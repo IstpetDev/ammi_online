@@ -1,13 +1,10 @@
 # Activación de ramas y CI en GitHub
 
-Esta guía se aplica al repositorio `monorepo/`. El remoto previsto es `https://github.com/IstpetDev/ammi_online.git`.
+Esta guía se aplica al repositorio `monorepo/`. El remoto es `https://github.com/IstpetDev/ammi_online.git`.
 
-## 1. Publicar la base
+## 1. Base publicada
 
-1. Crear un repositorio GitHub vacío, sin README ni licencia generados por GitHub.
-2. Confirmar con `git remote -v` que `origin` apunta a la URL anterior.
-3. Confirmar que `main` y `develop` apuntan al mismo commit: `git rev-parse main develop` debe mostrar dos hashes idénticos.
-4. Publicar ambas ramas y fijar `main` como rama por defecto.
+`main` y `develop` ya se publicaron desde el mismo commit inicial. Confirmar con `git remote -v` que `origin` apunta a la URL anterior y con `git rev-parse main develop` que las dos ramas locales siguen alineadas antes de abrir el primer PR. Fijar `main` como rama por defecto en GitHub.
 
 Los dos repositorios originales están fuera de este Git. No importar sus historiales: el backend original tiene valores configurados en campos sensibles de un archivo versionado.
 
