@@ -1,0 +1,91 @@
+<div class="postulations-container">
+  <p-toast></p-toast>
+  
+  <div class="postulations-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h2>Plantillas de Evaluación</h2>
+        <p>Gestión de modelos de evaluación y sus estructuras.</p>
+      </div>
+      <div class="header-actions">
+         <p-button label="Nueva Plantilla" icon="pi pi-plus" (onClick)="onCreate()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <p-selectButton [options]="filtroOptions" [(ngModel)]="filtroActivo"
+                    (onChange)="onFiltroChange()"></p-selectButton>
+  </div>
+
+  <div class="content-card">
+    <p-table [value]="plantillas" [paginator]="true" [rows]="10"
+             [loading]="loading"
+             [rowsPerPageOptions]="[10, 25, 50]"
+             [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} plantillas">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          <th>Materias Usando</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-plantilla>
+        <tr>
+          <td class="font-bold">{{ plantilla.nombre }}</td>
+          <td>{{ plantilla.detalle }}</td>
+          <td>
+            <p-tag [severity]="plantilla.esActivo ? 'success' : 'danger'"
+                   [value]="plantilla.esActivo ? 'Activa' : 'Inactiva'"></p-tag>
+          </td>
+          <td>{{ plantilla.cantidadMateriasUsando || 0 }}</td>
+          <td class="actions-cell">
+            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true"
+                      (onClick)="onEdit(plantilla)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-sitemap" [rounded]="true" [text]="true"
+                      (onClick)="onConfigure(plantilla)" pTooltip="Configurar Estructura" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-copy" [rounded]="true" [text]="true"
+                      (onClick)="onDuplicate(plantilla)" pTooltip="Duplicar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                      (onClick)="onDelete(plantilla)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-4">
+            No se encontraron plantillas.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal de confirmación -->
+<app-confirmation-modal [visible]="showConfirmDelete"
+                        title="Confirmar Eliminación"
+                        [message]="mensajeConfirmacion"
+                        (confirm)="confirmDelete()"
+                        (cancel)="cancelDelete()">
+</app-confirmation-modal>
+
+<!-- Modal de duplicar -->
+<p-dialog header="Duplicar Plantilla" [(visible)]="showDuplicateDialog" [modal]="true" 
+          [breakpoints]="{'960px': '75vw', '640px': '90vw'}" [style]="{width: '450px'}">
+  <div class="p-fluid">
+    <div class="field">
+      <label for="nuevoNombre">Nombre de la nueva plantilla</label>
+      <input pInputText id="nuevoNombre" [(ngModel)]="nuevoNombreDuplicado" autofocus />
+      <small class="text-gray-500">Se creará una copia idéntica de la estructura.</small>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" (onClick)="cancelDuplicate()" [text]="true"></p-button>
+    <p-button label="Duplicar" (onClick)="confirmDuplicate()" icon="pi pi-copy" [loading]="duplicating"
+              [disabled]="!nuevoNombreDuplicado.trim()"></p-button>
+  </ng-template>
+</p-dialog>

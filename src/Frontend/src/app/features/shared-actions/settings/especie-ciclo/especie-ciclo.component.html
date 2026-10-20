@@ -1,0 +1,259 @@
+<div class="especie-ciclo-container p-4">
+  <!-- Botón Volver -->
+  <div class="flex justify-content-start mb-4">
+    <p-button
+      label="Volver a Configuraciones Cíclicas"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      routerLink="/dashboard/cyclic-configurations">
+    </p-button>
+  </div>
+
+  <p-card header="Gestión de Especies por Ciclo" class="mb-4">
+    <p class="text-gray-600 mb-4">
+      Configure los valores de cada especie para los diferentes ciclos académicos.
+    </p>
+
+    <!-- Botones de acción -->
+    <div class="flex justify-content-between align-items-center mb-3">
+      <div>
+        <p-button
+          label="Duplicar del Ciclo Anterior"
+          icon="pi pi-copy"
+          severity="help"
+          (onClick)="duplicarDelCicloAnterior()"
+          [loading]="loading"
+          [disabled]="ciclos.length === 0">
+        </p-button>
+      </div>
+      <div>
+        <p-button
+          label="Nueva Configuración"
+          icon="pi pi-plus"
+          (onClick)="nuevaEspecieCiclo()"
+          [loading]="loading">
+        </p-button>
+      </div>
+    </div>
+
+    <!-- Tabla de Especies Ciclo -->
+    <p-table
+      [value]="especiesCiclo"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} configuraciones"
+      [rowsPerPageOptions]="[5, 10, 25]"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-striped">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th>ID</th>
+          <th>Especie</th>
+          <th>Ciclo</th>
+          <th>Valor</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-especieCiclo>
+        <tr>
+          <td>{{ especieCiclo.idEspecieCiclo }}</td>
+          <td>{{ getNombreEspecie(especieCiclo.idEspecie) }}</td>
+          <td>{{ getNombreCiclo(especieCiclo.idCiclo) }}</td>
+          <td>
+            <span class="font-semibold text-green-600">
+              ${{ especieCiclo.valorEspecie?.toFixed(2) }}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <p-button
+                icon="pi pi-pencil"
+                severity="info"
+                size="small"
+                pTooltip="Editar"
+                tooltipPosition="top"
+                (onClick)="editarEspecieCiclo(especieCiclo)">
+              </p-button>
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                pTooltip="Eliminar"
+                tooltipPosition="top"
+                (onClick)="eliminarEspecieCiclo(especieCiclo)">
+              </p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center py-4">
+            <i class="pi pi-info-circle text-gray-400 mr-2"></i>
+            No hay configuraciones de especie por ciclo
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Dialog para Crear/Editar Especie Ciclo -->
+  <p-dialog
+    [(visible)]="showDialog"
+    [modal]="true"
+    [closable]="true"
+    [closeOnEscape]="true"
+    header="{{ isEditing ? 'Editar Configuración' : 'Nueva Configuración' }}"
+    [style]="{ width: '500px' }"
+    (onHide)="cerrarDialog()">
+
+    <div class="p-fluid">
+      <!-- Especie -->
+      <div class="field mb-4">
+        <label for="especie" class="block text-sm font-medium text-gray-700 mb-2">
+          Especie <span class="text-red-500">*</span>
+        </label>
+        <p-select
+          [options]="especieOptions"
+          [(ngModel)]="especieCicloForm.idEspecie"
+          optionLabel="label"
+          optionValue="value.idEspecie"
+          placeholder="Seleccione una especie"
+          class="w-full">
+        </p-select>
+      </div>
+
+      <!-- Ciclo -->
+      <div class="field mb-4">
+        <label for="ciclo" class="block text-sm font-medium text-gray-700 mb-2">
+          Ciclo <span class="text-red-500">*</span>
+        </label>
+        <p-select
+          [options]="cicloOptions"
+          [(ngModel)]="especieCicloForm.idCiclo"
+          optionLabel="label"
+          optionValue="value.idCiclo"
+          placeholder="Seleccione un ciclo"
+          class="w-full">
+        </p-select>
+      </div>
+
+      <!-- Valor Especie -->
+      <div class="field mb-4">
+        <label for="valorEspecie" class="block text-sm font-medium text-gray-700 mb-2">
+          Valor <span class="text-red-500">*</span>
+        </label>
+        <p-inputNumber
+          [(ngModel)]="especieCicloForm.valorEspecie"
+          mode="currency"
+          currency="USD"
+          locale="en-US"
+          [min]="0"
+          [max]="999999.99"
+          placeholder="0.00"
+          class="w-full">
+        </p-inputNumber>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        (onClick)="cerrarDialog()">
+      </p-button>
+      <p-button
+        label="{{ isEditing ? 'Actualizar' : 'Crear' }}"
+        icon="pi pi-check"
+        severity="success"
+        [loading]="saving"
+        (onClick)="guardarEspecieCiclo()">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog para Duplicar Configuraciones -->
+  <p-dialog
+    [(visible)]="showDuplicarDialog"
+    [modal]="true"
+    [closable]="true"
+    [closeOnEscape]="true"
+    header="Duplicar Configuraciones de Ciclo"
+    [style]="{ width: '500px' }"
+    (onHide)="cerrarDuplicarDialog()">
+
+    <div class="p-fluid">
+      <!-- Ciclo Origen -->
+      <div class="field mb-4">
+        <label for="cicloOrigen" class="block text-sm font-medium text-gray-700 mb-2">
+          Ciclo Origen <span class="text-red-500">*</span>
+        </label>
+        <p-select
+          [options]="cicloOptions"
+          [(ngModel)]="duplicarForm.cicloOrigen"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione el ciclo del cual copiar"
+          class="w-full">
+        </p-select>
+        <small class="text-gray-500 block mt-1">
+          Ciclo que contiene las configuraciones a duplicar
+        </small>
+      </div>
+
+      <!-- Ciclo Destino -->
+      <div class="field mb-4">
+        <label for="cicloDestino" class="block text-sm font-medium text-gray-700 mb-2">
+          Ciclo Destino <span class="text-red-500">*</span>
+        </label>
+        <p-select
+          [options]="cicloOptions"
+          [(ngModel)]="duplicarForm.cicloDestino"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione el ciclo al cual copiar"
+          class="w-full">
+        </p-select>
+        <small class="text-gray-500 block mt-1">
+          Ciclo que recibirá las configuraciones duplicadas
+        </small>
+      </div>
+
+      <!-- Información adicional -->
+      <div class="bg-blue-50 p-3 rounded-lg border border-blue-200" *ngIf="duplicarForm.cicloOrigen">
+        <div class="text-sm text-blue-800">
+          <strong>Configuraciones encontradas:</strong>
+          {{ getConfiguracionesCount(duplicarForm.cicloOrigen) }} especie(s) configurada(s) en el ciclo origen
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        (onClick)="cerrarDuplicarDialog()">
+      </p-button>
+      <p-button
+        label="Duplicar Configuraciones"
+        icon="pi pi-copy"
+        severity="success"
+        [loading]="saving"
+        (onClick)="ejecutarDuplicacionDesdeDialogo()">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Toast para mensajes -->
+  <p-toast></p-toast>
+
+  <!-- Confirm Dialog -->
+  <p-confirmDialog></p-confirmDialog>
+</div>

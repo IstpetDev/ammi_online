@@ -1,0 +1,223 @@
+.get-pagos-container {
+  padding: 2rem;
+  width: 100%;
+}
+
+.pagos-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.pagos-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.total-info {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.total-info h3 {
+  margin: 0 0 1rem 0;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.total-info p {
+  margin: 0.5rem 0;
+  color: var(--text-color-secondary);
+  font-size: 1rem;
+}
+
+.total-info .highlight {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.btn-nuevo-abono {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-nuevo-abono:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.p-datatable {
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.p-datatable .p-datatable-header {
+  background-color: var(--surface-section);
+  color: var(--text-color);
+  font-weight: 600;
+  padding: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background-color: var(--surface-card);
+  color: var(--text-color);
+  transition: background-color 0.3s ease;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+.currency-positive {
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.currency-negative {
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+/* Modal styles */
+.pagos-modal .p-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.pagos-modal .p-dialog .p-dialog-header {
+  background: linear-gradient(135deg, var(--brand-yellow) 0%, var(--brand-yellow-dark) 100%);
+  color: var(--brand-black);
+  padding: 1.5rem 2rem;
+  border-bottom: 3px solid var(--brand-yellow-dark);
+  min-height: 80px;
+}
+
+.pagos-modal .p-dialog .p-dialog-title {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--brand-black);
+}
+
+.pagos-modal .p-dialog .p-dialog-content {
+  padding: 2rem;
+  background-color: var(--surface-card);
+}
+
+.pagos-modal .p-field {
+  margin-bottom: 1.5rem;
+}
+
+.pagos-modal .p-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.pagos-modal input,
+.pagos-modal select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.375rem;
+  background-color: var(--surface-section);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pagos-modal input:focus,
+.pagos-modal select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(252, 234, 30, 0.1);
+}
+
+.pagos-modal .p-dialog-footer {
+  padding: 1rem 2rem;
+  background-color: var(--surface-section);
+  border-top: 1px solid var(--surface-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.pagos-modal .p-dialog-footer .p-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .get-pagos-container {
+    padding: 1rem;
+  }
+
+  .pagos-card {
+    padding: 1rem;
+  }
+
+  .total-info h3 {
+    font-size: 1.25rem;
+  }
+
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .pagos-modal .p-dialog-content {
+    padding: 1rem;
+  }
+
+  .pagos-modal .p-dialog-footer {
+    padding: 1rem;
+    flex-direction: column;
+  }
+
+  .pagos-modal .p-dialog-footer .p-button {
+    width: 100%;
+  }
+}
+
+ .p-button {
+    background-color: var(--brand-yellow-dark);
+    color: var(--brand-black);
+    font-weight: 600;
+    border: none;
+  }
+  
+  .p-button:enabled:hover {
+    background-color: var(--brand-yellow);
+    color: var(--brand-black);
+  }
+

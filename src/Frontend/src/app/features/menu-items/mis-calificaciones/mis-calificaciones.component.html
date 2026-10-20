@@ -1,0 +1,239 @@
+<p-toast></p-toast>
+
+<div class="mis-calificaciones-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Mis Calificaciones</h1>
+          <p class="page-subtitle">
+            @if (historial) {
+              {{ historial.nombreAlumno }} - {{ historial.numeroDocumento }}
+            } @else {
+              Consulta tu historial academico completo
+            }
+          </p>
+        </div>
+      </div>
+      @if (vistaActual === 'detalle-materia') {
+        <button pButton
+                label="Volver"
+                icon="pi pi-arrow-left"
+                class="p-button-outlined"
+                (click)="volverAHistorial()">
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+      <p>Cargando tu historial academico...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error && !loading) {
+    <div class="error-container">
+      <i class="pi pi-exclamation-triangle"></i>
+      <p>{{ error }}</p>
+      <button pButton label="Reintentar" icon="pi pi-refresh" (click)="cargarHistorial()"></button>
+    </div>
+  }
+
+  <!-- Vista: Historial -->
+  @if (!loading && !error && vistaActual === 'historial' && historial) {
+    <!-- Filtros -->
+    <div class="filtros-section">
+      <div class="filtro-item">
+        <label for="malla">Carrera / Malla:</label>
+        <p-select
+          id="malla"
+          [options]="mallasOptions"
+          [(ngModel)]="mallaSeleccionada"
+          (onChange)="seleccionarMalla($event.value)"
+          placeholder="Selecciona una malla"
+          styleClass="w-full">
+        </p-select>
+      </div>
+      @if (mallaSeleccionada && ciclosOptions.length > 0) {
+        <div class="filtro-item">
+          <label for="ciclo">Ciclo / Periodo:</label>
+          <p-select
+            id="ciclo"
+            [options]="ciclosOptions"
+            [(ngModel)]="cicloSeleccionado"
+            (onChange)="seleccionarCiclo($event.value)"
+            placeholder="Selecciona un ciclo"
+            styleClass="w-full">
+          </p-select>
+        </div>
+      }
+    </div>
+
+    <!-- Info del Ciclo Seleccionado -->
+    @if (cicloSeleccionado) {
+      <p-card styleClass="ciclo-info-card">
+        <div class="ciclo-info">
+          <div class="info-item">
+            <i class="pi pi-calendar"></i>
+            <span>{{ cicloSeleccionado.nombreCiclo }}</span>
+          </div>
+          @if (cicloSeleccionado.fechaInicio) {
+            <div class="info-item">
+              <i class="pi pi-clock"></i>
+              <span>{{ cicloSeleccionado.fechaInicio | date:'mediumDate' }} - {{ cicloSeleccionado.fechaFin | date:'mediumDate' }}</span>
+            </div>
+          }
+          <div class="info-item promedio">
+            <span class="label">Promedio General:</span>
+            <p-tag [value]="formatearNota(cicloSeleccionado.promedioGeneral)"
+                   [severity]="getColorNota(cicloSeleccionado.promedioGeneral)">
+            </p-tag>
+          </div>
+        </div>
+      </p-card>
+    }
+
+    <!-- Loading Boletin -->
+    @if (loadingBoletin) {
+      <div class="loading-container small">
+        <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+        <p>Cargando notas...</p>
+      </div>
+    }
+
+    <!-- Lista de Materias -->
+    @if (!loadingBoletin && boletinActual && boletinActual.materias && boletinActual.materias.length > 0) {
+      <div class="materias-grid">
+        @for (materia of boletinActual.materias; track materia.idDetalleMalla) {
+          <p-card styleClass="materia-card" (click)="verDetalleMateria(materia)">
+            <div class="materia-content">
+              <div class="materia-header">
+                <h3 class="materia-nombre">{{ materia.nombreMateria }}</h3>
+                <p-tag [value]="materia.estado" [severity]="getSeverityEstado(materia.estado)"></p-tag>
+              </div>
+              <div class="materia-nota">
+                <span class="nota-label">Nota Final:</span>
+                <span class="nota-valor" [ngClass]="'nota-' + getColorNota(materia.notaFinal)">
+                  {{ formatearNota(materia.notaFinal) }}
+                </span>
+              </div>
+              <p class="nota-descripcion">{{ getDescripcionNota(materia.notaFinal) }}</p>
+              <button pButton
+                      label="Ver Detalle"
+                      icon="pi pi-eye"
+                      class="p-button-sm p-button-outlined w-full">
+              </button>
+            </div>
+          </p-card>
+        }
+      </div>
+    }
+
+    <!-- Sin Materias -->
+    @if (!loadingBoletin && (!boletinActual || !boletinActual.materias || boletinActual.materias.length === 0)) {
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <h3>Sin notas registradas</h3>
+        <p>No hay calificaciones disponibles para este periodo.</p>
+      </div>
+    }
+  }
+
+  <!-- Vista: Detalle Materia -->
+  @if (vistaActual === 'detalle-materia' && materiaDetalle) {
+    <div class="detalle-materia-container">
+      <!-- Header Materia -->
+      <p-card styleClass="materia-detalle-header">
+        <div class="header-info">
+          <div class="info-principal">
+            <h2>{{ materiaDetalle.nombreMateria }}</h2>
+            <p-tag [value]="materiaDetalle.estado" [severity]="getSeverityEstado(materiaDetalle.estado)"></p-tag>
+          </div>
+          <div class="nota-final-grande">
+            <span class="label">Nota Final</span>
+            <span class="valor" [ngClass]="'nota-' + getColorNota(materiaDetalle.notaFinal)">
+              {{ formatearNota(materiaDetalle.notaFinal) }}
+            </span>
+            <span class="descripcion">{{ getDescripcionNota(materiaDetalle.notaFinal) }}</span>
+          </div>
+        </div>
+      </p-card>
+
+      <!-- Estructura de Notas -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <h3>Desglose de Calificaciones</h3>
+          </div>
+        </ng-template>
+
+        @if (notasTree.length > 0) {
+          <p-tree [value]="notasTree" styleClass="notas-tree">
+            <ng-template let-node pTemplate="default">
+              <div class="tree-node-content">
+                <div class="node-info">
+                  <span class="node-nombre">{{ node.label }}</span>
+                  @if (node.data.peso) {
+                    <span class="node-peso">({{ node.data.peso }}%)</span>
+                  }
+                </div>
+                <div class="node-nota">
+                  @if (node.data.valorNota !== null) {
+                    <p-tag [value]="formatearNota(node.data.valorNota)"
+                           [severity]="getColorNota(node.data.valorNota)">
+                    </p-tag>
+                  } @else {
+                    <span class="sin-nota">--</span>
+                  }
+                  @if (node.data.esCalculada) {
+                    <i class="pi pi-calculator" pTooltip="Calculada automaticamente"></i>
+                  }
+                </div>
+              </div>
+            </ng-template>
+          </p-tree>
+        } @else {
+          <div class="no-estructura">
+            <i class="pi pi-info-circle"></i>
+            <p>No hay estructura de notas disponible para esta materia.</p>
+          </div>
+        }
+      </p-card>
+
+      <!-- Escala de Calificaciones -->
+      <p-card styleClass="escala-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <h3>Escala de Calificaciones</h3>
+          </div>
+        </ng-template>
+        <div class="escala-grid">
+          <div class="escala-item escala-success">
+            <span class="rango">9.00 - 10.00</span>
+            <span class="descripcion">Domina los aprendizajes</span>
+          </div>
+          <div class="escala-item escala-info">
+            <span class="rango">7.00 - 8.99</span>
+            <span class="descripcion">Alcanza los aprendizajes</span>
+          </div>
+          <div class="escala-item escala-warning">
+            <span class="rango">4.01 - 6.99</span>
+            <span class="descripcion">Proximo a alcanzar</span>
+          </div>
+          <div class="escala-item escala-danger">
+            <span class="rango">0.00 - 4.00</span>
+            <span class="descripcion">No alcanza los aprendizajes</span>
+          </div>
+        </div>
+      </p-card>
+    </div>
+  }
+</div>

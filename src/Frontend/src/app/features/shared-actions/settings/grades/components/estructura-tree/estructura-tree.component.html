@@ -1,0 +1,58 @@
+<p-treeTable [value]="treeNodes" [columns]="cols" [loading]="loading" styleClass="p-treetable-sm">
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns">{{ col.header }}</th>
+      <th class="text-center" style="width: 180px">Acciones</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-rowNode let-rowData="rowData" let-columns="columns">
+    <tr>
+      <td *ngFor="let col of columns; let i = index">
+        <p-treeTableToggler [rowNode]="rowNode" *ngIf="i === 0"></p-treeTableToggler>
+        
+        <ng-container *ngIf="col.field === 'nombre'">
+           <i [class]="getIconClass(rowData.tipo)" class="mr-2 text-lg vertical-align-middle"></i>
+           <span class="font-medium vertical-align-middle">{{ rowData.nombre }}</span>
+        </ng-container>
+
+        <ng-container *ngIf="col.field === 'peso'">
+          <div class="flex align-items-center gap-2">
+            <p-tag [value]="rowData.peso + '%'"
+                   [severity]="getPesoSeverity(rowData.peso)"
+                   [rounded]="true"></p-tag>
+            
+            <i *ngIf="rowData.formula && rowData.formula !== 'NONE'" 
+               class="pi pi-calculator text-primary" 
+               [pTooltip]="'Regla: ' + rowData.formula"
+               tooltipPosition="top"></i>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="col.field === 'tipo'">
+          <span class="text-sm text-gray-600">{{ rowData.tipo }}</span>
+        </ng-container>
+
+        <ng-container *ngIf="col.field === 'orden'">
+          {{ rowData.orden }}
+        </ng-container>
+      </td>
+      <td class="text-center">
+        <p-button icon="pi pi-plus" [rounded]="true" [text]="true" size="small"
+                  (onClick)="onAddChild(rowNode)" pTooltip="Agregar Sub-nivel" tooltipPosition="top"
+                  *ngIf="canAddChild(rowData.tipo)"></p-button>
+        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="info"
+                  (onClick)="onEdit(rowNode)" pTooltip="Editar" tooltipPosition="top"></p-button>
+        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" size="small" severity="danger"
+                  (onClick)="onDelete(rowNode)" pTooltip="Eliminar" tooltipPosition="top"></p-button>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td [attr.colspan]="cols.length + 1" class="text-center p-4">
+        No hay estructura definida. Agregue un nodo raíz comenzar.
+      </td>
+    </tr>
+  </ng-template>
+</p-treeTable>

@@ -1,0 +1,751 @@
+/* =============================================
+   MIS PAGOS COMPONENT - Vista de solo lectura para Alumnos
+   ============================================= */
+
+.mis-pagos-container {
+  width: 100%;
+  padding: 1.5rem;
+}
+
+/* =============================================
+   PAGE HEADER
+   ============================================= */
+
+.page-header {
+  background: linear-gradient(135deg, var(--brand-black) 0%, var(--brand-gray) 100%);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title-icon {
+  width: 50px;
+  height: 50px;
+  background-color: var(--brand-yellow-dark);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-icon i {
+  font-size: 1.5rem;
+  color: var(--brand-black);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0.25rem 0 0 0;
+}
+
+.user-info-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.user-info-badge i {
+  color: var(--brand-yellow);
+}
+
+/* =============================================
+   INFO BANNER
+   ============================================= */
+
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.info-banner i {
+  font-size: 1.25rem;
+  color: #3b82f6;
+}
+
+.info-banner.alumno-info {
+  background: linear-gradient(135deg, rgba(217, 160, 5, 0.1) 0%, rgba(217, 160, 5, 0.05) 100%);
+  border-color: rgba(217, 160, 5, 0.3);
+}
+
+.info-banner.alumno-info i {
+  color: var(--brand-yellow-dark);
+}
+
+/* =============================================
+   CARD CONTAINER
+   ============================================= */
+
+.card {
+  background-color: var(--surface-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border);
+}
+
+/* =============================================
+   TABLE HEADER (CAPTION)
+   ============================================= */
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+  z-index: 1;
+}
+
+.search-input {
+  padding-left: 38px !important;
+  width: 250px;
+  border-radius: 8px;
+}
+
+/* =============================================
+   TABLE STYLES
+   ============================================= */
+
+:host ::ng-deep .p-datatable {
+  font-size: 0.9rem;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-header {
+  background: transparent;
+  border: none;
+  padding: 0 0 1rem 0;
+}
+
+:host ::ng-deep .p-datatable-gridlines .p-datatable-thead > tr > th {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  font-weight: 600;
+  border-color: var(--surface-border);
+  padding: 0.875rem 1rem;
+}
+
+:host ::ng-deep .p-datatable-gridlines .p-datatable-tbody > tr > td {
+  border-color: var(--surface-border);
+  padding: 0.875rem 1rem;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Paginator */
+:host ::ng-deep .p-paginator {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--surface-border);
+  padding: 1rem 0 0 0;
+  margin-top: 0.5rem;
+}
+
+/* Progress cell */
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+}
+
+/* =============================================
+   PROGRESS BAR
+   ============================================= */
+
+:host ::ng-deep .p-progressbar {
+  height: 6px;
+  border-radius: 4px;
+  background-color: var(--surface-200);
+}
+
+:host ::ng-deep .p-progressbar .p-progressbar-value {
+  background: linear-gradient(90deg, var(--brand-yellow-dark) 0%, var(--brand-yellow) 100%);
+  border-radius: 4px;
+}
+
+/* =============================================
+   DETALLE VIEW - HEADER
+   ============================================= */
+
+.detalle-header {
+  padding: 1.25rem 1.5rem;
+}
+
+.detalle-header .title-section {
+  gap: 1rem;
+}
+
+:host ::ng-deep .back-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+}
+
+:host ::ng-deep .back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.student-header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-avatar-large {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--brand-yellow-dark) 0%, var(--brand-yellow) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-avatar-large i {
+  font-size: 1.25rem;
+  color: var(--brand-black);
+}
+
+.ciclo-badge {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+/* =============================================
+   RESUMEN CARDS
+   ============================================= */
+
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen-card {
+  background-color: var(--surface-card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--surface-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resumen-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.resumen-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resumen-icon i {
+  font-size: 1.25rem;
+}
+
+.total-deuda .resumen-icon {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.total-deuda .resumen-icon i {
+  color: #dc3545;
+}
+
+.total-pagado .resumen-icon {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.total-pagado .resumen-icon i {
+  color: #28a745;
+}
+
+.pendiente .resumen-icon {
+  background-color: rgba(217, 160, 5, 0.1);
+}
+
+.pendiente .resumen-icon i {
+  color: var(--brand-yellow-dark);
+}
+
+.progreso-general .resumen-icon {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.progreso-general .resumen-icon i {
+  color: #3b82f6;
+}
+
+.resumen-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.resumen-label {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+}
+
+.resumen-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+/* =============================================
+   PROGRESO GENERAL BAR
+   ============================================= */
+
+.progreso-general-bar {
+  background-color: var(--surface-card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--surface-border);
+}
+
+.progreso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.progreso-porcentaje-general {
+  color: var(--brand-yellow-dark);
+  font-size: 1.1rem;
+}
+
+:host ::ng-deep .progreso-bar-grande {
+  height: 12px !important;
+  border-radius: 6px !important;
+}
+
+/* =============================================
+   ESPECIES SECTION
+   ============================================= */
+
+.especies-section {
+  margin-top: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title i {
+  color: var(--brand-yellow-dark);
+}
+
+.especies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* =============================================
+   ESPECIE CARD
+   ============================================= */
+
+.especie-card {
+  background-color: var(--surface-card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--surface-border);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.especie-card.readonly-card {
+  cursor: default;
+}
+
+.especie-card:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.especie-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+/* Card types */
+.card-matricula {
+  border-left: 4px solid var(--brand-yellow-dark);
+}
+
+.card-matricula::before {
+  background: linear-gradient(90deg, var(--brand-yellow-dark) 0%, #e6c200 100%);
+}
+
+.card-pension {
+  border-left: 4px solid #6b7280;
+}
+
+.card-pension::before {
+  background: linear-gradient(90deg, #4b5563 0%, #9ca3af 100%);
+}
+
+.card-matricula .especie-tipo i {
+  color: var(--brand-yellow-dark);
+}
+
+.card-pension .especie-tipo i {
+  color: #6b7280;
+}
+
+.especie-pagada::before {
+  background: #28a745 !important;
+}
+
+.especie-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.especie-tipo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.especie-tipo i {
+  font-size: 1.25rem;
+}
+
+.especie-nombre {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+:host ::ng-deep .estado-tag {
+  font-size: 0.7rem;
+}
+
+.especie-ciclo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--surface-ground);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-color);
+}
+
+.especie-ciclo i {
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+}
+
+.especie-valores {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--surface-border);
+}
+
+.valor-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.valor-label {
+  font-size: 0.7rem;
+  color: var(--text-color-secondary);
+  text-transform: uppercase;
+}
+
+.valor-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.valor-amount.pagado {
+  color: #28a745;
+}
+
+.valor-amount.pendiente {
+  color: #dc3545;
+}
+
+.especie-progreso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+:host ::ng-deep .especie-progress-bar {
+  flex: 1;
+  height: 6px !important;
+}
+
+.progreso-porcentaje {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: 35px;
+  text-align: right;
+}
+
+.especie-fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.especie-fecha i {
+  color: var(--brand-yellow-dark);
+}
+
+/* Estado info boxes */
+.especie-pagado-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  background-color: rgba(40, 167, 69, 0.1);
+  border-radius: 8px;
+  color: #28a745;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.especie-pendiente-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  background-color: rgba(107, 114, 128, 0.1);
+  border-radius: 8px;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.especie-pendiente-pago {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: 8px;
+  color: #dc3545;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* =============================================
+   LEYENDA
+   ============================================= */
+
+.leyenda-section {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background-color: var(--surface-card);
+  border-radius: 12px;
+  border: 1px solid var(--surface-border);
+}
+
+.leyenda-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+}
+
+.leyenda-title i {
+  color: var(--brand-yellow-dark);
+}
+
+.leyenda-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+}
+
+.leyenda-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.leyenda-color.pagado {
+  background-color: #28a745;
+}
+
+.leyenda-color.parcial {
+  background: linear-gradient(90deg, var(--brand-yellow-dark) 0%, var(--brand-yellow) 100%);
+}
+
+.leyenda-color.pendiente {
+  background-color: #dc3545;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 768px) {
+  .mis-pagos-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .user-info-badge {
+    align-self: flex-start;
+  }
+
+  .title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .resumen-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .especies-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-header-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .leyenda-items {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .resumen-cards {
+    grid-template-columns: 1fr;
+  }
+}

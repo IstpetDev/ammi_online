@@ -1,0 +1,80 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Tipos de Oferta</h1>
+        <p>Aquí se gestionarán los tipos de oferta académica.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Agregar Tipo de Oferta" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="tiposOferta" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tipos de oferta">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Detalle</th>
+          <th>Activo</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-tipoOferta>
+        <tr>
+          <td>{{ tipoOferta.detalle }}</td>
+          <td>{{ tipoOferta.esActivo ? 'Sí' : 'No' }}</td>
+          <td class="seasons-actions-cell">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(tipoOferta)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(tipoOferta)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="3">No hay tipos de oferta registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog para crear/editar tipo de oferta -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '600px'}" [header]="isEditing ? 'Editar Tipo de Oferta' : 'Crear Tipo de Oferta'"
+          (onHide)="hideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+  <div class="p-dialog-content">
+    <form [formGroup]="tipoOfertaForm" (ngSubmit)="saveTipoOferta()" class="seasons-form-grid">
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="detalle" class="seasons-form-label">Detalle</label>
+          <input pInputText id="detalle" formControlName="detalle" class="seasons-form-control" />
+        </div>
+      </div>
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="esActivo" class="seasons-form-label">Activo</label>
+          <p-toggleButton formControlName="esActivo" onLabel="Activo" offLabel="Inactivo"></p-toggleButton>
+        </div>
+      </div>
+      <div class="seasons-form-actions">
+        <p-button label="Cancelar" icon="pi pi-times" type="button" (onClick)="displayDialog = false" class="p-button-secondary p-button-outlined"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" type="submit" [disabled]="!tipoOfertaForm.valid" class="p-button-primary"></p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
+
+<!-- Modal de confirmación para eliminar -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar este tipo de oferta?"
+  acceptLabel="Eliminar"
+  rejectLabel="Cancelar"
+  (accept)="deleteTipoOferta()"
+  (reject)="cancelDelete()"
+  (hide)="cancelDelete()">
+</app-confirmation-modal>
+
+<p-toast></p-toast>

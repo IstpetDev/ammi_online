@@ -1,0 +1,63 @@
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <i class="pi pi-graduation-cap sidebar-logo-icon"></i>
+      <span class="sidebar-logo-text" *ngIf="!sidebarCollapsed">AMMI ONLINE</span>
+    </div>
+
+    <nav class="sidebar-menu">
+      <!-- Menú dinámico basado en rol -->
+      <ng-container *ngFor="let item of menuItems">
+        <a 
+          [routerLink]="item.route" 
+          [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}" 
+          routerLinkActive="active" 
+          class="menu-item">
+          <i class="pi" [ngClass]="item.icon"></i>
+          <span *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+        </a>
+      </ng-container>
+    </nav>
+
+    <button class="sidebar-toggle" (click)="toggleSidebar()">
+      <i class="pi" [ngClass]="sidebarCollapsed ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <h1 class="page-title">{{ pageTitle }}</h1>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" title="Notificaciones">
+          <i class="pi pi-bell"></i>
+          <span class="notification-badge" *ngIf="notificationCount > 0">{{ notificationCount }}</span>
+        </button>
+        <app-theme-toggle></app-theme-toggle>
+        <div class="user-menu">
+          <div class="user-info-header">
+            <div class="user-avatar-small">
+              <i class="pi pi-user"></i>
+            </div>
+            <div class="user-details" *ngIf="user">
+              <span class="user-name">{{ user.username }}</span>
+              <span class="user-role-badge">{{ getRoleLabel(user.roles) }}</span>
+            </div>
+          </div>
+          <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
+            <i class="pi pi-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

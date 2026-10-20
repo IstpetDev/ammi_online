@@ -1,0 +1,12 @@
+.species-container {
+  padding: 2rem;
+}
+
+.species-container h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.species-container p {
+  color: var(--text-color-secondary);
+}

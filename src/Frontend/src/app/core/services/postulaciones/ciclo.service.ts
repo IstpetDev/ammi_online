@@ -1,0 +1,50 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { CicloDTO } from '../../../data/models/Entities';
+import { IResponse } from '../../../data/models/IResponse';
+import { environment } from '../../../environments/environment';
+import { API_ENDPOINTS } from '../../constants/app.constants';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CicloService {
+
+  private apiUrl = environment.apiUrl;
+
+  constructor(private http: HttpClient) { }
+
+  // Obtener todos los ciclos
+  getAll(): Observable<CicloDTO[]> {
+    return this.http.get<IResponse<CicloDTO[]>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.ciclo.getAll}`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  // Obtener ciclo por ID
+  getById(id: number): Observable<CicloDTO | undefined> {
+    return this.getAll().pipe(
+      map(ciclos => ciclos.find(c => c.idCiclo === id))
+    );
+  }
+
+  // Crear un nuevo ciclo
+  create(ciclo: CicloDTO): Observable<CicloDTO> {
+    return this.http.post<IResponse<CicloDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.ciclo.post}`, ciclo).pipe(
+      map(response => response.data)
+    );
+  }
+
+  // Actualizar un ciclo
+  update(ciclo: CicloDTO): Observable<CicloDTO> {
+    return this.http.put<IResponse<CicloDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.ciclo.put}`, ciclo).pipe(
+      map(response => response.data)
+    );
+  }
+
+  // Eliminar un ciclo por ID
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.ciclo.delete(id)}`);
+  }
+}

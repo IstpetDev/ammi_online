@@ -1,0 +1,15 @@
+<div *ngIf="validacion" class="my-4">
+  <p-message [severity]="validacion.esValido ? 'success' : 'error'" 
+             [text]="validacion.mensaje"
+             styleClass="w-full block"></p-message>
+
+  <div *ngIf="!validacion.esValido && validacion.nodosInvalidos.length" class="mt-2 ml-4">
+    <small class="block text-red-600 font-semibold mb-1">Detalle de problemas:</small>
+    <ul class="list-disc list-inside ml-2">
+      <li *ngFor="let nodo of validacion.nodosInvalidos" class="text-sm text-red-600">
+        <strong>{{ nodo.nombreNodo }}:</strong> {{ nodo.problema }}
+        <span class="text-red-800">(Suma actual: {{ nodo.pesoHijos }}%)</span>
+      </li>
+    </ul>
+  </div>
+</div>

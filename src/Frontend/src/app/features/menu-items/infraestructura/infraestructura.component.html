@@ -1,0 +1,85 @@
+<div class="menu-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+          <button *ngIf="showSeasonsComponent || showStudyAreasComponent || showMallasComponent || showGradesComponent" (click)="hideComponents()" class="mr-4 p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Volver a Infraestructura">
+            <i class="pi pi-arrow-left text-lg"></i>
+          </button>
+        <div class="title-icon">
+          <i class="pi pi-building"></i>
+        </div>
+        <div class="flex items-center">
+
+          <div>
+            <h1 class="page-title">Gestión de Infraestructura</h1>
+            <p class="page-subtitle">Administra y controla la infraestructura</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+
+  <!-- Mostrar componente seasons si está activado -->
+  <div *ngIf="showSeasonsComponent" class="seasons-container">
+    <app-seasons></app-seasons>
+  </div>
+
+  <!-- Mostrar componente study-areas si está activado -->
+  <div *ngIf="showStudyAreasComponent" class="study-areas-container">
+    <app-study-areas></app-study-areas>
+  </div>
+
+  <!-- Mostrar componente mallas si está activado -->
+  <div *ngIf="showMallasComponent" class="mallas-container">
+    <app-mallas></app-mallas>
+  </div>
+
+  <!-- Mostrar componente grades si está activado -->
+  <div *ngIf="showGradesComponent" class="grades-container">
+    <app-grades></app-grades>
+  </div>
+
+  <!-- Mostrar tarjetas si no está mostrando ningún componente -->
+  <div *ngIf="!showSeasonsComponent && !showStudyAreasComponent && !showMallasComponent && !showGradesComponent" class="card-grid">
+    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showSeasons()">
+      <div class="icon-container text-center mb-4">
+        <i class="pi pi-calendar text-6xl"></i>
+      </div>
+ 
+      <h2 class="card-title text-xl font-semibold text-center">Temporadas</h2>
+ 
+      <p class="card-description text-center">Gestionar temporadas académicas</p>
+    </div>
+    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showStudyAreas()">
+      <div class="icon-container text-center mb-4">
+        <i class="pi pi-map text-6xl"></i>
+      </div>
+ 
+      <h2 class="card-title text-xl font-semibold text-center">Áreas de Estudio</h2>
+ 
+      <p class="card-description text-center">Gestionar áreas de estudio disponibles</p>
+    </div>
+    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showMallas()">
+      <div class="icon-container text-center mb-4">
+        <i class="pi pi-sitemap text-6xl"></i>
+      </div>
+ 
+      <h2 class="card-title text-xl font-semibold text-center">Mallas</h2>
+ 
+      <p class="card-description text-center">Administrar mallas curriculares</p>
+    </div>
+    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showGrades()">
+      <div class="icon-container text-center mb-4">
+        <i class="pi pi-book text-6xl"></i>
+      </div>
+
+      <h2 class="card-title text-xl font-semibold text-center">Notas</h2>
+
+      <p class="card-description text-center">Gestionar calificaciones y notas</p>
+    </div>
+ 
+  </div>
+</div>

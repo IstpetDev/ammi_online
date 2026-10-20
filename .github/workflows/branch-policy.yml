@@ -1,0 +1,33 @@
+# Política de ramas y título del PR (ADR-0001). La llama ci.yml en cada PR
+# para que su resultado forme parte de ci-ok.
+name: Política de ramas
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validar:
+    name: Ramas y título
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # El script se toma de la rama base: un PR no puede relajar su propia política.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      # El evento pull_request contiene el título y autor actuales. El autor
+      # solo decide la excepción de Dependabot (dependabot[bot]).
+      - name: Validar rama de origen, destino y título
+        env:
+          BASE: ${{ github.base_ref }}
+          CABEZA: ${{ github.head_ref }}
+          TITULO: ${{ github.event.pull_request.title }}
+          AUTOR: ${{ github.event.pull_request.user.login }}
+        run: bash .github/scripts/validar-rama.sh "$BASE" "$CABEZA" "$TITULO" "$AUTOR"

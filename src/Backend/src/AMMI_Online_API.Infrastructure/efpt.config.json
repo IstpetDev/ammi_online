@@ -1,0 +1,338 @@
+﻿{
+   "CodeGenerationMode": 4,
+   "ContextClassName": "Ammi_OnlineContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "MinimumProductVersion": "2.6.1248",
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Persistence\/Context",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "AMMI_Online_API.Infrastructure",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 2,
+   "SelectedToBeGenerated": 1,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "adjunto",
+         "ObjectType": 0
+      },
+      {
+         "Name": "area",
+         "ObjectType": 0
+      },
+      {
+         "Name": "area_competencia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "beneficio",
+         "ObjectType": 0
+      },
+      {
+         "Name": "canton",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ciclo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "contenido_malla",
+         "ObjectType": 0
+      },
+      {
+         "Name": "credito",
+         "ObjectType": 0
+      },
+      {
+         "Name": "credito_beneficio",
+         "ObjectType": 0
+      },
+      {
+         "Name": "cuenta_bancaria",
+         "ObjectType": 0
+      },
+      {
+         "Name": "cursos",
+         "ObjectType": 0
+      },
+      {
+         "Name": "datos_contacto",
+         "ObjectType": 0
+      },
+      {
+         "Name": "detalle_credito",
+         "ObjectType": 0
+      },
+      {
+         "Name": "detalle_malla",
+         "ObjectType": 0
+      },
+      {
+         "Name": "detalle_matricula",
+         "ObjectType": 0
+      },
+      {
+         "Name": "distributivo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "documentos_personales",
+         "ObjectType": 0
+      },
+      {
+         "Name": "especialidad",
+         "ObjectType": 0
+      },
+      {
+         "Name": "especie",
+         "ObjectType": 0
+      },
+      {
+         "Name": "especie_ciclo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "estado_civil",
+         "ObjectType": 0
+      },
+      {
+         "Name": "estudiante_beneficio",
+         "ObjectType": 0
+      },
+      {
+         "Name": "etnia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "genero",
+         "ObjectType": 0
+      },
+      {
+         "Name": "institucion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "malla",
+         "ObjectType": 0
+      },
+      {
+         "Name": "malla_requisitos",
+         "ObjectType": 0
+      },
+      {
+         "Name": "materia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "matricula",
+         "ObjectType": 0
+      },
+      {
+         "Name": "modulo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "modulo_operacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "nacionalidad_etnica",
+         "ObjectType": 0
+      },
+      {
+         "Name": "notas_alumno",
+         "ObjectType": 0
+      },
+      {
+         "Name": "operacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "pago",
+         "ObjectType": 0
+      },
+      {
+         "Name": "pago_cuota",
+         "ObjectType": 0
+      },
+      {
+         "Name": "pais",
+         "ObjectType": 0
+      },
+      {
+         "Name": "paralelo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "parentesco",
+         "ObjectType": 0
+      },
+      {
+         "Name": "parroquia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "periodo_lectivo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_actividad_economica",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_alergias",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_direccion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_discapacidad",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_info",
+         "ObjectType": 0
+      },
+      {
+         "Name": "persona_nacionalidad",
+         "ObjectType": 0
+      },
+      {
+         "Name": "plantilla_estructura",
+         "ObjectType": 0
+      },
+      {
+         "Name": "plantilla_evaluacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "postulacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "provincia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "regimen",
+         "ObjectType": 0
+      },
+      {
+         "Name": "reglas_calculo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "requisitos",
+         "ObjectType": 0
+      },
+      {
+         "Name": "rol",
+         "ObjectType": 0
+      },
+      {
+         "Name": "rol_operacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "rol_usuario",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_actividad_economica",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_alergia",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_cuenta",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_dato_contacto",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_discapacidad",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_documento",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_documento_personal",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_estado_aprobacion",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_oferta",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_pago",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_parentesco",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_plantilla_estrucutra",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_regla_calculo",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_sangre",
+         "ObjectType": 0
+      },
+      {
+         "Name": "usuario",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": true,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": false,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false
+}

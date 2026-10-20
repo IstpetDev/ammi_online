@@ -1,0 +1,25 @@
+<div class="w-full p-4">
+
+
+  <!-- Navigation Menu -->
+  <div class="mb-6">
+    <nav class="flex space-x-4 border-b border-gray-200">
+      <a (click)="setActiveTab('periodos')" [class.active-link]="activeTab === 'periodos'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Periodos Lectivos
+      </a>
+      <a (click)="setActiveTab('regimenes')" [class.active-link]="activeTab === 'regimenes'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Régimen
+      </a>
+      <a (click)="setActiveTab('ciclos')" [class.active-link]="activeTab === 'ciclos'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Ciclos
+      </a>
+    </nav>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content-area">
+    <app-periodos *ngIf="activeTab === 'periodos'"></app-periodos>
+    <app-regimenes *ngIf="activeTab === 'regimenes'"></app-regimenes>
+    <app-ciclos *ngIf="activeTab === 'ciclos'"></app-ciclos>
+  </div>
+</div>

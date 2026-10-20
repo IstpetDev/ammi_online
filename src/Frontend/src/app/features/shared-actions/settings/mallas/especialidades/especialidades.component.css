@@ -1,0 +1,245 @@
+.seasons-container {
+  padding: 20px;
+}
+
+.seasons-header {
+  margin-bottom: 2rem;
+}
+
+.seasons-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seasons-header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0;
+  background: linear-gradient(45deg, #1a237e, #0d47a1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.seasons-header-title p {
+  font-style: italic;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+  width: 100%;
+}
+
+.seasons-content-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* Modal and Form Styles */
+::ng-deep .p-dialog-custom .p-dialog-content {
+  padding: 30px !important;
+}
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.seasons-form-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.seasons-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.seasons-form-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.seasons-form-control {
+  width: 100% !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  border: 1px solid #d1d5db;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.seasons-form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.seasons-form-actions p-button {
+  flex: 1;
+}
+
+::ng-deep .seasons-form-actions .p-button {
+  width: 100% !important;
+  justify-content: center !important;
+  padding: 12px !important;
+}
+
+.seasons-actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: white !important;
+}
+
+.p-dialog-custom .p-dialog-header .p-dialog-header-icon {
+  color: white !important;
+  font-size: 1.2rem !important;
+}
+
+.p-dialog-custom .p-dialog-content {
+  padding: 0 !important;
+  background-color: var(--surface-card, #ffffff) !important;
+}
+
+.p-dialog-custom .p-dialog-footer {
+  padding: 1.5rem 2rem !important;
+  border-top: 2px solid var(--surface-border, #e9ecef) !important;
+  background: linear-gradient(135deg, var(--surface-section, #f8f9fa) 0%, var(--surface-ground, #f1f3f4) 100%) !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+}
+
+
+
+.p-dialog-custom {
+  border-radius: 12px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--surface-border, #e9ecef) !important;
+}
+
+.dialog-content {
+  padding: 2rem !important;
+  background: linear-gradient(135deg, var(--surface-card, #ffffff) 0%, var(--surface-ground, #f8f9fa) 100%) !important;
+  border-radius: 8px !important;
+  margin: 0.5rem !important;
+}
+
+.form-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+}
+
+.form-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1.5rem !important;
+}
+
+.form-group {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.form-label {
+  font-weight: 700 !important;
+  color: var(--text-color, #495057) !important;
+  margin-bottom: 0.75rem !important;
+  font-size: 0.95rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  letter-spacing: 0.025em !important;
+}
+
+.form-control {
+  padding: 0.875rem 1rem !important;
+  border: 2px solid var(--surface-border, #dee2e6) !important;
+  border-radius: 8px !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  color: var(--text-color, #495057) !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+.form-control:focus {
+  outline: none !important;
+  border-color: var(--primary-color, #007bff) !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1), 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  transform: translateY(-1px) !important;
+}
+
+.form-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 2px solid var(--surface-border, #e9ecef) !important;
+  margin-top: 1.5rem !important;
+}
+
+/* Estilos mejorados para los botones del modal de edición */
+.p-dialog-custom .p-dialog-footer .p-button,
+.p-dialog-custom .form-actions .p-button {
+  border: 3px solid var(--primary-color, #007bff) !important;
+  border-radius: 10px !important;
+  padding: 1rem 2rem !important;
+  margin: 0 0.5rem !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  min-width: 140px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  background: transparent !important;
+  color: var(--primary-color, #007bff) !important;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2) !important;
+  text-shadow: none !important;
+}
+
+.p-dialog-custom .p-dialog-footer .p-button:hover,
+.p-dialog-custom .form-actions .p-button:hover {
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3) !important;
+  border-color: var(--primary-hover, #0056b3) !important;
+  color: var(--primary-hover, #0056b3) !important;
+}
+
+.p-dialog-custom .p-dialog-footer .p-button.p-button-secondary,
+.p-dialog-custom .form-actions .p-button.p-button-secondary {
+  background-color: transparent !important;
+  color: var(--primary-color, #007bff) !important;
+  border-color: var(--primary-color, #007bff) !important;
+}
+
+.p-dialog-custom .p-dialog-footer .p-button.p-button-secondary:hover,
+.p-dialog-custom .form-actions .p-button.p-button-secondary:hover {
+  background-color: var(--primary-color, #007bff) !important;
+  color: white !important;
+  border-color: var(--primary-color, #007bff) !important;
+}

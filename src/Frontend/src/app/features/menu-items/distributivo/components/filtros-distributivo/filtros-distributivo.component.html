@@ -1,0 +1,78 @@
+<div class="filtros-card">
+  <div class="filtros-grid">
+    <!-- Ciclo -->
+    <div class="filtro-item">
+      <label class="filtro-label">
+        <i class="pi pi-calendar"></i>
+        Ciclo Académico
+      </label>
+      <p-select 
+        [(ngModel)]="filtros.idCiclo" 
+        [options]="ciclosOptions"
+        placeholder="Todos los Ciclos"
+        [showClear]="true"
+        (onChange)="onFiltroChange()">
+      </p-select>
+    </div>
+
+    <!-- Malla -->
+    <div class="filtro-item">
+      <label class="filtro-label">
+        <i class="pi pi-book"></i>
+        Malla Curricular
+      </label>
+      <p-select 
+        [(ngModel)]="filtros.idMalla" 
+        [options]="mallasOptions"
+        placeholder="Todas las Mallas"
+        [showClear]="true"
+        (onChange)="onFiltroChange()">
+      </p-select>
+    </div>
+
+    <!-- Paralelo -->
+    <div class="filtro-item">
+      <label class="filtro-label">
+        <i class="pi pi-th-large"></i>
+        Paralelo
+      </label>
+      <p-select 
+        [(ngModel)]="filtros.idParalelo" 
+        [options]="paralelosOptions"
+        placeholder="Todos los Paralelos"
+        [showClear]="true"
+        (onChange)="onFiltroChange()">
+      </p-select>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="filtro-item">
+      <label class="filtro-label">
+        <i class="pi pi-search"></i>
+        Buscar
+      </label>
+      <div class="search-wrapper">
+        <i class="pi pi-search"></i>
+        <input 
+          pInputText 
+          type="text" 
+          [(ngModel)]="filtros.busqueda" 
+          (input)="onFiltroChange()"
+          placeholder="Materia, Docente...">
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="filtro-item filtros-actions">
+      @if (tieneFiltrosActivos) {
+        <p-button 
+          label="Limpiar Filtros" 
+          icon="pi pi-filter-slash" 
+          [outlined]="true"
+          severity="secondary"
+          (onClick)="limpiarFiltros()">
+        </p-button>
+      }
+    </div>
+  </div>
+</div>

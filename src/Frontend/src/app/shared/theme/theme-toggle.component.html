@@ -1,0 +1,7 @@
+<button
+  (click)="toggleDarkMode()"
+  class="theme-toggle-btn"
+  aria-label="Toggle theme"
+>
+  <i [class]="isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"></i>
+</button>

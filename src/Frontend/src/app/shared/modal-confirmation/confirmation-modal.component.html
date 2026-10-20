@@ -1,0 +1,26 @@
+<p-dialog
+  [visible]="visible"
+  [modal]="true"
+  [closable]="true"
+  [style]="{ width: '600px', maxHeight: '80vh' }"
+  [header]="title"
+  (onHide)="onHide()">
+  <div class="modal-content">
+    <div class="message-content" [innerHTML]="message"></div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      [label]="rejectLabel"
+      icon="pi pi-times"
+      class="p-button-text"
+      (onClick)="onReject()">
+    </p-button>
+    <p-button
+      [label]="acceptLabel"
+      icon="pi pi-check"
+      class="p-button-primary"
+      (onClick)="onAccept()">
+    </p-button>
+  </ng-template>
+</p-dialog>

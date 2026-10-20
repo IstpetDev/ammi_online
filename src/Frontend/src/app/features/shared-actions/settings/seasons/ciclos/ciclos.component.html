@@ -1,0 +1,113 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Ciclos</h1>
+        <p>Aquí se gestionarán los ciclos académicos que requieren un régimen y un periodo lectivo para su configuración completa.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Agregar Ciclo" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="ciclos" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ciclos">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Detalle</th>
+          <th>Periodo</th>
+          <th>Régimen</th>
+          <th>Fecha Inicio</th>
+          <th>Fecha Fin</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ciclo>
+        <tr>
+          <td>{{ ciclo.detalle }}</td>
+          <td>{{ getPeriodoDetalle(ciclo.idPeriodo) }}</td>
+          <td>{{ getRegimenDetalle(ciclo.idRegimen) }}</td>
+          <td>{{ ciclo.fechaInicio | date:'dd/MM/yyyy' }}</td>
+          <td>{{ ciclo.fechaFin | date:'dd/MM/yyyy' }}</td>
+          <td class="seasons-actions-cell">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(ciclo)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(ciclo)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">No hay ciclos registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog para crear/editar ciclo -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '600px'}" [header]="isEditing ? 'Editar Ciclo' : 'Crear Ciclo'"
+          (onHide)="onHideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+  <div class="seasons-dialog-content">
+    <form [formGroup]="cicloForm" (ngSubmit)="saveCiclo()" class="seasons-form-grid">
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="detalle" class="seasons-form-label">Detalle</label>
+          <input pInputText id="detalle" formControlName="detalle" class="seasons-form-control" />
+        </div>
+        <div class="seasons-form-group">
+          <label for="idPadre" class="seasons-form-label">Ciclo Padre</label>
+          <select id="idPadre" formControlName="idPadre" class="seasons-form-control">
+            <option value="">Seleccione un ciclo padre (opcional)</option>
+            <option *ngFor="let ciclo of filteredCiclos" [value]="ciclo.idCiclo">{{ ciclo.detalle }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="idPeriodo" class="seasons-form-label">Periodo</label>
+          <select id="idPeriodo" formControlName="idPeriodo" class="seasons-form-control">
+            <option value="">Seleccione un periodo</option>
+            <option *ngFor="let periodo of periodos" [value]="periodo.idPeriodoLectivo">{{ periodo.detalle }}</option>
+          </select>
+        </div>
+        <div class="seasons-form-group">
+          <label for="idRegimen" class="seasons-form-label">Régimen</label>
+          <select id="idRegimen" formControlName="idRegimen" class="seasons-form-control">
+            <option value="">Seleccione un régimen</option>
+            <option *ngFor="let regimen of regimenes" [value]="regimen.idRegimen">{{ regimen.detalle }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="fechaInicio" class="seasons-form-label">Fecha Inicio</label>
+          <input type="date" id="fechaInicio" formControlName="fechaInicio" class="seasons-form-control" />
+        </div>
+        <div class="seasons-form-group">
+          <label for="fechaFin" class="seasons-form-label">Fecha Fin</label>
+          <input type="date" id="fechaFin" formControlName="fechaFin" class="seasons-form-control" />
+        </div>
+      </div>
+      <div class="seasons-form-actions">
+        <p-button label="Cancelar" icon="pi pi-times" type="button" (onClick)="displayDialog = false" class="p-button-secondary p-button-outlined"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" type="submit" [disabled]="!cicloForm.valid" class="p-button-primary"></p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
+
+<!-- Modal de confirmación para eliminar -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar este ciclo?"
+  acceptLabel="Eliminar"
+  rejectLabel="Cancelar"
+  (accept)="deleteCiclo()"
+  (reject)="onRejectDelete()"
+  (hide)="onRejectDelete()">
+</app-confirmation-modal>
+
+<p-toast></p-toast>

@@ -1,0 +1,235 @@
+<div class="postulacion-detail-container">
+  <p-toast></p-toast>
+
+  <div class="detail-content" *ngIf="postulacion">
+    <!-- Mostrar loading mientras se cargan los requisitos -->
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="loading-message">
+        <p>Cargando detalles de tu postulación...</p>
+      </div>
+    </div>
+
+    <!-- Contenido principal cuando no está cargando -->
+    <div class="content-wrapper" *ngIf="!loading">
+    <!-- Zona Izquierda - 30% -->
+    <div class="left-panel">
+      <div class="info-section">
+        <h3>Mi Información</h3>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-field">
+              <label>Nombre Completo</label>
+              <span>{{ postulacion.personasimple?.primerNombre + ' ' + postulacion.personasimple?.segundoNombre + ' ' + postulacion.personasimple?.primerApellido + ' ' + postulacion.personasimple?.segundoApellido || 'No especificado' }}</span>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-field">
+              <label>Oferta Académica</label>
+              <span>{{ postulacion.malla?.detalle || 'No especificada' }}</span>
+            </div>
+            <div class="info-field">
+              <label>Estado</label>
+              <span class="status-badge" [class]="'status-' + ((postulacion.tipoestadoaprobacion?.detalle?.toLowerCase() || 'desconocido').replace(' ', '-'))">{{ postulacion.tipoestadoaprobacion?.detalle || 'Sin Estado' }}</span>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-field">
+              <label>Fecha de Postulación</label>
+              <span>{{ 'No disponible' }}</span>
+            </div>
+            <div class="info-field">
+              <label>Ciclo</label>
+              <span>{{ postulacion.malla!.mallaCiclo?.ciclo?.detalle || 'No especificado' }}</span>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-field">
+              <label>Curso</label>
+              <span>{{ postulacion.malla!.curso?.detalle || 'No especificado' }}</span>
+            </div>
+            <div class="info-field">
+              <label>Edad</label>
+              <span>{{ calcularEdad(postulacion.personasimple!.pinfo?.fechaNacimiento) || 'No disponible' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="requisitos-section">
+        <h3>Requisitos y Documentos</h3>
+        <div class="requisitos-grid">
+          <div class="requisito-card" *ngFor="let requisito of requisitos">
+            <div class="requisito-header">
+              <span class="requisito-name">{{ requisito.detalle }}</span>
+              <div class="requisito-badges">
+                <span class="requisito-status" [class.required]="requisito.esObligatorio">
+                  {{ requisito.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+                </span>
+                <span class="requisito-completed" *ngIf="requisito.completado">
+                  <i class="pi pi-check-circle"></i> Subido
+                </span>
+                <span class="requisito-approved" *ngIf="requisito.completado && requisito.documentoExistente?.estado === true">
+                  <i class="pi pi-check"></i> Aprobado
+                </span>
+                <span class="requisito-rejected" *ngIf="requisito.completado && requisito.documentoExistente?.estado === false">
+                  <i class="pi pi-times"></i> Rechazado
+                </span>
+              </div>
+            </div>
+            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'ADJUNTO'">
+
+              <p-button
+                label="Subir"
+                icon="pi pi-upload"
+                (onClick)="subirDocumento(requisito)"
+                styleClass="p-button-sm p-button-outlined"
+                [disabled]="requisito.completado && !getDocumentoPendiente(requisito)">
+              </p-button>
+              <p-button
+                label="Ver"
+                icon="pi pi-eye"
+                (onClick)="verDocumento(requisito)"
+                styleClass="p-button-sm p-button-outlined"
+                [disabled]="!getDocumentoPendiente(requisito) && !requisito.completado">
+              </p-button>
+              <!-- Eliminar documento pendiente -->
+              <p-button
+                label="Quitar"
+                icon="pi pi-times"
+                (onClick)="eliminarDocumentoPendiente(requisito)"
+                styleClass="p-button-sm p-button-warning p-button-outlined"
+                [disabled]="!getDocumentoPendiente(requisito)"
+                *ngIf="getDocumentoPendiente(requisito)">
+              </p-button>
+              <!-- Eliminar documento completado del servidor -->
+              <p-button
+                label="Eliminar"
+                icon="pi pi-trash"
+                (onClick)="eliminarDocumentoCompletado(requisito)"
+                styleClass="p-button-sm p-button-danger"
+                [disabled]="!requisito.completado"
+                *ngIf="requisito.completado && !getDocumentoPendiente(requisito)">
+              </p-button>
+            </div>
+            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'BOOL'">
+              <!-- Estado: Sin selección y sin completar - Mostrar botones -->
+              <div class="bool-buttons" *ngIf="!requisito.completado && !getSeleccionBoolPendiente(requisito)">
+                <p-button
+                  label="Sí Cumple"
+                  icon="pi pi-check"
+                  (onClick)="marcarRequisitoCumple(requisito, true)"
+                  styleClass="p-button-sm p-button-success p-button-outlined">
+                </p-button>
+                <p-button
+                  label="No Cumple"
+                  icon="pi pi-times"
+                  (onClick)="marcarRequisitoCumple(requisito, false)"
+                  styleClass="p-button-sm p-button-warning p-button-outlined">
+                </p-button>
+              </div>
+
+              <!-- Estado: Selección pendiente - Mostrar selección con opción de cambiar -->
+              <div class="bool-pending" *ngIf="!requisito.completado && getSeleccionBoolPendiente(requisito)">
+                <div class="pending-selection">
+                  <span class="pending-badge" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'cumple' : 'no-cumple'">
+                    <i class="pi" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'pi-check' : 'pi-times'"></i>
+                    {{ getSeleccionBoolPendiente(requisito)?.valorBool ? 'Sí Cumple' : 'No Cumple' }}
+                    <small>(Pendiente)</small>
+                  </span>
+                  <div class="pending-actions">
+                    <p-button
+                      label="Cambiar"
+                      icon="pi pi-pencil"
+                      (onClick)="eliminarSeleccionBoolPendiente(requisito)"
+                      styleClass="p-button-sm p-button-text p-button-secondary">
+                    </p-button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estado: Completado - Mostrar resultado final -->
+              <div class="bool-result" *ngIf="requisito.completado">
+                <div class="bool-completed-content">
+                  <span class="result-badge" [class]="requisito.documentoExistente?.valorDato ? 'cumple' : 'no-cumple'">
+                    <i class="pi" [class]="requisito.documentoExistente?.valorDato ? 'pi-check' : 'pi-times'"></i>
+                    {{ requisito.documentoExistente?.valorDato ? 'Cumple' : 'No Cumple' }}
+                  </span>
+                  <p class="result-message" *ngIf="!requisito.documentoExistente?.valorDato">
+                    Un asesor se comunicará contigo para orientarte sobre este requisito.
+                  </p>
+                </div>
+                <div class="bool-completed-actions">
+                  <p-button
+                    label="Eliminar"
+                    icon="pi pi-trash"
+                    (onClick)="eliminarDocumentoCompletado(requisito)"
+                    styleClass="p-button-sm p-button-danger p-button-outlined">
+                  </p-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+      </div>
+    </div>
+
+    <!-- Zona Derecha - 70% -->
+    <div class="right-panel">
+      <div class="preview-header">
+        <button type="button" (click)="volver()" class="btn-back-small">← Volver</button>
+        <button
+          type="button"
+          (click)="confirmarDatos()"
+          class="btn-confirm"
+          [disabled]="documentosPendientes.length === 0 || uploading">
+          <i class="pi pi-check"></i>
+          {{ uploading ? 'Subiendo...' : 'Confirmar Datos (' + documentosPendientes.length + ')' }}
+        </button>
+      </div>
+      <div class="document-preview">
+        <h3>Previsualización de Documentos</h3>
+        <div class="preview-content">
+          <div class="no-documents" *ngIf="!previewUrl">
+            <i class="pi pi-file"></i>
+            <p>Selecciona un documento y presiona "Ver" para previsualizarlo</p>
+            <p class="hint" *ngIf="documentosPendientes.length > 0">
+              Tienes {{ documentosPendientes.length }} documento(s) listo(s) para subir
+            </p>
+          </div>
+          <div class="preview-container" *ngIf="previewUrl">
+            <div class="preview-header-info">
+              <span class="preview-filename">
+                <i class="pi pi-file-pdf"></i>
+                {{ previewFileName }}
+              </span>
+            </div>
+            <!-- Mostrar iframe solo para tipos de archivo soportados -->
+            <iframe
+              [src]="previewUrl | safe:'resourceUrl'"
+              class="document-iframe"
+              width="100%"
+              height="600px"
+              frameborder="0"
+              *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType)">
+            </iframe>
+            <!-- Mostrar información para archivos no previsualizable -->
+            <div class="non-previewable-file" *ngIf="previewUrl && !esTipoPrevisualizable(previewFileName, previewFileType)">
+              <div class="file-info">
+                <i class="pi pi-file" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <h4>Archivo cargado correctamente</h4>
+                <p><strong>Nombre:</strong> {{ previewFileName }}</p>
+                <p><strong>Tipo:</strong> {{ obtenerTipoArchivo(previewFileName, previewFileType) }}</p>
+                <p class="note">Este tipo de archivo no se puede previsualizar en el navegador, pero ha sido procesado correctamente.</p>
+                <a [href]="previewUrl" [download]="previewFileName" class="download-link">
+                  <i class="pi pi-download"></i> Descargar archivo
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>

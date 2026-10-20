@@ -1,0 +1,356 @@
+<div class="mis-pagos-container">
+  <!-- VISTA: Lista de Matrículas del Alumno -->
+  @if (!mostrarDetalle) {
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-credit-card"></i>
+          </div>
+          <div>
+            <h1 class="page-title">Mis Pagos</h1>
+            <p class="page-subtitle">Consulta el estado de tus pagos y cuotas</p>
+          </div>
+        </div>
+        @if (nombreAlumno) {
+          <div class="user-info-badge">
+            <i class="pi pi-user"></i>
+            <span>{{ nombreAlumno }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Mensaje informativo -->
+    <div class="info-banner">
+      <i class="pi pi-info-circle"></i>
+      <span>Aquí puedes visualizar el estado de tus pagos. Para realizar pagos, acércate a secretaría o utiliza los canales oficiales de pago.</span>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+      <p-table 
+        #dt
+        [value]="pagos" 
+        dataKey="idMatricula"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [paginator]="true"
+        [globalFilterFields]="['modalidad', 'detalleCiclo']"
+        [showGridlines]="true"
+        (onPage)="onPageChange($event)">
+        
+        <ng-template #caption>
+          <div class="table-header">
+            <p-button label="Limpiar" [outlined]="true" icon="pi pi-filter-slash" (click)="clearFilters()" />
+            <div class="search-container">
+              <i class="pi pi-search search-icon"></i>
+              <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Buscar..." class="search-input" />
+            </div>
+          </div>
+        </ng-template>
+        
+        <ng-template #header>
+          <tr>
+            <th style="min-width: 12rem">
+              <div class="flex items-center justify-between">
+                Modalidad
+                <p-columnFilter field="modalidad" matchMode="equals" display="menu">
+                  <ng-template #filter let-filter="filterCallback">
+                    <p-select [options]="modalidades" (onChange)="filter($event.value)" placeholder="Seleccionar" class="w-full">
+                      <ng-template let-option #item>
+                        <p-tag [value]="option.label" [severity]="option.value === 'Formal virtual' ? 'info' : 'warn'" />
+                      </ng-template>
+                    </p-select>
+                  </ng-template>
+                </p-columnFilter>
+              </div>
+            </th>
+            <th style="min-width: 14rem">
+              <div class="flex items-center justify-between">
+                Ciclo
+                <p-columnFilter type="text" field="detalleCiclo" display="menu" />
+              </div>
+            </th>
+            <th style="min-width: 10rem">
+              <div class="flex items-center">
+                Progreso de Pagos
+              </div>
+            </th>
+            <th style="min-width: 8rem">
+              <div class="flex items-center">
+                Estado
+              </div>
+            </th>
+            <th style="width: 5rem">
+              <div class="flex items-center justify-center">
+                Detalle
+              </div>
+            </th>
+          </tr>
+        </ng-template>
+        
+        <ng-template #body let-pago>
+          <tr>
+            <td>
+              <p-tag 
+                [value]="pago.modalidad" 
+                [severity]="pago.modalidad?.includes('FORMAL') ? 'info' : 'warn'"
+                [icon]="pago.modalidad?.includes('FORMAL') ? 'pi pi-desktop' : 'pi pi-bolt'" />
+            </td>
+            <td>
+              <div class="flex items-center gap-2">
+                <i class="pi pi-bookmark text-primary"></i>
+                <span>{{ pago.detalleCiclo }}</span>
+              </div>
+            </td>
+            <td>
+              @if (pago.totalDeuda > 0) {
+                <div class="progress-cell">
+                  <p-progressBar [value]="getProgreso(pago.totalDeuda, pago.totalPagado)" [showValue]="false" />
+                  <span class="progress-text">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
+                </div>
+              } @else {
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-spin pi-spinner text-color-secondary"></i>
+                  <span class="text-sm text-color-secondary">Cargando...</span>
+                </div>
+              }
+            </td>
+            <td>
+              @if (pago.totalDeuda > 0) {
+                <p-tag 
+                  [value]="getEstadoLabel(pago.totalDeuda, pago.totalPagado)" 
+                  [severity]="getSeverity(pago.totalDeuda, pago.totalPagado)" />
+              }
+            </td>
+            <td class="text-center">
+              <p-button 
+                icon="pi pi-eye" 
+                [rounded]="true"
+                [text]="true"
+                severity="info"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+                (onClick)="verDetalle(pago)" />
+            </td>
+          </tr>
+        </ng-template>
+        
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">
+              <div class="flex flex-col items-center justify-center py-6">
+                <i class="pi pi-inbox text-4xl text-color-secondary mb-4"></i>
+                <span class="text-xl text-color-secondary">No tienes matrículas registradas</span>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- VISTA: Detalle de Pagos de la Matrícula -->
+  @if (mostrarDetalle && estudianteSeleccionado) {
+    <!-- Header con info de la matrícula -->
+    <div class="page-header detalle-header">
+      <div class="header-content">
+        <div class="title-section">
+          <p-button 
+            icon="pi pi-arrow-left" 
+            [rounded]="true"
+            [outlined]="true"
+            severity="secondary"
+            styleClass="back-btn"
+            pTooltip="Volver a mis matrículas"
+            (onClick)="volverALista()">
+          </p-button>
+          <div class="student-header-info">
+            <div class="student-avatar-large">
+              <i class="pi pi-graduation-cap"></i>
+            </div>
+            <div>
+              <h1 class="page-title">{{ estudianteSeleccionado.modalidad }}</h1>
+              <p class="page-subtitle">
+                <span class="ciclo-badge">{{ estudianteSeleccionado.detalleCiclo }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje informativo para alumno -->
+    <div class="info-banner alumno-info">
+      <i class="pi pi-eye"></i>
+      <span>Vista de solo lectura. Para realizar pagos, comunícate con secretaría académica.</span>
+    </div>
+
+    <!-- Resumen de pagos -->
+    <div class="resumen-cards">
+      <div class="resumen-card total-deuda">
+        <div class="resumen-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Total a Pagar</span>
+          <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="resumen-card total-pagado">
+        <div class="resumen-icon">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Total Pagado</span>
+          <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="resumen-card pendiente">
+        <div class="resumen-icon">
+          <i class="pi pi-clock"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Saldo Pendiente</span>
+          <span class="resumen-value">{{ (estudianteSeleccionado.totalDeuda - estudianteSeleccionado.totalPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="resumen-card progreso-general">
+        <div class="resumen-icon">
+          <i class="pi pi-chart-line"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Progreso</span>
+          <span class="resumen-value">{{ getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado) }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de progreso general -->
+    <div class="progreso-general-bar">
+      <div class="progreso-header">
+        <span>Progreso General de Pagos</span>
+        <span class="progreso-porcentaje-general">{{ getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado) }}%</span>
+      </div>
+      <p-progressBar 
+        [value]="getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado)" 
+        [showValue]="false"
+        styleClass="progreso-bar-grande">
+      </p-progressBar>
+    </div>
+
+    <!-- Cards de Especies -->
+    <div class="especies-section">
+      <h2 class="section-title">
+        <i class="pi pi-list"></i>
+        Detalle de Pagos por Concepto
+      </h2>
+      
+      <div class="especies-grid">
+        @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
+          <div class="especie-card readonly-card" 
+               [class.especie-pagada]="especie.pagado" 
+               [class.especie-pendiente]="!especie.pagado"
+               [class.card-matricula]="especie.tipo === 'matricula'"
+               [class.card-pension]="especie.tipo === 'pension'">
+            <!-- Header de la card -->
+            <div class="especie-header">
+              <div class="especie-tipo">
+                <i [class]="especie.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
+                <span class="especie-nombre">{{ especie.nombre }}</span>
+              </div>
+              <p-tag 
+                [value]="getEspecieEstado(especie)" 
+                [severity]="getEspecieSeverity(especie)"
+                styleClass="estado-tag">
+              </p-tag>
+            </div>
+
+            <!-- Ciclo -->
+            <div class="especie-ciclo">
+              <i class="pi pi-bookmark"></i>
+              <span>{{ especie.ciclo }}</span>
+            </div>
+
+            <!-- Valores -->
+            <div class="especie-valores">
+              <div class="valor-item">
+                <span class="valor-label">Valor Total</span>
+                <span class="valor-amount">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="valor-item">
+                <span class="valor-label">Pagado</span>
+                <span class="valor-amount pagado">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="valor-item">
+                <span class="valor-label">Pendiente</span>
+                <span class="valor-amount pendiente">{{ (especie.valor - especie.valorPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="especie-progreso">
+              <p-progressBar 
+                [value]="especie.valor > 0 ? (especie.valorPagado / especie.valor) * 100 : 0" 
+                [showValue]="false"
+                styleClass="especie-progress-bar">
+              </p-progressBar>
+              <span class="progreso-porcentaje">{{ especie.valor > 0 ? ((especie.valorPagado / especie.valor) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+
+            <!-- Fecha límite -->
+            <div class="especie-fecha">
+              <i class="pi pi-calendar-clock"></i>
+              <span>Fecha límite: {{ especie.fechaLimite }}</span>
+            </div>
+
+            <!-- Estado visual para el alumno (sin botones de acción) -->
+            @if (especie.pagado) {
+              <div class="especie-pagado-info">
+                <i class="pi pi-check-circle"></i>
+                <span>Pago completado</span>
+              </div>
+            } @else if (especie.esPensionNoDiferida) {
+              <div class="especie-pendiente-info">
+                <i class="pi pi-hourglass"></i>
+                <span>Pendiente de diferir por secretaría</span>
+              </div>
+            } @else {
+              <div class="especie-pendiente-pago">
+                <i class="pi pi-info-circle"></i>
+                <span>Pendiente de pago</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="leyenda-section">
+      <h3 class="leyenda-title">
+        <i class="pi pi-info-circle"></i>
+        Información
+      </h3>
+      <div class="leyenda-items">
+        <div class="leyenda-item">
+          <div class="leyenda-color pagado"></div>
+          <span>Pagado completamente</span>
+        </div>
+        <div class="leyenda-item">
+          <div class="leyenda-color parcial"></div>
+          <span>Pago parcial realizado</span>
+        </div>
+        <div class="leyenda-item">
+          <div class="leyenda-color pendiente"></div>
+          <span>Pendiente de pago</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOAST para mensajes -->
+  <p-toast />
+</div>

@@ -1,0 +1,53 @@
+<div class="w-full p-4">
+  <!-- Botón Volver -->
+  <div class="flex justify-content-start mb-4">
+    <p-button
+      label="Volver a Configuraciones Cíclicas"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      routerLink="/dashboard/cyclic-configurations">
+    </p-button>
+  </div>
+
+  <!-- Navigation Menu -->
+  <div class="mb-6">
+    <nav class="flex space-x-4 border-b border-gray-200">
+      <a (click)="setActiveTab('mallas')" [class.active-link]="activeTab === 'mallas'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Mallas
+      </a>
+      <a (click)="setActiveTab('cursos')" [class.active-link]="activeTab === 'cursos'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Cursos
+      </a>
+      <a (click)="setActiveTab('tipo-oferta')" [class.active-link]="activeTab === 'tipo-oferta'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Tipo de Oferta
+      </a>
+      <a (click)="setActiveTab('materias')" [class.active-link]="activeTab === 'materias'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Materias
+      </a>
+      <a (click)="setActiveTab('especialidades')" [class.active-link]="activeTab === 'especialidades'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Especialidades
+      </a>
+      <a (click)="setActiveTab('requisitos')" [class.active-link]="activeTab === 'requisitos'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Requisitos
+      </a>
+      <a (click)="setActiveTab('malla-requisitos')" [class.active-link]="activeTab === 'malla-requisitos'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Malla Requisitos
+      </a>
+      <a (click)="setActiveTab('detalle-malla')" [class.active-link]="activeTab === 'detalle-malla'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
+        Detalle Malla
+      </a>
+    </nav>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content-area">
+    <app-mallas-list *ngIf="activeTab === 'mallas'"></app-mallas-list>
+    <app-cursos *ngIf="activeTab === 'cursos'"></app-cursos>
+    <app-tipo-oferta *ngIf="activeTab === 'tipo-oferta'"></app-tipo-oferta>
+    <app-materias *ngIf="activeTab === 'materias'"></app-materias>
+    <app-especialidades *ngIf="activeTab === 'especialidades'"></app-especialidades>
+    <app-requisitos *ngIf="activeTab === 'requisitos'"></app-requisitos>
+    <app-malla-requisitos *ngIf="activeTab === 'malla-requisitos'"></app-malla-requisitos>
+    <app-detalle-malla *ngIf="activeTab === 'detalle-malla'"></app-detalle-malla>
+  </div>
+</div>

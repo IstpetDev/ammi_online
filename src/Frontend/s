@@ -1,0 +1,60 @@
+{
+    "idTipoDocumento": 1,
+    "documento": "1724649337",
+    "idGenero": 1,
+    "primerNombre": "ANTHONY",
+    "segundoNombre": "DAVID",
+    "primerApellido": "PILATASIG",
+    "segundoApellido": "MACAS",
+    "fechaNacimiento": "2001-09-15",
+    "idEstadoCivil": 1,
+    "idNacionalidadEtnica": 1,
+    "idTipoSangre": 1,
+    "datosContactos": [
+        {
+            "idTipoDatoContacto": 1,
+            "detalle": "antpila3848@gmail.com",
+            "esPrincipal": true
+        },
+        {
+            "idTipoDatoContacto": 2,
+            "detalle": "0983588715",
+            "esPrincipal": true
+        }
+    ],
+    "idParroquia": 1477,
+    "direccionDomiciliaria": "Av. Principal 123 y Calle Secundaria",
+    "idTipoActividadEconomica": 1,
+    "valor": 500.00,
+    "esPrincipal": true,
+    "activo": true,
+    "idPais": 1,
+    "documentosPersonales": [
+        {
+            "idTipoDocumentoPersonal": 1,
+            "codigoRequisito": "REQ001",
+            "estado": null,
+            "valorDato": true,
+            "observacion": "Cédula de identidad",
+            "tieneArchivo": true
+        },
+        {
+            "idTipoDocumentoPersonal": 2,
+            "codigoRequisito": "REQ002",
+            "estado": null,
+            "valorDato": true,
+            "observacion": "Ser mayor de edad",
+            "tieneArchivo": false
+        },
+        {
+            "idTipoDocumentoPersonal": 2,
+            "codigoRequisito": "REQ003",
+            "estado": null,
+            "valorDato": true,
+            "observacion": "Tener años de resago educativo",
+            "tieneArchivo": true
+        }
+    ],
+    "idMalla": 1,
+    "idParalelo": 1
+}

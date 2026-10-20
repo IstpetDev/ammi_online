@@ -1,0 +1,21 @@
+# Dependencias y resultados de compilación.
+**/node_modules/
+**/.angular/
+**/dist/
+**/out-tsc/
+**/coverage/
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+
+# Configuración local y archivos generados por usuarios.
+.env
+.env.*
+!.env.example
+**/appsettings.Development.local.json
+**/appsettings.Production.json
+**/Uploads/
+*.user
+*.suo
+*.log

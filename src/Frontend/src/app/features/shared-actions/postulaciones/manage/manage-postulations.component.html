@@ -1,0 +1,74 @@
+<div class="postulations-container">
+  <div class="postulations-header">
+    <h2>Gestionar Postulaciones</h2>
+    <p>Administre y visualice todas las postulaciones registradas en el sistema</p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label for="nombre">Buscar por Nombre:</label>
+      <input type="text" id="nombre" [(ngModel)]="filtroNombre" placeholder="Escriba el nombre..." class="form-control">
+    </div>
+    <div class="filter-group">
+      <label for="oferta">Oferta Académica:</label>
+      <select id="oferta" [(ngModel)]="filtroOferta" class="form-control">
+        <option [ngValue]="null">Todas</option>
+        <option *ngFor="let oferta of tiposOferta" [ngValue]="oferta">{{ oferta.detalle }}</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="ciclo">Ciclo:</label>
+      <select id="ciclo" [(ngModel)]="filtroCiclo" class="form-control">
+        <option [ngValue]="null">Todos</option>
+        <option *ngFor="let ciclo of ciclos" [ngValue]="ciclo">{{ ciclo.detalle }}</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="estado">Estado:</label>
+      <select id="estado" [(ngModel)]="filtroEstado" class="form-control">
+        <option [ngValue]="null">Todos</option>
+        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado.detalle }}</option>
+      </select>
+    </div>
+    <div class="filter-group button-group">
+      <button type="button" (click)="limpiarFiltros()" class="btn-clear">Limpiar Filtros</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <p-table [value]="postulacionesFiltradas" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} postulaciones">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre Completo</th>
+          <th>Documento</th>
+          <th>Edad</th>
+          <th>Ciclo</th>
+          <th>Oferta Académica</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-postulacion>
+        <tr>
+          <td>{{ postulacion.NombreCompleto }}</td>
+          <td>{{ postulacion.Documento }}</td>
+          <td>{{ postulacion.Edad }}</td>
+          <td>{{ postulacion.Ciclo }}</td>
+          <td>{{ postulacion.OfertaAcademica }}</td>
+          <td>{{ postulacion.Estado }}</td>
+          <td class="actions-cell">
+            <p-button icon="pi pi-eye" (onClick)="verDetalles(postulacion)" pTooltip="Ver detalles" tooltipPosition="top" styleClass="p-button-rounded p-button-info p-button-sm"></p-button>
+            <p-button icon="pi pi-pencil" (onClick)="editarPostulacion(postulacion)" pTooltip="Editar postulacion" tooltipPosition="top" styleClass="p-button-rounded p-button-warning p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8">No hay postulaciones registradas.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

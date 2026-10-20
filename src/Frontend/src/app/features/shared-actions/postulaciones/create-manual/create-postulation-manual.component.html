@@ -1,0 +1,646 @@
+<div class="postulation-wizard">
+  <!-- Toast de PrimeNG para mensajes -->
+  <p-toast />
+  
+  <!-- Sidebar con pasos -->
+  <div class="wizard-sidebar">
+    <div class="wizard-steps">
+      <div
+        *ngFor="let step of steps"
+        class="step-item"
+        [class.active]="step.active"
+        [class.completed]="step.completed"
+        [class.clickable]="step.id <= getMaxAccessibleStep()"
+        (click)="setStep(step.id)">
+        <div class="step-icon">
+          <i [class]="step.icon"></i>
+          <span class="step-number" *ngIf="step.completed">{{ step.id }}</span>
+        </div>
+        <div class="step-content">
+          <h4>{{ step.title }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="wizard-content">
+    <form [formGroup]="postulacionForm" (ngSubmit)="onSubmit()" style="display: flex; flex-direction: column; height: 100%;">
+      <!-- Área con scroll -->
+      <div style="flex: 1; overflow-y: auto; padding: 2rem;">
+        <!-- Paso 1: Datos Personales -->
+        <div *ngIf="currentStep === 1" class="step-form">
+        <div class="step-header">
+          <h2><i class="pi pi-user"></i> Datos Personales</h2>
+          <p>Complete su información personal básica</p>
+        </div>
+
+        <!-- Sección: Identificación -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-id-card"></i> Identificación</h3>
+          <div class="form-grid">
+          <div class="form-group">
+            <label for="idTipoDocumento">Tipo de Documento *</label>
+            <select id="idTipoDocumento" formControlName="idTipoDocumento" class="form-control">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let tipo of tiposDocumento" [value]="tipo.idTipoDocumento">
+                {{ tipo.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="documento">Número de Documento *</label>
+            <input 
+              type="text" 
+              id="documento" 
+              formControlName="documento" 
+              class="form-control" 
+              [class.is-invalid]="postulacionForm.get('documento')?.invalid && postulacionForm.get('documento')?.touched"
+              [placeholder]="documentoPlaceholder"
+              [maxlength]="documentoMaxLength">
+            <small *ngIf="postulacionForm.get('documento')?.invalid && postulacionForm.get('documento')?.touched" 
+                   class="error-message">
+              {{ getDocumentoError() }}
+            </small>
+            <small *ngIf="tipoDocumentoSeleccionado" class="hint-message">
+              {{ documentoErrorMessage }}
+            </small>
+          </div>
+          </div>
+        </div>
+
+        <!-- Sección: Nombres y Apellidos -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-user-edit"></i> Nombres y Apellidos</h3>
+          <div class="form-grid">
+          <div class="form-group">
+            <label for="primerNombre">Primer Nombre *</label>
+            <input 
+              type="text" 
+              id="primerNombre" 
+              formControlName="primerNombre" 
+              class="form-control" 
+              [class.is-invalid]="postulacionForm.get('primerNombre')?.invalid && postulacionForm.get('primerNombre')?.touched"
+              placeholder="Ingrese primer nombre">
+            <small *ngIf="postulacionForm.get('primerNombre')?.invalid && postulacionForm.get('primerNombre')?.touched" 
+                   class="error-message">
+              {{ getFieldError('primerNombre') }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="segundoNombre">Segundo Nombre</label>
+            <input 
+              type="text" 
+              id="segundoNombre" 
+              formControlName="segundoNombre" 
+              class="form-control" 
+              [class.is-invalid]="postulacionForm.get('segundoNombre')?.invalid && postulacionForm.get('segundoNombre')?.touched"
+              placeholder="Ingrese segundo nombre">
+            <small *ngIf="postulacionForm.get('segundoNombre')?.invalid && postulacionForm.get('segundoNombre')?.touched" 
+                   class="error-message">
+              {{ getFieldError('segundoNombre') }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="primerApellido">Primer Apellido *</label>
+            <input 
+              type="text" 
+              id="primerApellido" 
+              formControlName="primerApellido" 
+              class="form-control" 
+              [class.is-invalid]="postulacionForm.get('primerApellido')?.invalid && postulacionForm.get('primerApellido')?.touched"
+              placeholder="Ingrese primer apellido">
+            <small *ngIf="postulacionForm.get('primerApellido')?.invalid && postulacionForm.get('primerApellido')?.touched" 
+                   class="error-message">
+              {{ getFieldError('primerApellido') }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="segundoApellido">Segundo Apellido</label>
+            <input 
+              type="text" 
+              id="segundoApellido" 
+              formControlName="segundoApellido" 
+              class="form-control" 
+              [class.is-invalid]="postulacionForm.get('segundoApellido')?.invalid && postulacionForm.get('segundoApellido')?.touched"
+              placeholder="Ingrese segundo apellido">
+            <small *ngIf="postulacionForm.get('segundoApellido')?.invalid && postulacionForm.get('segundoApellido')?.touched" 
+                   class="error-message">
+              {{ getFieldError('segundoApellido') }}
+            </small>
+          </div>
+          </div>
+        </div>
+
+        <!-- Sección: Información Demográfica -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-users"></i> Información Demográfica</h3>
+          <div class="form-grid">
+          <div class="form-group">
+            <label for="fechaNacimiento">Fecha de Nacimiento * </label>
+            <p-datepicker 
+              formControlName="fechaNacimiento" 
+              dateFormat="dd/mm/yy"
+              [class.is-invalid]="postulacionForm.get('fechaNacimiento')?.invalid && postulacionForm.get('fechaNacimiento')?.touched">
+            </p-datepicker>
+            <small *ngIf="ageDisplay" class="age-display">{{ ageDisplay }}</small>
+            <small *ngIf="postulacionForm.get('fechaNacimiento')?.invalid && postulacionForm.get('fechaNacimiento')?.touched" 
+                   class="error-message">
+              {{ getFechaNacimientoError() }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="idEstadoCivil">Estado Civil *</label>
+            <select id="idEstadoCivil" formControlName="idEstadoCivil" class="form-control">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let estado of estadosCiviles" [value]="estado.idEstadoCivil">
+                {{ estado.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="idEtnia">Etnia *</label>
+            <select id="idEtnia" formControlName="idEtnia" class="form-control">
+              <option [ngValue]="null">Seleccione...</option>
+              <option *ngFor="let etnia of etnias" [ngValue]="etnia.idEtnia">
+                {{ etnia.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Nacionalidad Étnica (cuando la etnia seleccionada tiene default true) -->
+          <div class="form-group" *ngIf="nacionalidadesEtnicas.length > 0">
+            <label for="idNacionalidadEtnica">Nacionalidad Étnica *</label>
+            <select id="idNacionalidadEtnica" formControlName="idNacionalidadEtnica" class="form-control">
+              <option [ngValue]="null">Seleccione...</option>
+              <option *ngFor="let nacionalidad of nacionalidadesEtnicas" [ngValue]="nacionalidad.idnacionalidadEtnica"> 
+                {{ nacionalidad.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="idGenero">Género *</label>
+            <select 
+              id="idGenero" 
+              formControlName="idGenero" 
+              class="form-control"
+              [class.is-invalid]="postulacionForm.get('idGenero')?.invalid && postulacionForm.get('idGenero')?.touched">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let genero of generos" [value]="genero.idGenero">
+                {{ genero.nombre }}
+              </option>
+            </select>
+            <small *ngIf="postulacionForm.get('idGenero')?.invalid && postulacionForm.get('idGenero')?.touched" 
+                   class="error-message">
+              {{ getFieldError('idGenero') }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="idTipoSangre">Tipo de Sangre</label>
+            <select id="idTipoSangre" formControlName="idTipoSangre" class="form-control">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let tipo of tiposSangre" [value]="tipo.idTipoSangre">
+                {{ tipo.detalle }}
+              </option>
+            </select>
+          </div>
+          </div>
+        </div>
+
+        <!-- Sección: Residencia -->
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-home"></i> Residencia</h3>
+          <div class="form-grid">
+          <div class="form-group full-width">
+            <label>¿Es usted extranjero?</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" [value]="false" formControlName="esExtranjero">
+                <span class="radio-label">No (Ecuatoriano)</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" [value]="true" formControlName="esExtranjero">
+                <span class="radio-label">Sí (Extranjero)</span>
+              </label>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Datos Geográficos -->
+      <div *ngIf="currentStep === 2" class="step-form">
+        <div class="step-header">
+          <h2><i class="pi pi-map-marker"></i> Datos Geográficos</h2>
+          <p>Información de ubicación y residencia</p>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-globe"></i> Ubicación (Lugar de Nacimiento)</h3>
+          <p class="section-description">Seleccione el lugar de nacimiento del estudiante</p>
+          <div class="form-grid">
+          <!-- País -->
+          <div class="form-group">
+            <label for="idPais">País *</label>
+            <select id="idPais" formControlName="idPais" class="form-control" (change)="onPaisChange()">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let pais of paises" [value]="pais.idPais">
+                {{ pais.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group" *ngIf="!postulacionForm.get('esExtranjero')?.value">
+            <label for="idProvincia">Provincia *</label>
+            <p-autoComplete 
+              [(ngModel)]="selectedProvincia"
+              [ngModelOptions]="{standalone: true}"
+              [suggestions]="filteredProvincias" 
+              (completeMethod)="filterProvincias($event)" 
+              (onSelect)="onProvinciaSelect($event)"
+              optionLabel="nombre"
+              [dropdown]="true"
+              [forceSelection]="true" 
+              placeholder="Seleccione provincia"
+              [class.is-invalid]="postulacionForm.get('idProvincia')?.invalid && postulacionForm.get('idProvincia')?.touched">
+            </p-autoComplete>
+            <small *ngIf="postulacionForm.get('idProvincia')?.invalid && postulacionForm.get('idProvincia')?.touched" 
+                   class="error-message">
+              Provincia es requerida
+            </small>
+          </div>
+
+          <div class="form-group" *ngIf="!postulacionForm.get('esExtranjero')?.value">
+            <label for="idCanton">Cantón *</label>
+            <p-autoComplete 
+              [(ngModel)]="selectedCanton"
+              [ngModelOptions]="{standalone: true}"
+              [suggestions]="filteredCantones" 
+              (completeMethod)="filterCantones($event)" 
+              (onSelect)="onCantonSelect($event)"
+              optionLabel="nombre"
+              [dropdown]="true"
+              [forceSelection]="true" 
+              placeholder="Seleccione cantón"
+              [class.is-invalid]="postulacionForm.get('idCanton')?.invalid && postulacionForm.get('idCanton')?.touched">
+            </p-autoComplete>
+            <small *ngIf="postulacionForm.get('idCanton')?.invalid && postulacionForm.get('idCanton')?.touched" 
+                   class="error-message">
+              Cantón es requerido
+            </small>
+          </div>
+
+          <div class="form-group" *ngIf="!postulacionForm.get('esExtranjero')?.value">
+            <label for="idParroquia">Parroquia</label>
+            <p-autoComplete 
+              [(ngModel)]="selectedParroquia"
+              [ngModelOptions]="{standalone: true}"
+              [suggestions]="filteredParroquias" 
+              (completeMethod)="filterParroquias($event)" 
+              (onSelect)="onParroquiaSelect($event)"
+              optionLabel="nombre"
+              [dropdown]="true"
+              [forceSelection]="false" 
+              placeholder="Seleccione parroquia">
+            </p-autoComplete>
+          </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title"><i class="pi pi-home"></i> Dirección Actual</h3>
+          <p class="section-description">Ingrese la dirección domiciliaria actual del estudiante</p>
+          <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="direccionDomiciliaria">Dirección Domiciliaria *</label>
+            <textarea 
+              id="direccionDomiciliaria" 
+              formControlName="direccionDomiciliaria" 
+              class="form-control" 
+              rows="2" 
+              [class.is-invalid]="postulacionForm.get('direccionDomiciliaria')?.invalid && postulacionForm.get('direccionDomiciliaria')?.touched"
+              placeholder="Calle principal, numeración, referencias, etc."></textarea>
+            <small *ngIf="postulacionForm.get('direccionDomiciliaria')?.invalid && postulacionForm.get('direccionDomiciliaria')?.touched" 
+                   class="error-message">
+              {{ getFieldError('direccionDomiciliaria') }}
+            </small>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 3: Datos de Contacto -->
+      <div *ngIf="currentStep === 3" class="step-form">
+        <div class="step-header">
+          <h2>Datos de Contacto</h2>
+          <p>Información de contacto para comunicación</p>
+        </div>
+
+        <div class="form-grid">
+          <!-- Contactos Obligatorios -->
+          <div class="contact-section" *ngIf="tiposDatoContactoObligatorios.length > 0">
+            <h3>Contactos Obligatorios</h3>
+            <div class="optional-contacts-grid">
+              <div class="optional-contact-card required active" *ngFor="let tipo of tiposDatoContactoObligatorios">
+                <div class="optional-contact-header">
+                  <div class="optional-contact-icon">
+                    <i [class]="getContactIcon(tipo.detalle)"></i>
+                  </div>
+                  <span class="optional-contact-label">{{ tipo.detalle }} *</span>
+                </div>
+                <div class="optional-contact-input">
+                  <input 
+                    [type]="isEmailContact(tipo.detalle) ? 'email' : 'text'" 
+                    [class.is-invalid]="hasContactError(getContactControlName(tipo.idTipoDatoContacto))"
+                    [placeholder]="getContactPlaceholder(tipo.detalle)" 
+                    formControlName="{{ getContactControlName(tipo.idTipoDatoContacto) }}">
+                  <small *ngIf="hasContactError(getContactControlName(tipo.idTipoDatoContacto))" class="error-message">
+                    {{ getContactError(getContactControlName(tipo.idTipoDatoContacto), tipo.detalle) }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contactos Opcionales -->
+          <div class="contact-section" *ngIf="tiposDatoContactoOpcionales.length > 0">
+            <h3>Contactos Opcionales</h3>
+            <p class="contact-info">Agregue información de contacto adicional si lo desea</p>
+
+            <div class="optional-contacts-grid">
+              <div class="optional-contact-card" 
+                   [class.active]="hasOptionalContact(tipo.idTipoDatoContacto)"
+                   *ngFor="let tipo of tiposDatoContactoOpcionales">
+                <div class="optional-contact-header">
+                  <div class="optional-contact-icon">
+                    <i [class]="getContactIcon(tipo.detalle)"></i>
+                  </div>
+                  <span class="optional-contact-label">{{ tipo.detalle }}</span>
+                  <button type="button" 
+                          class="optional-contact-toggle"
+                          [class.added]="hasOptionalContact(tipo.idTipoDatoContacto)"
+                          (click)="hasOptionalContact(tipo.idTipoDatoContacto) ? removeOptionalContact(tipo.idTipoDatoContacto) : addOptionalContact(tipo)"
+                          [title]="hasOptionalContact(tipo.idTipoDatoContacto) ? 'Quitar' : 'Agregar'">
+                    <i [class]="hasOptionalContact(tipo.idTipoDatoContacto) ? 'pi pi-times' : 'pi pi-plus'"></i>
+                  </button>
+                </div>
+                <div class="optional-contact-input" *ngIf="hasOptionalContact(tipo.idTipoDatoContacto)">
+                  <input 
+                    [type]="isEmailContact(tipo.detalle) ? 'email' : 'text'" 
+                    [class.is-invalid]="hasContactError(getOptionalContactControlName(tipo.idTipoDatoContacto))"
+                    [placeholder]="getContactPlaceholder(tipo.detalle)" 
+                    formControlName="{{ getOptionalContactControlName(tipo.idTipoDatoContacto) }}">
+                  <small *ngIf="hasContactError(getOptionalContactControlName(tipo.idTipoDatoContacto))" class="error-message">
+                    {{ getContactError(getOptionalContactControlName(tipo.idTipoDatoContacto), tipo.detalle) }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 4: Datos Académicos -->
+      <div *ngIf="currentStep === 4" class="step-form">
+        <div class="step-header">
+          <h2>Datos Académicos</h2>
+          <p>Información académica y preferencias de estudio</p>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="idTipoOferta">Tipo de Oferta Académica *</label>
+            <select id="idTipoOferta" formControlName="idTipoOferta" class="form-control" (change)="onTipoOfertaChange(+$any($event.target).value)">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let tipo of tiposOferta" [value]="tipo.idtipoOferta">
+                {{ tipo.detalle }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="idMalla">Curso asignado *</label>
+            <select id="idMalla" formControlName="idMalla" class="form-control" [disabled]="!postulacionForm.get('idTipoOferta')?.value || mallas.length === 0">
+              <option value="">{{ mallas.length === 0 ? 'Primero seleccione un tipo de oferta' : 'Seleccione...' }}</option>
+              <option *ngFor="let malla of mallas" [value]="malla.idMalla">
+                {{ malla.detalle }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="idParalelo">Paralelo *</label>
+            <select id="idParalelo" formControlName="idParalelo" class="form-control">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let paralelo of paralelos" [value]="paralelo.idParalelo">
+                {{ paralelo.nombreParalelo }} 
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Requisitos de Inscripción -->
+        <div class="requisitos-section" *ngIf="requisitos && requisitos.length > 0">
+          <h3>Requisitos de Inscripción</h3>
+          <p class="requisitos-info">Estos son los requisitos a considerar para la postulación. (Total: {{ requisitos.length }})</p>
+          <div class="requisitos-list">
+            <div *ngFor="let req of requisitos; let i = index" class="requisito-item" [class.obligatorio]="req.esObligatorio" [class.opcional]="!req.esObligatorio">
+              <div class="requisito-header">
+                <i class="pi pi-info-circle" *ngIf="!req.esObligatorio"></i>
+                <i class="pi pi-exclamation-triangle" *ngIf="req.esObligatorio"></i>
+                <span class="requisito-nombre">{{ i + 1 }}. {{ req.detalle || 'Sin nombre' }}</span>
+                <span class="requisito-status" [class.obligatorio]="req.esObligatorio" [class.opcional]="!req.esObligatorio">
+                  {{ req.esObligatorio ? 'Obligatorio' : 'Opcional' }} - Tipo: {{ req.tipoDato }}
+                </span>
+              </div>
+              <div class="requisito-upload" *ngIf="req.tipoDato === 'ADJUNTO'">
+                <label for="file-{{ req.idRequisitos }}">Adjuntar documento{{ req.esObligatorio ? '' : ' (opcional)' }}:</label>
+                <div class="upload-zone"
+                     (dragover)="onDragOver($event)"
+                     (dragleave)="onDragLeave($event)"
+                     (drop)="onDrop($event, req)"
+                     [class.drag-over]="isDragOver">
+                  <input type="file" id="file-{{ req.idRequisitos }}" (change)="onFileSelected($event, req)" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="file-input-hidden" #fileInput>
+                  <div class="upload-content">
+                    <i class="pi pi-cloud-upload" *ngIf="!getUploadedFile(req)"></i>
+                    <i class="pi pi-check-circle" *ngIf="getUploadedFile(req)" style="color: var(--success-color);"></i>
+                    <p *ngIf="!getUploadedFile(req)">Arrastra y suelta tu archivo aquí o <button type="button" class="upload-btn" (click)="fileInput.click()">haz clic para seleccionar</button></p>
+                    <p *ngIf="getUploadedFile(req)" class="file-selected">{{ getUploadedFile(req)?.name }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="requisito-boolean" *ngIf="req.tipoDato === 'BOOL'">
+                <label class="req-label">{{ req.detalle }}{{ req.esObligatorio ? ' *' : '' }}</label>
+                <div class="radio-group-horizontal">
+                  <label class="radio-option">
+                    <input type="radio"
+                           name="bool-{{ req.idRequisitos }}"
+                           [value]="true"
+                           [checked]="getBooleanValue(req) === true"
+                           (change)="onBooleanChange(req, true)">
+                    <span class="radio-label">✓ Cumple el requisito</span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio"
+                           name="bool-{{ req.idRequisitos }}"
+                           [value]="false"
+                           [checked]="getBooleanValue(req) === false"
+                           (change)="onBooleanChange(req, false)">
+                    <span class="radio-label">✗ No cumple el requisito</span>
+                  </label>
+                </div>
+                <small class="help-text">*Esta información es para referencia y no bloquea la inscripción</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 5: Datos de Ayudas Económicas -->
+      <div *ngIf="currentStep === 5" class="step-form">
+        <div class="step-header">
+          <h2>Datos de Ayudas Económicas</h2>
+          <p>Información económica y de discapacidad para determinar ayudas</p>
+        </div>
+
+        <div class="question-cards">
+          <!-- Tarjeta: ¿El estudiante trabaja? -->
+          <div class="question-card">
+            <div class="question-row">
+              <div class="question-text">
+                <h3>¿El estudiante trabaja?</h3>
+              </div>
+              <div class="question-answer">
+                <div class="radio-group-horizontal">
+                  <label class="radio-option">
+                    <input type="radio" [value]="true" formControlName="trabaja">
+                    <span class="radio-label">Sí</span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" [value]="false" formControlName="trabaja">
+                    <span class="radio-label">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos de actividad económica - solo visibles si trabaja -->
+            <div class="question-details" *ngIf="postulacionForm.get('trabaja')?.value">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="idTipoActividadEconomica">Tipo de Actividad Económica *</label>
+                  <select id="idTipoActividadEconomica" formControlName="idTipoActividadEconomica" class="form-control">
+                    <option value="">Seleccione...</option>
+                    <option *ngFor="let tipo of tiposActividadEconomica" [value]="tipo.idtipoActividadEconomica">
+                      {{ tipo.nombre }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="valor">Valor/Ingreso *</label>
+                  <input type="number" id="valor" formControlName="valor" class="form-control" placeholder="Ingrese el valor" min="0" step="0.01">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta: ¿El estudiante tiene discapacidad? -->
+          <div class="question-card">
+            <div class="question-row">
+              <div class="question-text">
+                <h3>¿El estudiante tiene discapacidad?</h3>
+              </div>
+              <div class="question-answer">
+                <div class="radio-group-horizontal">
+                  <label class="radio-option">
+                    <input type="radio" [value]="true" formControlName="tieneDiscapacidad">
+                    <span class="radio-label">Sí</span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" [value]="false" formControlName="tieneDiscapacidad">
+                    <span class="radio-label">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos de discapacidad - solo visibles si tiene discapacidad -->
+            <div class="question-details" *ngIf="postulacionForm.get('tieneDiscapacidad')?.value">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="idTipoDiscapacidad">Tipo de Discapacidad *</label>
+                  <select id="idTipoDiscapacidad" formControlName="idTipoDiscapacidad" class="form-control">
+                    <option value="">Seleccione...</option>
+                    <option *ngFor="let tipo of tiposDiscapacidad" [value]="tipo.idTipoDiscapacidad">
+                      {{ tipo.nombre }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="porcentaje">Porcentaje de discapacidad *</label>
+                  <input type="number" id="porcentaje" formControlName="porcentaje" class="form-control" placeholder="Ingrese porcentaje" min="0" max="100" step="1">
+                </div>
+
+                <div class="form-group">
+                  <label for="archivoDiscapacidad">Archivo de Discapacidad</label>
+                  <input type="file" id="archivoDiscapacidad" (change)="onFileChange($event)" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                </div>
+
+                <div class="form-group">
+                  <label for="recomendaciones">Recomendaciones</label>
+                  <textarea id="recomendaciones" formControlName="recomendaciones" class="form-control" rows="3" placeholder="Ingrese recomendaciones adicionales"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- Cierre del div con scroll -->
+
+      <!-- Navegación entre pasos -->
+      <div class="step-navigation">
+        <button type="button" class="btn btn-secondary" (click)="prevStep()" [disabled]="currentStep === 1">
+          <i class="pi pi-chevron-left"></i>
+          Anterior
+        </button>
+
+        <div class="step-indicator">
+          Paso {{ currentStep }} de 5
+        </div>
+
+        <button type="button" class="btn btn-primary" (click)="nextStep()" *ngIf="currentStep < 5">
+          Siguiente
+          <i class="pi pi-chevron-right"></i>
+        </button>
+
+        <button type="button" class="btn btn-success" *ngIf="currentStep === 5" (click)="nextStep()">
+          <i class="pi pi-check"></i>
+          Revisar y Confirmar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<app-confirmation-modal
+  [visible]="showConfirmationModal"
+  [title]="modalTitle"
+  [message]="modalMessage"
+  [acceptLabel]="'Crear Postulación'"
+  [rejectLabel]="'Cancelar'"
+  (accept)="onConfirmAccept()"
+  (reject)="onConfirmReject()"
+  (hide)="onModalHide()">
+</app-confirmation-modal>

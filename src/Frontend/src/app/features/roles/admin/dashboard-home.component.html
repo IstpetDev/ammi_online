@@ -1,0 +1,100 @@
+<div class="welcome-section">
+  <div class="welcome-card">
+    <div class="welcome-header">
+      <h2>¡Bienvenido, {{ user?.username }}! 👋</h2>
+      <p class="welcome-subtitle">Has iniciado sesión exitosamente en AMMI Online</p>
+    </div>
+  </div>
+
+  <div class="dashboard-stats" *ngIf="hasRole('ADMINISTRADOR')">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>156</h3>
+        <p>Usuarios Totales</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-book"></i>
+      </div>
+      <div class="stat-content">
+        <h3>24</h3>
+        <p>Cursos Activos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-file"></i>
+      </div>
+      <div class="stat-content">
+        <h3>48</h3>
+        <p>Postulaciones</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-chart-line"></i>
+      </div>
+      <div class="stat-content">
+        <h3>92%</h3>
+        <p>Tasa de Aprobación</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <h3>Acciones Rápidas</h3>
+    <div class="actions-grid" *ngIf="hasRole('ADMINISTRADOR')">
+      <a routerLink="/dashboard/users" class="action-card">
+        <i class="pi pi-users action-icon"></i>
+        <h4>Gestionar Usuarios</h4>
+        <p>Administrar estudiantes y permisos</p>
+      </a>
+      <a routerLink="/dashboard/courses" class="action-card">
+        <i class="pi pi-book action-icon"></i>
+        <h4>Gestionar Cursos</h4>
+        <p>Crear y modificar programas</p>
+      </a>
+      <a routerLink="/dashboard/create-postulation" class="action-card">
+        <i class="pi pi-plus action-icon"></i>
+        <h4>Crear Postulación</h4>
+        <p>Registrar nueva postulación</p>
+      </a>
+      <a routerLink="/dashboard/manage-postulations" class="action-card">
+        <i class="pi pi-list action-icon"></i>
+        <h4>Gestionar Postulaciones</h4>
+        <p>Ver y administrar postulaciones</p>
+      </a>
+    </div>
+
+    <div class="actions-grid" *ngIf="hasRole('ALUMNO')">
+      <a routerLink="/dashboard/my-courses" class="action-card">
+        <i class="pi pi-graduation-cap action-icon"></i>
+        <h4>Mis Cursos</h4>
+        <p>Ver cursos inscritos</p>
+      </a>
+      <a routerLink="/dashboard/schedule" class="action-card">
+        <i class="pi pi-calendar action-icon"></i>
+        <h4>Horario</h4>
+        <p>Ver clases programadas</p>
+      </a>
+      <a routerLink="/dashboard/progress" class="action-card">
+        <i class="pi pi-trophy action-icon"></i>
+        <h4>Progreso</h4>
+        <p>Ver avances y certificados</p>
+      </a>
+    </div>
+
+    <div class="actions-grid" *ngIf="hasRole('POSTULANTE')">
+      <a routerLink="/dashboard/mi-postulacion" class="action-card">
+        <i class="pi pi-file action-icon"></i>
+        <h4>Mis Postulaciones</h4>
+        <p>Ver estado de postulaciones</p>
+      </a>
+
+    </div>
+  </div>
+</div>

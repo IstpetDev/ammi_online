@@ -1,0 +1,96 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Personas</h1>
+        <p>Aquí se gestionarán las personas del sistema.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Nueva Persona" icon="pi pi-plus" (click)="openNewPersonaDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <div class="p-field p-fluid" style="margin-bottom: 1rem;">
+      <input pInputText placeholder="Buscar personas..." (input)="dt.filterGlobal($event.target.value, 'contains')" />
+    </div>
+    <p-table #dt [value]="personas" [loading]="loading" [paginator]="true" [rows]="10" [globalFilterFields]="['documento', 'primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido', 'idTipoDocumento', 'idGenero']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>ID</th>
+          <th>Tipo Documento</th>
+          <th>Documento</th>
+          <th>Género</th>
+          <th>Nombre Completo</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-persona>
+        <tr>
+          <td>{{ persona.idPersona }}</td>
+          <td>{{ getTipoDocumentoNombre(persona.idTipoDocumento) }}</td>
+          <td>{{ persona.documento }}</td>
+          <td>{{ getGeneroNombre(persona.idGenero) }}</td>
+          <td>{{ persona.primerNombre }} {{ persona.segundoNombre }} {{ persona.primerApellido }} {{ persona.segundoApellido }}</td>
+          <td>
+            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editPersona(persona)"></button>
+            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deletePersona(persona)"></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog for Persona -->
+<p-dialog [(visible)]="personaDialog" [style]="{width: '450px'}" header="Persona" [modal]="true" styleClass="p-dialog-custom">
+  <form class="seasons-form-grid">
+    <div class="seasons-form-row">
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Tipo Documento</label>
+        <select [(ngModel)]="selectedTipoDocumento" [ngModelOptions]="{standalone: true}" required class="seasons-form-control">
+          <option *ngFor="let tipo of tiposDocumento" [ngValue]="tipo">{{ tipo.nombre }}</option>
+        </select>
+      </div>
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Género</label>
+        <select [(ngModel)]="selectedGenero" [ngModelOptions]="{standalone: true}" required class="seasons-form-control">
+          <option *ngFor="let genero of generos" [ngValue]="genero">{{ genero.nombre }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="seasons-form-row">
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Documento</label>
+        <input pInputText id="documento" [(ngModel)]="persona.documento" [ngModelOptions]="{standalone: true}" required autofocus class="seasons-form-control" />
+      </div>
+    </div>
+    <div class="seasons-form-row">
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Primer Nombre</label>
+        <input pInputText id="primerNombre" [(ngModel)]="persona.primerNombre" [ngModelOptions]="{standalone: true}" required class="seasons-form-control" />
+      </div>
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Segundo Nombre</label>
+        <input pInputText id="segundoNombre" [(ngModel)]="persona.segundoNombre" [ngModelOptions]="{standalone: true}" class="seasons-form-control" />
+      </div>
+    </div>
+    <div class="seasons-form-row">
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Primer Apellido</label>
+        <input pInputText id="primerApellido" [(ngModel)]="persona.primerApellido" [ngModelOptions]="{standalone: true}" required class="seasons-form-control" />
+      </div>
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Segundo Apellido</label>
+        <input pInputText id="segundoApellido" [(ngModel)]="persona.segundoApellido" [ngModelOptions]="{standalone: true}" class="seasons-form-control" />
+      </div>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <div class="seasons-form-actions">
+      <p-button label="Cancelar" icon="pi pi-times" (onClick)="hidePersonaDialog()" styleClass="p-button-secondary"></p-button>
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="savePersona()" styleClass="p-button-primary"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

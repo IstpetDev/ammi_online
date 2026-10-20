@@ -1,0 +1,101 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Requisitos</h1>
+        <p>Aquí se gestionarán los requisitos relacionados con las mallas curriculares.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Agregar Requisito" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="requisitos" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} requisitos">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Detalle</th>
+          <th>Obligatorio</th>
+          <th>Bloquea Inscripción</th>
+          <th>Tipo de Dato</th>
+          <th>Mayor de Edad</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-requisito>
+        <tr>
+          <td>{{ requisito.detalle }}</td>
+          <td>{{ requisito.esObligatorio ? 'Sí' : 'No' }}</td>
+          <td>{{ requisito.bloqueaInscripcion ? 'Sí' : 'No' }}</td>
+          <td>{{ requisito.tipoDato }}</td>
+          <td>{{ requisito.esMayorEdad ? 'Sí' : 'No' }}</td>
+          <td class="seasons-actions-cell">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(requisito)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(requisito)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">No hay requisitos registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog para crear/editar requisito -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '500px'}" [header]="isEditing ? 'Editar Requisito' : 'Crear Requisito'"
+          (onHide)="hideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+  <div class="p-dialog-content">
+    <form [formGroup]="requisitoForm" (ngSubmit)="saveRequisito()" class="seasons-form-grid">
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="detalle" class="seasons-form-label">Detalle</label>
+          <input pInputText id="detalle" formControlName="detalle" placeholder="Ingrese el detalle del requisito" class="seasons-form-control" />
+        </div>
+      </div>
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="tipoDato" class="seasons-form-label">Tipo de Dato</label>
+          <select id="tipoDato" formControlName="tipoDato" class="seasons-form-control">
+            <option value="BOOL">Booleano</option>
+            <option value="ADJUNTO">Adjunto</option>
+            <option value="TEXTO">Texto</option>
+          </select>
+        </div>
+      </div>
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="esObligatorio" class="seasons-form-label">Obligatorio</label>
+          <p-toggleButton formControlName="esObligatorio" onLabel="Obligatorio" offLabel="Opcional"></p-toggleButton>
+        </div>
+        <div class="seasons-form-group">
+          <label for="bloqueaInscripcion" class="seasons-form-label">Bloquea Inscripción</label>
+          <p-toggleButton formControlName="bloqueaInscripcion" onLabel="Bloquea" offLabel="No Bloquea"></p-toggleButton>
+        </div>
+        <div class="seasons-form-group">
+          <label for="esMayorEdad" class="seasons-form-label">Mayor de Edad</label>
+          <p-toggleButton formControlName="esMayorEdad" onLabel="Mayor" offLabel="Menor"></p-toggleButton>
+        </div>
+      </div>
+      <div class="seasons-form-actions">
+        <p-button type="submit" [disabled]="!requisitoForm.valid" label="Guardar" icon="pi pi-check" styleClass="p-button-primary"></p-button>
+        <p-button type="button" label="Cancelar" icon="pi pi-times" (onClick)="hideDialog()" styleClass="p-button-secondary"></p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
+
+<!-- Modal de confirmación para eliminar -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar este requisito?"
+  (accept)="deleteRequisito()"
+  (reject)="cancelDelete()">
+</app-confirmation-modal>
+
+<p-toast></p-toast>

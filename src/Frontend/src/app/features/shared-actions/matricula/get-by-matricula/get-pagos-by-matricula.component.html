@@ -1,0 +1,59 @@
+<div class="get-pagos-container">
+  <div class="pagos-card">
+    <h1>Pagos por Matrícula</h1>
+    <p>ID de la Matrícula: <strong>{{ matriculaId }}</strong></p>
+
+    <div class="total-info">
+      <h3>Información de Pagos</h3>
+      <div class="flex justify-between items-center gap-4">
+        <p>Valor Total de la Matrícula: <span class="highlight">{{ totalMatricula | currency:'USD':'symbol':'1.0-0' }}</span></p>
+        <p>Total Abonado: <span class="highlight currency-positive">{{ sumaAbonada | currency:'USD':'symbol':'1.0-0' }}</span></p>
+        <p>Valor Restante: <span class="highlight currency-negative">{{ restante | currency:'USD':'symbol':'1.0-0' }}</span></p>
+      </div>
+    </div>
+
+    <button class="btn-nuevo-abono" (click)="abrirModalNuevoAbono()">
+      <i class="pi pi-plus"></i>
+      Nuevo Abono
+    </button>
+
+    <p-table [value]="pagos" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Tipo de Pago</th>
+          <th>Valor Abonado</th>
+          <th>Valor Total</th>
+          <th>Diferencia</th>
+          <th>Valor Restante</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-pago let-rowIndex="rowIndex">
+        <tr>
+          <td>{{ pago.tipo }}</td>
+          <td class="currency-positive">{{ pago.valorAbonado | currency:'USD':'symbol':'1.0-0' }}</td>
+          <td>{{ totalMatricula | currency:'USD':'symbol':'1.0-0' }}</td>
+          <td class="currency-negative">{{ totalMatricula - pago.valorAbonado | currency:'USD':'symbol':'1.0-0' }}</td>
+          <td class="currency-negative">{{ getRemaining(rowIndex) | currency:'USD':'symbol':'1.0-0' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-dialog header="Nuevo Abono" [(visible)]="displayModal" modal="true" styleClass="pagos-modal">
+      <div class="p-field">
+        <label for="tipo">Tipo de Pago</label>
+        <select id="tipo" [(ngModel)]="nuevoPago.tipo" class="form-input">
+          <option value="">Seleccione tipo</option>
+          <option *ngFor="let tipo of tiposPago" [value]="tipo.value">{{ tipo.label }}</option>
+        </select>
+      </div>
+      <div class="p-field">
+        <label for="valor">Valor Entregado</label>
+        <input pInputText id="valor" type="number" [(ngModel)]="nuevoPago.valor" placeholder="Ingrese el valor" class="form-input">
+      </div>
+      <ng-template pTemplate="footer">
+        <p-button label="Cancelar" icon="pi pi-times" class="p-button-text" (onClick)="cancelarNuevoPago()"></p-button>
+        <p-button label="Agregar" icon="pi pi-check" class="p-button-primary" (onClick)="agregarPago()"></p-button>
+      </ng-template>
+    </p-dialog>
+  </div>
+</div>

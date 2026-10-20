@@ -1,0 +1,158 @@
+<p-toast></p-toast>
+
+<div class="menu-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-users"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Mi Distributivo</h1>
+          <p class="page-subtitle">Gestiona el contenido de tus asignaturas asignadas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+      <p>Cargando asignaciones...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error && !loading) {
+    <div class="error-container">
+      <i class="pi pi-exclamation-triangle"></i>
+      <p>{{ error }}</p>
+      <button pButton label="Reintentar" icon="pi pi-refresh" (click)="cargarAsignacionesDocente()"></button>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (!loading && !error) {
+    <div class="content-section">
+      <p-card header="Asignaturas Asignadas">
+        @if (asignaciones.length === 0) {
+          <div class="no-data">
+            <i class="pi pi-info-circle"></i>
+            <p>No tienes asignaturas asignadas actualmente.</p>
+          </div>
+        } @else {
+          <p-table [value]="asignaciones" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                   currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} asignaturas">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Materia</th>
+                <th>Paralelo</th>
+                <th>Malla</th>
+                <th>Cantidad Alumnos</th>
+                <th>Plantilla Evaluación</th>
+                <th>Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-asignacion>
+              <tr>
+                <td>{{ asignacion.nombreMateria }}</td>
+                <td>{{ asignacion.nombreParalelo }}</td>
+                <td>{{ asignacion.nombreMalla }}</td>
+                <td>{{ asignacion.cantidadAlumnos }}</td>
+                <td>{{ asignacion.nombrePlantilla || 'Sin plantilla' }}</td>
+                <td>
+                  <button pButton
+                          label="Subir Contenido Malla"
+                          icon="pi pi-upload"
+                          class="p-button-sm p-button-outlined"
+                          (click)="subirContenidoMalla(asignacion)">
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </p-card>
+    </div>
+  }
+</div>
+
+<!-- Dialog para subir contenido -->
+<p-dialog
+  [(visible)]="displayDialog"
+  [modal]="true"
+  [style]="{width: '500px'}"
+  [closable]="true"
+  [closeOnEscape]="true"
+  header="Subir Contenido de Malla"
+  (onHide)="cancelarSubida()">
+
+  @if (selectedAsignacion) {
+    <div class="dialog-content">
+      <div class="asignacion-info">
+        <h4>{{ selectedAsignacion.nombreMateria }}</h4>
+        <p>{{ selectedAsignacion.nombreParalelo }} - {{ selectedAsignacion.nombreMalla }}</p>
+      </div>
+
+      <div class="form-group">
+        <label for="titulo">Título del Contenido *</label>
+        <input
+          pInputText
+          id="titulo"
+          [(ngModel)]="tituloContenido"
+          placeholder="Ingrese el título del contenido"
+          class="w-full"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea
+          pInputTextarea
+          id="descripcion"
+          [(ngModel)]="descripcionContenido"
+          placeholder="Ingrese una descripción opcional"
+          rows="3"
+          class="w-full">
+        </textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Archivo Adjunto</label>
+        <p-fileUpload
+          mode="basic"
+          chooseLabel="Seleccionar Archivo"
+          [auto]="false"
+          [multiple]="false"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+          (onSelect)="onFileSelect($event)"
+          (onRemove)="onFileRemove()"
+          [maxFileSize]="10485760">
+        </p-fileUpload>
+        @if (archivoSeleccionado) {
+          <small class="file-info">Archivo seleccionado: {{ archivoSeleccionado.name }}</small>
+        }
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        class="p-button-text"
+        (click)="cancelarSubida()">
+      </button>
+      <button
+        pButton
+        label="Subir Contenido"
+        icon="pi pi-upload"
+        [loading]="uploading"
+        [disabled]="!tituloContenido.trim()"
+        (click)="guardarContenido()">
+      </button>
+    </ng-template>
+  }
+</p-dialog>

@@ -1,0 +1,115 @@
+
+<div class="tabla-card">
+  <p-table 
+    [value]="distributivos" 
+    [paginator]="true" 
+    [rows]="10" 
+    [showCurrentPageReport]="true" 
+    [rowsPerPageOptions]="[10, 25, 50]"
+    currentPageReportTemplate="{first}-{last} de {totalRecords}"
+    [showGridlines]="false"
+    [scrollable]="true"
+    [tableStyle]="{'min-width': '50rem'}">
+    
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="nombreMalla" style="min-width: 10rem">
+          Malla <p-sortIcon field="nombreMalla"></p-sortIcon>
+        </th>
+        <th pSortableColumn="nombreMateria" style="min-width: 10rem">
+          Materia <p-sortIcon field="nombreMateria"></p-sortIcon>
+        </th>
+        <th pSortableColumn="nombreParalelo" style="min-width: 6rem">
+          Paralelo <p-sortIcon field="nombreParalelo"></p-sortIcon>
+        </th>
+        <th pSortableColumn="nombreDocente" style="min-width: 10rem">
+          Docente <p-sortIcon field="nombreDocente"></p-sortIcon>
+        </th>
+        <th style="min-width: 7rem" class="text-center">
+          Acciones
+        </th>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <!-- Malla -->
+        <td>
+          <span class="text-sm font-medium">{{ item.nombreMalla }}</span>
+        </td>
+        
+        <!-- Materia -->
+        <td>
+          <div class="materia-info">
+            <span class="materia-nombre">{{ item.nombreMateria }}</span>
+            <span class="materia-horas">
+              <i class="pi pi-clock"></i>
+              {{ item.horasMateria }}h
+            </span>
+          </div>
+        </td>
+        
+        <!-- Paralelo -->
+        <td>
+          <p-tag [value]="item.nombreParalelo" severity="secondary" [rounded]="true"></p-tag>
+        </td>
+        
+        <!-- Docente -->
+        <td>
+          @if (item.nombreDocente) {
+            <div class="docente-info">
+              <span class="docente-nombre">{{ item.nombreDocente }}</span>
+              <p-button 
+                label="Ver Carga" 
+                icon="pi pi-chart-pie" 
+                [text]="true"
+                size="small"
+                (onClick)="onVerCarga(item.idPersona)">
+              </p-button>
+            </div>
+          } @else {
+            <span class="sin-asignar">
+              <i class="pi pi-exclamation-circle"></i>
+              Sin asignar
+            </span>
+          }
+        </td>
+        
+        <!-- Acciones -->
+        <td>
+          <div class="actions-cell">
+            <p-button 
+              icon="pi pi-pencil" 
+              [rounded]="true"
+              [text]="true"
+              severity="warn"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              (onClick)="onEditar(item)">
+            </p-button>
+            <p-button 
+              icon="pi pi-trash" 
+              [rounded]="true"
+              [text]="true"
+              severity="danger"
+              pTooltip="Eliminar"
+              tooltipPosition="top"
+              (onClick)="onEliminar(item.idDistributivo)">
+            </p-button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5">
+          <div class="empty-message">
+            <i class="pi pi-inbox"></i>
+            <p>No hay asignaciones registradas</p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

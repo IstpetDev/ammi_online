@@ -1,0 +1,49 @@
+<header class="header">
+  <div class="header-content">
+    <div class="logo">
+      <a routerLink="/" style="text-decoration: none; color: inherit;">
+        <h1>AMMI<span class="logo-highlight">Online</span></h1>
+      </a>
+    </div>
+
+    <!-- Hamburger Menu Button -->
+    <button class="hamburger" (click)="toggleMobileMenu()" [class.active]="mobileMenuOpen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Menu -->
+    <nav class="nav" [class.mobile-open]="mobileMenuOpen">
+      
+      <div class="nav-item dropdown" (mouseenter)="showModalidadesDropdown()" (mouseleave)="hideModalidadesDropdown()">
+        <a href="#modalidades" class="nav-link" (click)="closeMobileMenu()">
+          <i class="pi pi-book"></i>
+          Modalidades
+        </a>
+        @if (showModalidades) {
+          <div class="dropdown-menu" (mouseenter)="showModalidadesDropdown()" (mouseleave)="hideModalidadesDropdown()">
+            <a routerLink="/acelerado-virtual" class="dropdown-item" (click)="closeMobileMenu()">
+              <i class="pi pi-bolt"></i>
+              <div>
+                <strong>Acelerado Virtual</strong>
+                <span class="dropdown-desc">Aprende rápido y certificado</span>
+              </div>
+            </a>
+            <a routerLink="/formal-virtual" class="dropdown-item" (click)="closeMobileMenu()">
+              <i class="pi pi-graduation-cap"></i>
+              <div>
+                <strong>Formal Virtual</strong>
+                <span class="dropdown-desc">Programa completo estructurado</span>
+              </div>
+            </a>
+          </div>
+        }
+      </div>
+      
+      
+      <a class="btn btn-primary btn-header" routerLink="/login" (click)="closeMobileMenu()">Ingresar</a>
+      <app-theme-toggle></app-theme-toggle>
+    </nav>
+  </div>
+</header>

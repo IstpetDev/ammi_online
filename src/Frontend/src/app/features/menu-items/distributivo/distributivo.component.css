@@ -1,0 +1,240 @@
+/* =============================================
+   DISTRIBUTIVO COMPONENT - Modern Design
+   ============================================= */
+
+.distributivo-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* =============================================
+   PAGE HEADER
+   ============================================= */
+
+.page-header {
+  background: linear-gradient(135deg, var(--brand-black) 0%, var(--brand-gray) 100%);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title-icon {
+  width: 50px;
+  height: 50px;
+  background-color: var(--brand-yellow-dark);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-icon i {
+  font-size: 1.5rem;
+  color: var(--brand-black);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0.25rem 0 0 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* =============================================
+   LOADING STATE
+   ============================================= */
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading-content i {
+  font-size: 3rem;
+  color: var(--brand-yellow-dark);
+}
+
+.loading-content p {
+  color: var(--text-color-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* =============================================
+   STATS BAR
+   ============================================= */
+
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  background-color: var(--surface-card);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--surface-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item i {
+  font-size: 1.5rem;
+  color: var(--brand-yellow-dark);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+}
+
+/* =============================================
+   BUTTONS OVERRIDE
+   ============================================= */
+
+:host ::ng-deep .p-button {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+:host ::ng-deep .p-button:not(.p-button-outlined):not(.p-button-text) {
+  background: linear-gradient(135deg, var(--brand-yellow-dark) 0%, var(--brand-yellow) 100%);
+  border: none;
+  color: var(--brand-black);
+}
+
+:host ::ng-deep .p-button:not(.p-button-outlined):not(.p-button-text):hover {
+  box-shadow: 0 4px 12px rgba(217, 160, 5, 0.35);
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+/* =============================================
+   RESPONSIVE - Evitar doble scroll
+   ============================================= */
+
+@media (max-width: 1200px) {
+  .distributivo-container {
+    padding: 1rem;
+  }
+
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .distributivo-container {
+    padding: 0.75rem;
+  }
+
+  .page-header {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .header-actions .p-button {
+    width: 100%;
+  }
+
+  .title-section {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stat-item i {
+    font-size: 1.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+}

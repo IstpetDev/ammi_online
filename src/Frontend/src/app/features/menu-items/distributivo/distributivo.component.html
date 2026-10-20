@@ -1,0 +1,133 @@
+
+<div class="distributivo-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-sitemap"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Distributivo Académico</h1>
+          <p class="page-subtitle">Gestión de asignaciones de docentes a materias y paralelos</p>
+        </div>
+      </div>
+      
+      @if (vistaActual === 'tabla') {
+        <div class="header-actions">
+          <p-button 
+            label="Asignación Masiva" 
+            icon="pi pi-clone" 
+            [outlined]="true"
+            severity="secondary"
+            (onClick)="abrirModalMasivo()">
+          </p-button>
+          <p-button 
+            label="Nueva Asignación" 
+            icon="pi pi-plus"
+            (onClick)="abrirModalNuevo()">
+          </p-button>
+        </div>
+      }
+
+      @if (vistaActual === 'carga-docente') {
+        <p-button 
+          label="Volver al Distributivo" 
+          icon="pi pi-arrow-left" 
+          [outlined]="true"
+          severity="secondary"
+          (onClick)="volverATabla()">
+        </p-button>
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <div class="loading-content">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Cargando datos del distributivo...</p>
+      </div>
+    </div>
+  }
+
+  <!-- Vista Tabla -->
+  @if (!loading && vistaActual === 'tabla') {
+    <!-- Filtros -->
+    <app-filtros-distributivo
+      [mallas]="mallas"
+      [ciclos]="ciclos"
+      [paralelos]="paralelos"
+      (filtrosChange)="onFiltrosChange($event)">
+    </app-filtros-distributivo>
+
+    <!-- Estadísticas rápidas -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <i class="pi pi-list"></i>
+        <span class="stat-value">{{ distributivosFiltrados.length }}</span>
+        <span class="stat-label">Asignaciones</span>
+      </div>
+      <div class="stat-item">
+        <i class="pi pi-book"></i>
+        <span class="stat-value">{{ mallas.length }}</span>
+        <span class="stat-label">Mallas</span>
+      </div>
+      <div class="stat-item">
+        <i class="pi pi-users"></i>
+        <span class="stat-value">{{ docentes.length }}</span>
+        <span class="stat-label">Docentes</span>
+      </div>
+      <div class="stat-item">
+        <i class="pi pi-th-large"></i>
+        <span class="stat-value">{{ paralelos.length }}</span>
+        <span class="stat-label">Paralelos</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <app-tabla-distributivo
+      [distributivos]="distributivosFiltrados"
+      (editar)="abrirModalEditar($event)"
+      (eliminar)="onEliminar($event)"
+      (verCarga)="verCargaDocente($event)">
+    </app-tabla-distributivo>
+  }
+
+  <!-- Vista Carga Docente -->
+  @if (!loading && vistaActual === 'carga-docente') {
+    <app-vista-carga-docente
+      [carga]="cargaDocenteSeleccionado"
+      (volver)="volverATabla()">
+    </app-vista-carga-docente>
+  }
+</div>
+
+<!-- Toast para notificaciones -->
+<p-toast position="top-right" />
+
+<!-- Confirm Dialog -->
+<p-confirmDialog />
+
+<!-- Modal Nueva/Editar Asignación -->
+<app-modal-asignacion
+  [show]="showModalAsignacion"
+  [distributivo]="distributivoEditar"
+  [mallas]="mallas"
+  [cicloss]="ciclos"
+  [paralelos]="paralelos"
+  [docentes]="docentes"
+  (close)="cerrarModales()"
+  (save)="onGuardarAsignacion($event)">
+</app-modal-asignacion>
+
+<!-- Modal Asignación Masiva -->
+<app-modal-asignacion-masiva
+  [show]="showModalMasivo"
+  [mallas]="mallas"
+  [paralelos]="paralelos"
+  [docentes]="docentes"
+  (close)="cerrarModales()"
+  (save)="onGuardarMasivo($event)">
+</app-modal-asignacion-masiva>

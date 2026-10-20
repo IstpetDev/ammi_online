@@ -1,0 +1,506 @@
+<div class="pagos-container">
+  <!-- VISTA: Lista de Estudiantes -->
+  @if (!mostrarDetalle) {
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-money-bill"></i>
+          </div>
+          <div>
+            <h1 class="page-title">Gestión de Pagos</h1>
+            <p class="page-subtitle">Administra y controla los pagos de estudiantes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+      <p-table 
+        #dt
+        [value]="pagos" 
+        dataKey="idMatricula"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [paginator]="true"
+        [globalFilterFields]="['cedula', 'nombreEstudiante', 'modalidad', 'detalleCiclo']"
+        [showGridlines]="true"
+        (onPage)="onPageChange($event)">
+        
+        <ng-template #caption>
+          <div class="table-header">
+            <p-button label="Limpiar" [outlined]="true" icon="pi pi-filter-slash" (click)="clearFilters()" />
+            <div class="search-container">
+              <i class="pi pi-search search-icon"></i>
+              <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Buscar..." class="search-input" />
+            </div>
+          </div>
+        </ng-template>
+        
+        <ng-template #header>
+          <tr>
+            <th style="min-width: 12rem">
+              <div class="flex items-center justify-between">
+                Cédula
+                <p-columnFilter type="text" field="cedula" display="menu" />
+              </div>
+            </th>
+            <th style="min-width: 14rem">
+              <div class="flex items-center justify-between">
+                Estudiante
+                <p-columnFilter type="text" field="nombreEstudiante" display="menu" />
+              </div>
+            </th>
+            <th style="min-width: 12rem">
+              <div class="flex items-center justify-between">
+                Modalidad
+                <p-columnFilter field="modalidad" matchMode="equals" display="menu">
+                  <ng-template #filter let-filter="filterCallback">
+                    <p-select [options]="modalidades" (onChange)="filter($event.value)" placeholder="Seleccionar" class="w-full">
+                      <ng-template let-option #item>
+                        <p-tag [value]="option.label" [severity]="option.value === 'Formal virtual' ? 'info' : 'warn'" />
+                      </ng-template>
+                    </p-select>
+                  </ng-template>
+                </p-columnFilter>
+              </div>
+            </th>
+            <th style="min-width: 10rem">
+              <div class="flex items-center">
+                Progreso
+              </div>
+            </th>
+            <th style="min-width: 10rem">
+              <div class="flex items-center justify-between">
+                Ciclo
+                <p-columnFilter type="text" field="detalleCiclo" display="menu" />
+              </div>
+            </th>
+            <th style="width: 5rem">
+              <div class="flex items-center justify-center">
+                Acciones
+              </div>
+            </th>
+          </tr>
+        </ng-template>
+        
+        <ng-template #body let-pago>
+          <tr>
+            <td>
+              <span class="font-semibold">{{ pago.cedula }}</span>
+            </td>
+            <td>
+              {{ pago.nombreEstudiante }}
+            </td>
+            <td>
+              <p-tag 
+                [value]="pago.modalidad" 
+                [severity]="pago.modalidad === 'Formal virtual' ? 'info' : 'warn'"
+                [icon]="pago.modalidad === 'Formal virtual' ? 'pi pi-desktop' : 'pi pi-bolt'" />
+            </td>
+            <td>
+              @if (pago.totalDeuda > 0) {
+                <p-progressBar [value]="getProgreso(pago.totalDeuda, pago.totalPagado)" [showValue]="false" />
+                <span class="text-sm text-color-secondary">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
+              } @else {
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-spin pi-spinner text-color-secondary"></i>
+                  <span class="text-sm text-color-secondary">Cargando...</span>
+                </div>
+              }
+            </td>
+            <td>
+              <div class="flex items-center gap-2">
+                <i class="pi pi-bookmark text-primary"></i>
+                <span>{{ pago.detalleCiclo }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <p-button 
+                icon="pi pi-eye" 
+                [rounded]="true"
+                [text]="true"
+                severity="info"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+                (onClick)="verDetalle(pago)" />
+            </td>
+          </tr>
+        </ng-template>
+        
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="8">
+              <div class="flex flex-col items-center justify-center py-6">
+                <i class="pi pi-inbox text-4xl text-color-secondary mb-4"></i>
+                <span class="text-xl text-color-secondary">No se encontraron estudiantes</span>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- VISTA: Detalle del Estudiante -->
+  @if (mostrarDetalle && estudianteSeleccionado) {
+    <!-- Header con nombre del estudiante -->
+    <div class="page-header detalle-header">
+      <div class="header-content">
+        <div class="title-section">
+          <p-button 
+            icon="pi pi-arrow-left" 
+            [rounded]="true"
+            [outlined]="true"
+            severity="secondary"
+            styleClass="back-btn"
+            pTooltip="Volver a la lista"
+            (onClick)="volverALista()">
+          </p-button>
+          <div class="student-header-info">
+            <div class="student-avatar-large">
+              <i class="pi pi-user"></i>
+            </div>
+            <div>
+              <h1 class="page-title">{{ estudianteSeleccionado.nombreEstudiante }}</h1>
+              <p class="page-subtitle">
+                <span class="cedula-text">CI: {{ estudianteSeleccionado.cedula }}</span>
+                <span class="separator">•</span>
+                <span class="modalidad-text">{{ estudianteSeleccionado.modalidad }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen de pagos -->
+    <div class="resumen-cards">
+      <div class="resumen-card total-deuda">
+        <div class="resumen-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Total Deuda</span>
+          <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="resumen-card total-pagado">
+        <div class="resumen-icon">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Total Pagado</span>
+          <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="resumen-card pendiente">
+        <div class="resumen-icon">
+          <i class="pi pi-clock"></i>
+        </div>
+        <div class="resumen-info">
+          <span class="resumen-label">Saldo Pendiente</span>
+          <span class="resumen-value">{{ (estudianteSeleccionado.totalDeuda - estudianteSeleccionado.totalPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards de Especies -->
+    <div class="especies-section">
+      <h2 class="section-title">
+        <i class="pi pi-file-edit"></i>
+        Detalle de Pagos por Especie
+      </h2>
+      
+      <div class="especies-grid">
+        @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
+          <div class="especie-card" 
+               [class.especie-pagada]="especie.pagado" 
+               [class.especie-pendiente]="!especie.pagado"
+               [class.card-matricula]="especie.tipo === 'matricula'"
+               [class.card-pension]="especie.tipo === 'pension'">
+            <!-- Header de la card -->
+            <div class="especie-header">
+              <div class="especie-tipo">
+                <i [class]="especie.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
+                <span class="especie-nombre">{{ especie.nombre }}</span>
+              </div>
+              <p-tag 
+                [value]="getEspecieEstado(especie)" 
+                [severity]="getEspecieSeverity(especie)"
+                styleClass="estado-tag">
+              </p-tag>
+            </div>
+
+            <!-- Ciclo -->
+            <div class="especie-ciclo">
+              <i class="pi pi-bookmark"></i>
+              <span>{{ especie.ciclo }}</span>
+            </div>
+
+            <!-- Valores -->
+            <div class="especie-valores">
+              <div class="valor-item">
+                <span class="valor-label">Valor Total</span>
+                <span class="valor-amount">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="valor-item">
+                <span class="valor-label">Pagado</span>
+                <span class="valor-amount pagado">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="valor-item">
+                <span class="valor-label">Pendiente</span>
+                <span class="valor-amount pendiente">{{ (especie.valor - especie.valorPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="especie-progreso">
+              <p-progressBar 
+                [value]="(especie.valorPagado / especie.valor) * 100" 
+                [showValue]="false"
+                styleClass="especie-progress-bar">
+              </p-progressBar>
+              <span class="progreso-porcentaje">{{ ((especie.valorPagado / especie.valor) * 100) | number:'1.0-0' }}%</span>
+            </div>
+
+            <!-- Fecha límite -->
+            <div class="especie-fecha">
+              <i class="pi pi-calendar-clock"></i>
+              <span>Fecha límite: {{ especie.fechaLimite }}</span>
+            </div>
+
+            <!-- Botones de acción -->
+            @if (!especie.pagado) {
+              <div class="especie-action">
+                @if (especie.esPensionNoDiferida) {
+                  <p-button 
+                    label="Diferir Pago" 
+                    icon="pi pi-calendar-plus"
+                    styleClass="btn-diferir"
+                    (onClick)="mostrarModalDiferirPension(especie)">
+                  </p-button>
+                } @else {
+                  <p-button 
+                    label="Realizar Pago" 
+                    icon="pi pi-credit-card"
+                    styleClass="btn-pagar"
+                    (onClick)="pagarEspecie(especie)">
+                  </p-button>
+                }
+              </div>
+            } @else {
+              <div class="especie-pagado-info">
+                <i class="pi pi-check-circle"></i>
+                <span>Pago completado</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TOAST para mensajes -->
+  <p-toast />
+
+  <!-- MODAL: Realizar Pago -->
+  <p-dialog 
+    header="Realizar Pago" 
+    [(visible)]="mostrarModalPago" 
+    [modal]="true" 
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px' }"
+    styleClass="pago-modal">
+    
+    @if (especieSeleccionada) {
+      <div class="modal-pago-content">
+        <!-- Info de la especie -->
+        <div class="especie-info-modal">
+          <div class="especie-modal-header">
+            <i [class]="especieSeleccionada.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
+            <span>{{ especieSeleccionada.nombre }}</span>
+          </div>
+          <div class="especie-modal-ciclo">{{ especieSeleccionada.ciclo }}</div>
+        </div>
+
+        <!-- Resumen de valores -->
+        <div class="valores-resumen">
+          <div class="valor-row">
+            <span class="valor-label">Valor Total:</span>
+            <span class="valor-monto">{{ especieSeleccionada.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          <div class="valor-row">
+            <span class="valor-label">Ya Pagado:</span>
+            <span class="valor-monto pagado">{{ especieSeleccionada.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          <div class="valor-row destacado">
+            <span class="valor-label">Pendiente de esta especie:</span>
+            <span class="valor-monto pendiente">{{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          @if (!esUltimaEspecie()) {
+            <div class="valor-row info">
+              <span class="valor-label">Total pendiente (incluye siguientes):</span>
+              <span class="valor-monto">{{ getTotalPendienteRestante() | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Tipo de Pago -->
+        <div class="campo-pago">
+          <label class="campo-label">Tipo de Pago <span class="requerido">*</span></label>
+          @if (loadingTiposPago) {
+            <div class="loading-tipos">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Cargando tipos de pago...</span>
+            </div>
+          } @else {
+            <div class="tipos-pago-grid">
+              @for (tipo of tiposPago; track tipo.idTipoPago) {
+                <div 
+                  class="tipo-pago-card" 
+                  [class.seleccionado]="tipoPagoSeleccionado === tipo.idTipoPago"
+                  (click)="tipoPagoSeleccionado = tipo.idTipoPago ?? null">
+                  <i [class]="tipo.detalle === 'EFECTIVO' ? 'pi pi-money-bill' : 'pi pi-building-columns'"></i>
+                  <span>{{ tipo.detalle }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Monto a Pagar -->
+        <div class="campo-pago">
+          <label class="campo-label">Monto a Pagar <span class="requerido">*</span></label>
+          <p-inputNumber 
+            [(ngModel)]="montoPago" 
+            mode="currency" 
+            currency="USD" 
+            locale="en-US"
+            [min]="0.01"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            placeholder="Ingrese el monto"
+            styleClass="monto-input">
+          </p-inputNumber>
+          
+          <div class="monto-sugerencias">
+            <small class="sugerencia-label">Sugerencias:</small>
+            <div class="sugerencias-btns">
+              <button type="button" class="sugerencia-btn" (click)="montoPago = getMontoPendienteEspecie()">
+                Pendiente cuota ({{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2' }})
+              </button>
+              @if (!esUltimaEspecie()) {
+                <button type="button" class="sugerencia-btn" (click)="montoPago = getTotalPendienteRestante()">
+                  Todo pendiente ({{ getTotalPendienteRestante() | currency:'USD':'symbol':'1.2-2' }})
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribución del pago (si hay excedente) -->
+        @if (getDistribucionPago().length > 1) {
+          <div class="distribucion-pago">
+            <label class="campo-label">
+              <i class="pi pi-share-alt"></i>
+              Distribución del pago:
+            </label>
+            <div class="distribucion-lista">
+              @for (dist of getDistribucionPago(); track dist.especie) {
+                <div class="distribucion-item">
+                  <span class="dist-especie">{{ dist.especie }}</span>
+                  <span class="dist-monto">{{ dist.monto | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <ng-template #footer>
+      <div class="modal-footer">
+        <p-button 
+          label="Cancelar" 
+          [outlined]="true" 
+          severity="secondary"
+          (onClick)="cerrarModalPago()">
+        </p-button>
+        <p-button 
+          label="Confirmar Pago" 
+          icon="pi pi-check"
+          (onClick)="confirmarPago()">
+        </p-button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- MODAL: Diferir Pensión -->
+  <p-dialog 
+    header="Diferir Pensión en Cuotas" 
+    [(visible)]="mostrarModalDiferir" 
+    [modal]="true" 
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px' }"
+    styleClass="diferir-modal">
+    
+    @if (creditoPensionPorDiferir) {
+      <div class="modal-diferir-content">
+        <div class="info-pension">
+          <div class="info-row">
+            <span class="info-label">Especie:</span>
+            <span class="info-value">{{ creditoPensionPorDiferir.detalleEspecie }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Valor Total:</span>
+            <span class="info-value">{{ creditoPensionPorDiferir.valorEspecie | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="campo-cuotas">
+          <label class="campo-label">Número de Cuotas <span class="requerido">*</span></label>
+          <p-inputNumber 
+            [(ngModel)]="numeroCuotasDiferir" 
+            [min]="1"
+            [max]="12"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus"
+            placeholder="Ingrese número de cuotas"
+            styleClass="cuotas-input">
+          </p-inputNumber>
+          <small class="campo-ayuda">El valor de cada cuota será: {{ (creditoPensionPorDiferir.valorEspecie / numeroCuotasDiferir) | currency:'USD':'symbol':'1.2-2' }}</small>
+        </div>
+
+        <div class="nota-referencial">
+          <i class="pi pi-info-circle"></i>
+          <span>Este es un valor referencial. Puede pagar más o menos en cada cuota según su disponibilidad.</span>
+        </div>
+      </div>
+    }
+
+    <ng-template #footer>
+      <div class="modal-footer">
+        <p-button 
+          label="Cancelar" 
+          [outlined]="true" 
+          severity="secondary"
+          (onClick)="omitirDiferimiento()">
+        </p-button>
+        <p-button 
+          label="Confirmar Diferimiento" 
+          icon="pi pi-check"
+          (onClick)="confirmarDiferimiento()">
+        </p-button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

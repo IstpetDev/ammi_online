@@ -1,0 +1,72 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Régimen</h1>
+        <p>Aquí se gestionarán los regímenes académicos que proporcionan información general sobre los tipos de oferta educativa.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Agregar Régimen" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="regimenes" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} regimenes">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Detalle</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-regimen>
+        <tr>
+          <td>{{ regimen.detalle }}</td>
+          <td class="seasons-actions-cell">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(regimen)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(regimen)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2">No hay regímenes registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog para crear/editar regimen -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '600px'}" [header]="isEditing ? 'Editar Régimen' : 'Crear Régimen'"
+          (onHide)="onHideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+  <div class="seasons-dialog-content">
+    <form [formGroup]="regimenForm" (ngSubmit)="saveRegimen()" class="seasons-form-grid">
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="detalle" class="seasons-form-label">Detalle</label>
+          <input pInputText id="detalle" formControlName="detalle" class="seasons-form-control" />
+        </div>
+      </div>
+      <div class="seasons-form-actions">
+        <p-button label="Cancelar" icon="pi pi-times" type="button" (onClick)="displayDialog = false" class="p-button-secondary p-button-outlined"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" type="submit" [disabled]="!regimenForm.valid" class="p-button-primary"></p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
+
+<!-- Modal de confirmación para eliminar -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar este régimen?"
+  acceptLabel="Eliminar"
+  rejectLabel="Cancelar"
+  (accept)="deleteRegimen()"
+  (reject)="onRejectDelete()"
+  (hide)="onRejectDelete()">
+</app-confirmation-modal>
+
+<p-toast></p-toast>

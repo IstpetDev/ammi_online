@@ -1,0 +1,34 @@
+﻿namespace AMMI_Online_API.Domain.Entities;
+
+public partial class Credito
+{
+    public int IdCredito { get; set; }
+
+    public int IdMatricula { get; set; }
+    
+    public int IdEspecieCiclo { get; set; }
+
+    public decimal MontoOriginal { get; set; }
+
+    public decimal? MontoBeneficio { get; set; }
+
+    public decimal? MontoFinal { get; set; }
+
+    public decimal SaldoPendiente { get; set; }
+
+    public string Estado { get; set; }
+
+    public DateOnly? FechaGeneracion { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<CreditoBeneficio> CreditoBeneficio { get; set; } = new List<CreditoBeneficio>();
+
+    public virtual ICollection<DetalleCredito> DetalleCredito { get; set; } = new List<DetalleCredito>();
+
+    public virtual EspecieCiclo IdEspecieCicloNavigation { get; set; }
+
+    public virtual Matricula IdMatriculaNavigation { get; set; }
+}

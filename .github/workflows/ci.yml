@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  politica:
+    name: Política de ramas
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/branch-policy.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  secretos:
+    name: Secretos
+    uses: ./.github/workflows/secrets-scan.yml
+    with:
+      completo: ${{ github.event_name != 'pull_request' || github.base_ref == 'main' }}
+      ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+
+  backend:
+    name: Backend (.NET 8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      CONFIGURACION: ${{ github.event_name == 'pull_request' && github.base_ref == 'develop' && 'Debug' || 'Release' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 8.0.x
+      - name: Restaurar
+        run: dotnet restore src/Backend/AMMI_Online_API.sln
+      - name: Compilar
+        run: dotnet build src/Backend/AMMI_Online_API.sln --no-restore --configuration "$CONFIGURACION"
+      - name: Pruebas .NET
+        run: dotnet test src/Backend/AMMI_Online_API.sln --no-build --configuration "$CONFIGURACION"
+
+  frontend:
+    name: Frontend (Angular 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: src/Frontend
+    env:
+      CONFIGURACION: ${{ github.event_name == 'pull_request' && github.base_ref == 'develop' && 'development' || 'production' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.22.3'
+          cache: npm
+          cache-dependency-path: src/Frontend/package-lock.json
+      - name: Instalar
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Compilar
+        run: npm run build -- --configuration "$CONFIGURACION"
+      - name: Pruebas Angular
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [politica, secretos, backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.base_ref || github.event_name == 'schedule' && 'develop' || github.ref }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Validar resultados
+        env:
+          EVENTO: ${{ github.event_name }}
+          POLITICA: ${{ needs.politica.result }}
+          SECRETOS: ${{ needs.secretos.result }}
+          BACKEND: ${{ needs.backend.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+        run: bash .github/scripts/validar-ci.sh "$EVENTO" "$POLITICA" "$SECRETOS" "$BACKEND" "$FRONTEND"

@@ -1,0 +1,225 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--surface-ground);
+  padding: 2rem;
+}
+
+.back-to-home {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-color-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: var(--primary-color);
+}
+
+.back-link i {
+  font-size: 0.8rem;
+}
+
+.login-card {
+  background-color: var(--surface-card);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.375rem;
+  background-color: var(--surface-section);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(252, 234, 30, 0.1);
+}
+
+.error-message {
+  color: var(--error-color);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn:disabled {
+  background-color: var(--surface-border);
+  cursor: not-allowed;
+}
+
+/* Mensaje de error general del login */
+.login-card > .error-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.375rem;
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid #fecaca;
+}
+
+/* Botón para mostrar/ocultar credenciales */
+.credentials-toggle {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.credentials-btn {
+  background: none;
+  border: none;
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+.credentials-btn:hover {
+  background-color: var(--surface-100);
+  color: var(--text-color);
+}
+
+.credentials-btn i {
+  font-size: 0.8rem;
+}
+
+/* Credenciales de prueba */
+.test-credentials {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: var(--surface-100);
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.credentials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credential-item {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  background-color: var(--surface-card);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-family: monospace;
+  border: 1px solid var(--surface-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge.admin {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.role-badge.supervisor {
+  background-color: var(--warning-color);
+  color: var(--secondary-color);
+}
+
+.role-badge.profesor {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.role-badge.alumno {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.role-badge.postulante {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+}
+
+.role-badge.academia {
+  background-color: var(--text-color-secondary);
+  color: white;
+}

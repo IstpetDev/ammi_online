@@ -1,0 +1,380 @@
+.menu-container {
+  padding: 1.5rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Header */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background-color: var(--brand-yellow-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-icon i {
+  color: var(--brand-black);
+}
+
+/* Dark mode adjustments for title icon */
+:host-context(.app-dark) .title-icon i {
+  color: var(--brand-white);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.page-subtitle {
+  margin: 0.25rem 0 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+}
+
+/* Loading & Error States */
+.loading-container,
+.error-container,
+.empty-state,
+.warning-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.loading-container p,
+.error-container p {
+  color: var(--text-color-secondary);
+  margin: 0;
+}
+
+.error-container i,
+.warning-container i {
+  font-size: 3rem;
+  color: var(--orange-500);
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: var(--surface-400);
+}
+
+.empty-state h3,
+.warning-container h3 {
+  margin: 0;
+  color: var(--text-color);
+}
+
+.empty-state p,
+.warning-container p {
+  color: var(--text-color-secondary);
+  margin: 0;
+}
+
+/* Asignaciones Grid */
+.asignaciones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .asignaciones-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .calificaciones-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    padding: 1rem;
+  }
+
+  .title-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .title-icon i {
+    font-size: 1.25rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+}
+
+:host ::ng-deep .asignacion-card {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+:host ::ng-deep .asignacion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-header-content {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-700));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-header-content i {
+  font-size: 2.5rem;
+  color: var(--text-color);
+}
+
+.card-body {
+  padding: 0.5rem 0;
+}
+
+.materia-nombre {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+.info-item i {
+  color: var(--primary-color);
+}
+
+/* Admin View */
+.admin-view {
+  margin-top: 1rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+.admin-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.count-badge {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+/* Ingreso de Notas */
+.ingreso-notas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+:host ::ng-deep .info-asignacion-card .p-card-body {
+  padding: 1rem 1.5rem;
+}
+
+.asignacion-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.info-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.info-group .label {
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.info-group .value {
+  color: var(--text-color);
+}
+
+.notas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+.notas-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background: var(--surface-0);
+  z-index: 1;
+}
+
+.nombre-col {
+  min-width: 200px;
+}
+
+.nota-col {
+  min-width: 100px;
+  text-align: center;
+}
+
+.nota-final-col {
+  min-width: 100px;
+  text-align: center;
+  background: var(--surface-50);
+  font-weight: 600;
+}
+
+.nota-final-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  min-width: 60px;
+}
+
+.nota-aprobada {
+  color: var(--green-600);
+  background-color: var(--green-50);
+}
+
+.nota-reprobada {
+  color: var(--red-600);
+  background-color: var(--red-50);
+}
+
+.nodo-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nodo-header small {
+  color: var(--text-color-secondary);
+  font-weight: normal;
+}
+
+:host ::ng-deep .nota-input {
+  width: 70px !important;
+  text-align: center;
+}
+
+:host ::ng-deep .invalid-nota .p-inputnumber-input {
+  border-color: var(--red-500);
+  background-color: var(--red-50);
+}
+
+.acciones-nodos {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--surface-200);
+}
+
+.acciones-nodos h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: var(--text-color-secondary);
+}
+
+.nodos-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .menu-container {
+    padding: 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .asignaciones-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asignacion-info {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .notas-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}

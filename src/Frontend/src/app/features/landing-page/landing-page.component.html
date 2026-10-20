@@ -1,0 +1,209 @@
+<div class="landing-page">
+  <app-header></app-header>
+
+  <main class="mt-[70px]">
+    <!-- Hero Section - Full Screen -->
+    <section class="hero" id="inicio">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Transforma tu futuro con
+          <span class="highlight">AMMI Online</span>
+        </h1>
+        <p class="hero-description">
+          Accede a programas virtuales diseñados para tu éxito profesional.
+          Aprende de forma flexible y certificada.
+        </p>
+        <div class="hero-actions">
+          <p-button 
+            label="Ver modalidades" 
+            icon="pi pi-arrow-down"
+            styleClass="p-button-lg"
+            (onClick)="scrollToModalidades()">
+          </p-button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ¿Por qué AMMI? Section -->
+    <section class="why-ammi" id="por-que-ammi">
+      <div class="container">
+        <div class="section-header">
+          <h2>¿Por qué elegir AMMI Online?</h2>
+          <p>La mejor inversión en tu educación profesional</p>
+        </div>
+        
+        <div class="benefits-grid">
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-target benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Enfoque práctico</h3>
+            <p class="benefit-text">Aprende haciendo con proyectos reales que aplicas desde el primer día.</p>
+          </p-card>
+
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-users benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Docentes expertos</h3>
+            <p class="benefit-text">Aprende de profesionales activos en la industria con experiencia comprobada.</p>
+          </p-card>
+
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-clock benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Flexibilidad total</h3>
+            <p class="benefit-text">Estudia cuando y donde quieras, adaptado a tu ritmo de vida.</p>
+          </p-card>
+
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-trophy benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Certificación oficial</h3>
+            <p class="benefit-text">Recibe certificados reconocidos que impulsan tu carrera profesional.</p>
+          </p-card>
+
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-briefcase benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Orientación laboral</h3>
+            <p class="benefit-text">Accede a nuestra red de empresas y oportunidades laborales.</p>
+          </p-card>
+
+          <p-card styleClass="benefit-card">
+            <ng-template pTemplate="header">
+              <div class="benefit-icon-wrapper">
+                <i class="pi pi-globe benefit-icon"></i>
+              </div>
+            </ng-template>
+            <h3 class="benefit-title">Comunidad activa</h3>
+            <p class="benefit-text">Conecta con estudiantes y profesionales de todo el mundo.</p>
+          </p-card>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modalidades Section -->
+    <section class="modalidades" id="modalidades">
+      <div class="container">
+        <div class="section-header">
+          <h2>Elige tu modalidad de estudio</h2>
+          <p>Programas diseñados para adaptarse a tus objetivos</p>
+        </div>
+
+        <div class="modalidades-grid">
+          <!-- Acelerado Virtual -->
+          <p-card styleClass="modalidad-card modalidad-featured">
+            <ng-template pTemplate="header">
+              <div class="modalidad-header">
+                <p-chip 
+                  label="Más popular" 
+                  icon="pi pi-rocket"
+                  styleClass="modalidad-badge">
+                </p-chip>
+                <h3 class="modalidad-title">Acelerado Virtual</h3>
+                <p class="modalidad-subtitle">Aprende rápido sin sacrificar calidad</p>
+              </div>
+            </ng-template>
+            <div class="modalidad-features">
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Duración: 3-6 meses</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Clases en vivo</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Proyectos prácticos</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Certificación inmediata</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Mentorías 1:1</span>
+              </div>
+            </div>
+            <ng-template pTemplate="footer">
+              <p-button 
+                label="Saber más" 
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                styleClass="w-full p-button-lg"
+                routerLink="/acelerado-virtual">
+              </p-button>
+            </ng-template>
+          </p-card>
+
+          <!-- Formal Virtual -->
+          <p-card styleClass="modalidad-card">
+            <ng-template pTemplate="header">
+              <div class="modalidad-header">
+                <p-chip 
+                  label="Completo" 
+                  icon="pi pi-book"
+                  styleClass="modalidad-badge-secondary">
+                </p-chip>
+                <h3 class="modalidad-title">Formal Virtual</h3>
+                <p class="modalidad-subtitle">Programa estructurado y profundo</p>
+              </div>
+            </ng-template>
+            <div class="modalidad-features">
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Duración: 12-18 meses</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Curriculum completo</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Evaluaciones continuas</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Diploma profesional</span>
+              </div>
+              <div class="feature-item">
+                <i class="pi pi-check-circle check-icon"></i>
+                <span>Bolsa de trabajo</span>
+              </div>
+            </div>
+            <ng-template pTemplate="footer">
+              <p-button 
+                label="Saber más" 
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                styleClass="w-full p-button-lg p-button-outlined"
+                routerLink="/formal-virtual">
+              </p-button>
+            </ng-template>
+          </p-card>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- WhatsApp Floating Button -->
+  <app-whatsapp-social-icon></app-whatsapp-social-icon>
+
+  <app-footer></app-footer>
+</div>

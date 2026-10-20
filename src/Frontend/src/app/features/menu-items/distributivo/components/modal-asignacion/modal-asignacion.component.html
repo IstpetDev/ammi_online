@@ -1,0 +1,139 @@
+<p-dialog 
+  [header]="isEditing ? 'Editar Asignación' : 'Nueva Asignación'"
+  [visible]="show"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '600px', maxWidth: '95vw' }"
+  [styleClass]="'asignacion-dialog'"
+  (onHide)="onClose()">
+  
+  <form [formGroup]="form" class="form-grid">
+    <!-- Malla Curricular -->
+    <div class="form-field">
+      <label class="field-label">
+        <i class="pi pi-book"></i> Malla Curricular <span class="required">*</span>
+      </label>
+      <p-select 
+        [options]="mallasOptions" 
+        formControlName="idMalla"
+        optionLabel="label" 
+        optionValue="value"
+        placeholder="Seleccione una malla"
+        [filter]="true"
+        filterBy="label"
+        [showClear]="true"
+        appendTo="body"
+        [scrollHeight]="'200px'">
+      </p-select>
+      @if (form.get('idMalla')?.invalid && form.get('idMalla')?.touched) {
+        <small class="error-text">Seleccione una malla curricular</small>
+      }
+    </div>
+
+    <!-- Materia -->
+    <div class="form-field">
+      <label class="field-label">
+        <i class="pi pi-file-edit"></i> Materia <span class="required">*</span>
+      </label>
+      @if (loadingMaterias) {
+        <div class="loading-materias">
+          <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="4" />
+          <span>Cargando materias...</span>
+        </div>
+      } @else {
+        <p-select 
+          [options]="materiasOptions" 
+          formControlName="idDetalleMalla"
+          optionLabel="label" 
+          optionValue="value"
+          placeholder="Seleccione una materia"
+          [filter]="true"
+          filterBy="label"
+          [showClear]="true"
+          [disabled]="materiasOptions.length === 0"
+          appendTo="body"
+          [scrollHeight]="'200px'">
+        </p-select>
+        @if (materiasOptions.length === 0 && form.get('idMalla')?.value) {
+          <small class="error-text">No hay materias disponibles para esta malla</small>
+        }
+      }
+      @if (form.get('idDetalleMalla')?.invalid && form.get('idDetalleMalla')?.touched && !loadingMaterias) {
+        <small class="error-text">Seleccione una materia</small>
+      }
+    </div>
+
+    <div class="form-row">
+      <!-- Paralelo -->
+      <div class="form-field">
+        <label class="field-label">
+          <i class="pi pi-users"></i> Paralelo <span class="required">*</span>
+        </label>
+        <p-select 
+          [options]="paralelosOptions" 
+          formControlName="idParalelo"
+          optionLabel="label" 
+          optionValue="value"
+          placeholder="Seleccione paralelo"
+          [showClear]="true"
+          appendTo="body"
+          [scrollHeight]="'200px'">
+        </p-select>
+        @if (form.get('idParalelo')?.invalid && form.get('idParalelo')?.touched) {
+          <small class="error-text">Seleccione un paralelo</small>
+        }
+      </div>
+
+      <!-- Docente -->
+      <div class="form-field">
+        <label class="field-label">
+          <i class="pi pi-user"></i> Docente <span class="required">*</span>
+        </label>
+        <p-select 
+          [options]="docentesOptions" 
+          formControlName="idPersona"
+          optionLabel="nombre" 
+          optionValue="value"
+          placeholder="Seleccione docente"
+          [filter]="true"
+          filterBy="nombre,documento"
+          [showClear]="true"
+          appendTo="body"
+          [scrollHeight]="'200px'">
+          <ng-template pTemplate="selectedItem" let-selected>
+            <div class="docente-selected">
+              <span>{{ selected?.nombre }}</span>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="item" let-docente>
+            <div class="docente-item">
+              <span class="docente-nombre">{{ docente.nombre }}</span>
+              <small class="docente-ci">CI: {{ docente.documento }}</small>
+            </div>
+          </ng-template>
+        </p-select>
+        @if (form.get('idPersona')?.invalid && form.get('idPersona')?.touched) {
+          <small class="error-text">Seleccione un docente</small>
+        }
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <p-button 
+      label="Cancelar" 
+      icon="pi pi-times" 
+      severity="secondary"
+      [outlined]="true"
+      (click)="onClose()">
+    </p-button>
+    <p-button 
+      [label]="isEditing ? 'Actualizar' : 'Guardar'"
+      [icon]="isEditing ? 'pi pi-check' : 'pi pi-save'"
+      (click)="onSubmit()"
+      [disabled]="form.invalid || loadingMaterias">
+    </p-button>
+  </div>
+</p-dialog>

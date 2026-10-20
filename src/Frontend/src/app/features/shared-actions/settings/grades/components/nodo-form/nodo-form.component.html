@@ -1,0 +1,127 @@
+<p-dialog [header]="title" [(visible)]="visible" [modal]="true"
+          [breakpoints]="{'960px': '75vw', '640px': '90vw'}" [style]="{width: '550px'}"
+          (onHide)="onCancel()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+
+  <form [formGroup]="nodoForm" (ngSubmit)="onSubmit()" class="p-fluid">
+
+    <!-- Nombre del Nodo -->
+    <div class="field mb-4">
+      <label for="nodoNombre" class="block mb-2 font-semibold">Nombre <span class="text-red-500">*</span></label>
+      <input pInputText id="nodoNombre" formControlName="nodoNombre" autofocus
+             placeholder="Ej: Primer Parcial, Examen Final"
+             [ngClass]="{'ng-invalid ng-dirty': nodoForm.get('nodoNombre')?.invalid && nodoForm.get('nodoNombre')?.touched}" />
+      <small *ngIf="nodoForm.get('nodoNombre')?.invalid && nodoForm.get('nodoNombre')?.touched" class="p-error block">
+        El nombre es requerido (min 2 caracteres)
+      </small>
+    </div>
+
+    <!-- Tipo de Nodo -->
+    <div class="field mb-4">
+      <label for="tipo" class="block mb-2 font-semibold">Tipo de Componente <span class="text-red-500">*</span></label>
+      <p-select id="tipo"
+                [options]="tiposEstructura"
+                optionLabel="detalle"
+                optionValue="idTipoPlantillaEstrucutra"
+                formControlName="idTipoPlantillaEstructura"
+                placeholder="Seleccione un tipo"
+                [showClear]="true"
+                appendTo="body">
+        <ng-template pTemplate="selectedItem" let-selected>
+          <span *ngIf="selected">{{ selected.detalle }}</span>
+        </ng-template>
+        <ng-template pTemplate="item" let-tipo>
+          <span>{{ tipo.detalle }}</span>
+        </ng-template>
+      </p-select>
+      <small *ngIf="nodoForm.get('idTipoPlantillaEstructura')?.invalid && nodoForm.get('idTipoPlantillaEstructura')?.touched" class="p-error block">
+        El tipo es requerido
+      </small>
+      <small *ngIf="tiposEstructura.length === 0" class="text-orange-500 block mt-1">
+        <i class="pi pi-exclamation-triangle mr-1"></i> No hay tipos disponibles. Verifique la conexion con el servidor.
+      </small>
+    </div>
+
+    <div class="formgrid grid">
+      <!-- Peso -->
+      <div class="field col-6">
+        <label for="peso" class="block mb-2 font-semibold">Peso (%) <span class="text-red-500">*</span></label>
+        <p-inputNumber id="peso" formControlName="peso" suffix="%"
+                       [min]="0" [max]="100"
+                       [minFractionDigits]="0" [maxFractionDigits]="2"
+                       mode="decimal"></p-inputNumber>
+      </div>
+
+      <!-- Orden -->
+      <div class="field col-6">
+        <label for="orden" class="block mb-2 font-semibold">Orden <span class="text-red-500">*</span></label>
+        <p-inputNumber id="orden" formControlName="orden" [min]="1" [showButtons]="true"></p-inputNumber>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <p-divider align="left" *ngIf="tiposReglaCalculo.length > 0">
+      <span class="text-sm text-gray-500">Regla de Calculo (Opcional)</span>
+    </p-divider>
+
+    <!-- Configurar Regla de Calculo -->
+    <div class="field mb-4" *ngIf="tiposReglaCalculo.length > 0">
+      <div class="flex align-items-center gap-2">
+        <p-checkbox formControlName="configurarRegla" [binary]="true" inputId="configurarRegla"></p-checkbox>
+        <label for="configurarRegla" class="cursor-pointer">Configurar regla de calculo para este nodo</label>
+        <i class="pi pi-info-circle text-gray-400 ml-1"
+           pTooltip="Las reglas de calculo definen como se calcularan las notas de nodos padre a partir de sus hijos"
+           tooltipPosition="top"></i>
+      </div>
+    </div>
+
+    <!-- Campos de Regla (condicional) -->
+    <div *ngIf="configurarRegla && tiposReglaCalculo.length > 0" class="p-3 bg-gray-50 rounded-lg mb-4">
+
+      <!-- Tipo de Regla -->
+      <div class="field mb-3">
+        <label for="tipoRegla" class="block mb-2 font-semibold">Tipo de Calculo <span class="text-red-500">*</span></label>
+        <p-select id="tipoRegla"
+                  [options]="tiposReglaCalculo"
+                  optionLabel="detalle"
+                  optionValue="idTipoReglaCalculo"
+                  formControlName="idTipoReglaCalculo"
+                  placeholder="Seleccione tipo de calculo"
+                  appendTo="body">
+        </p-select>
+      </div>
+
+      <div class="formgrid grid">
+        <!-- Nota Minima Aprobar -->
+        <div class="field col-6">
+          <label for="notaAprobar" class="block mb-2 font-semibold">Nota Min. Aprobar</label>
+          <p-inputNumber id="notaAprobar" formControlName="notaMinimaAprobar"
+                         [min]="0" [max]="10"
+                         [minFractionDigits]="2" [maxFractionDigits]="2"
+                         mode="decimal"></p-inputNumber>
+        </div>
+
+        <!-- Nota Minima Recuperar -->
+        <div class="field col-6">
+          <label for="notaRecuperar" class="block mb-2 font-semibold">Nota Min. Recuperar</label>
+          <p-inputNumber id="notaRecuperar" formControlName="notaMinimaRecuperar"
+                         [min]="0" [max]="10"
+                         [minFractionDigits]="2" [maxFractionDigits]="2"
+                         mode="decimal"></p-inputNumber>
+        </div>
+      </div>
+
+      <small class="text-gray-500 block mt-2">
+        <i class="pi pi-info-circle mr-1"></i>
+        Los estudiantes con notas menores a "Min. Recuperar" reprobaran directamente.
+      </small>
+    </div>
+
+  </form>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-end gap-2">
+      <p-button label="Cancelar" icon="pi pi-times" (onClick)="onCancel()" [text]="true" severity="secondary"></p-button>
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="onSubmit()" [disabled]="nodoForm.invalid"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -1,0 +1,170 @@
+<p-dialog 
+  header="Asignación Masiva"
+  [visible]="show"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '700px', maxWidth: '95vw' }"
+  [styleClass]="'masiva-dialog'"
+  (onHide)="onClose()">
+  
+  <!-- Info Banner -->
+  <div class="info-banner">
+    <i class="pi pi-info-circle"></i>
+    <p>Asigne un docente a una materia en <strong>múltiples paralelos</strong> simultáneamente.</p>
+  </div>
+
+  <form [formGroup]="form" class="form-grid">
+    <!-- Malla -->
+    <div class="form-field">
+      <label class="field-label">
+        <i class="pi pi-book"></i> Malla Curricular <span class="required">*</span>
+      </label>
+      <p-select 
+        [options]="mallasOptions" 
+        formControlName="idMalla"
+        optionLabel="label" 
+        optionValue="value"
+        placeholder="Seleccione una malla"
+        [filter]="true"
+        filterBy="label"
+        [showClear]="true"
+        appendTo="body"
+        [scrollHeight]="'200px'">
+      </p-select>
+    </div>
+
+    <!-- Materia -->
+    <div class="form-field">
+      <label class="field-label">
+        <i class="pi pi-file-edit"></i> Materia <span class="required">*</span>
+      </label>
+      @if (loadingMaterias) {
+        <div class="loading-materias">
+          <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="4" />
+          <span>Cargando materias...</span>
+        </div>
+      } @else {
+        <p-select 
+          [options]="materiasOptions" 
+          formControlName="idDetalleMalla"
+          optionLabel="label" 
+          optionValue="value"
+          placeholder="Seleccione una materia"
+          [filter]="true"
+          filterBy="label"
+          [showClear]="true"
+          [disabled]="materiasOptions.length === 0"
+          appendTo="body"
+          [scrollHeight]="'200px'">
+        </p-select>
+      }
+    </div>
+
+    <!-- Docente -->
+    <div class="form-field">
+      <label class="field-label">
+        <i class="pi pi-user"></i> Docente a Asignar <span class="required">*</span>
+      </label>
+      <p-select 
+        [options]="docentesOptions" 
+        formControlName="idPersona"
+        optionLabel="nombre" 
+        optionValue="value"
+        placeholder="Seleccione docente"
+        [filter]="true"
+        filterBy="nombre,documento"
+        [showClear]="true"
+        appendTo="body"
+        [scrollHeight]="'200px'">
+        <ng-template pTemplate="selectedItem" let-selected>
+          <div class="docente-selected">
+            <span>{{ selected?.nombre }}</span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="item" let-docente>
+          <div class="docente-item">
+            <span class="docente-nombre">{{ docente.nombre }}</span>
+            <small class="docente-ci">CI: {{ docente.documento }}</small>
+          </div>
+        </ng-template>
+      </p-select>
+    </div>
+
+    <!-- Paralelos Selection -->
+    <div class="paralelos-section">
+      <div class="paralelos-header">
+        <label class="field-label">
+          <i class="pi pi-users"></i> Seleccione los Paralelos
+        </label>
+        <div style="display: flex; gap: 0.5rem;">
+          <p-button 
+            label="Todos" 
+            icon="pi pi-check-square" 
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            (click)="selectAllParalelos()">
+          </p-button>
+          <p-button 
+            label="Ninguno" 
+            icon="pi pi-stop" 
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            (click)="deselectAllParalelos()">
+          </p-button>
+        </div>
+      </div>
+
+      <div class="paralelos-grid" formArrayName="paralelosCheck">
+        @for (p of paralelos; track p.idParalelo; let i = $index) {
+          <div 
+            class="paralelo-card" 
+            [class.selected]="paralelosFormArray.at(i).value"
+            (click)="toggleParalelo(i)">
+            <i class="pi" [class.pi-check-circle]="paralelosFormArray.at(i).value" [class.pi-circle]="!paralelosFormArray.at(i).value"></i>
+            <div class="paralelo-info">
+              <span>{{ p.nombreParalelo }}</span>
+              @if (p.cupoMaximo) {
+                <small>Cupos: {{ p.cupoMaximo }}</small>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Selection Count -->
+      <div class="selection-count" 
+           [class.error]="selectedParalelosCount === 0 && form.touched"
+           [class.success]="selectedParalelosCount > 0">
+        @if (selectedParalelosCount === 0) {
+          <i class="pi pi-exclamation-triangle" style="color: #dc3545;"></i>
+          <span style="color: #dc3545;">Debe seleccionar al menos un paralelo</span>
+        } @else {
+          <i class="pi pi-check-circle" style="color: #198754;"></i>
+          <span style="color: #198754;">
+            <strong>{{ selectedParalelosCount }}</strong> paralelo(s) seleccionado(s)
+          </span>
+        }
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <p-button 
+      label="Cancelar" 
+      icon="pi pi-times" 
+      severity="secondary"
+      [outlined]="true"
+      (click)="onClose()">
+    </p-button>
+    <p-button 
+      label="Asignar a Todos"
+      icon="pi pi-check-circle"
+      (click)="onSubmit()"
+      [disabled]="form.invalid || loadingMaterias || selectedParalelosCount === 0">
+    </p-button>
+  </div>
+</p-dialog>

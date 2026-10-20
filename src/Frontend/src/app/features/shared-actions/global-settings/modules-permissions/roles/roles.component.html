@@ -1,0 +1,52 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Roles</h1>
+        <p>Aquí se gestionarán los roles del sistema.</p>
+      </div>
+      <div class="seasons-header-actions">
+        <p-button label="Nuevo" icon="pi pi-plus" (onClick)="openNewRoleDialog()" styleClass="p-button-primary p-button-lg"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="roles" [loading]="loading" styleClass="p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Detalle</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-role>
+        <tr>
+          <td>{{ role.detalle }}</td>
+          <td>
+            <p-button icon="pi pi-pencil" (onClick)="editRole(role)" class="p-button-rounded p-button-success p-mr-2"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="deleteRole(role)" class="p-button-rounded p-button-danger"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="roleDialog" [modal]="true" header="Rol" styleClass="p-dialog-custom">
+  <form class="seasons-form-grid">
+    <div class="seasons-form-row">
+      <div class="seasons-form-group">
+        <label class="seasons-form-label">Detalle</label>
+        <input pInputText id="detalle" [(ngModel)]="role.detalle" [ngModelOptions]="{standalone: true}" required class="seasons-form-control" />
+      </div>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <div class="seasons-form-actions">
+      <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideRoleDialog()" styleClass="p-button-secondary"></p-button>
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="saveRole()" styleClass="p-button-primary"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-toast></p-toast>

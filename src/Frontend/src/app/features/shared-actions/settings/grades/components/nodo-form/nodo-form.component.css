@@ -1,0 +1,48 @@
+/* Estilos para el dialog */
+:host ::ng-deep .p-dialog-custom .p-dialog-header {
+  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-hover, #0056b3) 100%) !important;
+  color: white !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 1.5rem 2rem !important;
+  border-bottom: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+:host ::ng-deep .p-dialog-custom .p-dialog-header .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: white !important;
+}
+
+:host ::ng-deep .p-dialog-custom .p-dialog-header .p-dialog-header-icon {
+  color: white !important;
+  font-size: 1.2rem !important;
+}
+
+:host ::ng-deep .p-dialog-custom .p-dialog-content {
+  padding: 2rem !important;
+  background: linear-gradient(135deg, var(--surface-card, #ffffff) 0%, var(--surface-ground, #f8f9fa) 100%) !important;
+}
+
+:host ::ng-deep .p-dialog-custom .p-dialog-footer {
+  padding: 1.5rem 2rem !important;
+  border-top: 2px solid var(--surface-border, #e9ecef) !important;
+  background: linear-gradient(135deg, var(--surface-section, #f8f9fa) 0%, var(--surface-ground, #f1f3f4) 100%) !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+}
+
+:host ::ng-deep .p-dialog-custom {
+  border-radius: 12px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--surface-border, #e9ecef) !important;
+}
+
+:host ::ng-deep .p-dialog-custom .p-dialog-footer .p-button {
+  border-radius: 10px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 700 !important;
+}

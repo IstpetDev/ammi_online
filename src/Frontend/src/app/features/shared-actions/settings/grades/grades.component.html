@@ -1,0 +1,26 @@
+<ng-container [ngSwitch]="activeView">
+
+  <app-plantilla-list *ngSwitchCase="'list'"
+    (create)="showCreate()"
+    (edit)="showEdit($event)"
+    (configure)="showConfigure($event)">
+  </app-plantilla-list>
+
+  <app-plantilla-form *ngSwitchCase="'create'"
+    (save)="onFormSave()"
+    (cancel)="showList()">
+  </app-plantilla-form>
+
+  <app-plantilla-form *ngSwitchCase="'edit'"
+    [plantilla]="selectedPlantilla"
+    [isEditing]="true"
+    (save)="onFormSave()"
+    (cancel)="showList()">
+  </app-plantilla-form>
+
+  <app-configurar-plantilla *ngSwitchCase="'configure'"
+    [plantilla]="selectedPlantilla!"
+    (back)="showList()">
+  </app-configurar-plantilla>
+
+</ng-container>

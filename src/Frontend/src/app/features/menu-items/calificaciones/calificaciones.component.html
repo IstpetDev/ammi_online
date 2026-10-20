@@ -1,0 +1,301 @@
+<p-toast></p-toast>
+
+<div class="menu-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-star"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Gestion de Calificaciones</h1>
+          <p class="page-subtitle">
+            @if (esDocente && !esAdmin) {
+              Ingresa las notas de tus alumnos asignados
+            } @else if (esAdmin) {
+              Administra las calificaciones de todos los paralelos
+            }
+          </p>
+        </div>
+      </div>
+      @if (asignacionSeleccionada && vistaActual === 'ingreso-notas') {
+        <button pButton
+                label="Volver"
+                icon="pi pi-arrow-left"
+                class="p-button-outlined"
+                (click)="volverASeleccion()">
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+      <p>Cargando datos...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error && !loading) {
+    <div class="error-container">
+      <i class="pi pi-exclamation-triangle"></i>
+      <p>{{ error }}</p>
+      <button pButton label="Reintentar" icon="pi pi-refresh" (click)="cargarAsignacionesDocente()"></button>
+    </div>
+  }
+
+  <!-- Vista: Seleccion de Asignacion (Docente) -->
+  @if (!loading && !error && vistaActual === 'seleccion' && esDocente && !esAdmin) {
+    <div class="asignaciones-grid">
+      @for (asignacion of asignaciones; track asignacion.idDistributivo) {
+        <p-card styleClass="asignacion-card" (click)="seleccionarAsignacion(asignacion)">
+          <ng-template pTemplate="header">
+            <div class="card-header-content">
+              <i class="pi pi-book"></i>
+            </div>
+          </ng-template>
+          <div class="card-body">
+            <h3 class="materia-nombre">{{ asignacion.nombreMateria }}</h3>
+            <div class="card-info">
+              <span class="info-item">
+                <i class="pi pi-users"></i>
+                Paralelo {{ asignacion.nombreParalelo }}
+              </span>
+              <span class="info-item">
+                <i class="pi pi-user"></i>
+                {{ asignacion.cantidadAlumnos }} alumnos
+              </span>
+              <span class="info-item">
+                <i class="pi pi-sitemap"></i>
+                {{ asignacion.nombrePlantilla }}
+              </span>
+            </div>
+         
+          </div>
+          <ng-template pTemplate="footer">
+            <button pButton
+                    label="Ingresar Notas"
+                    icon="pi pi-pencil"
+                    class="p-button-sm w-full">
+            </button>
+          </ng-template>
+        </p-card>
+      }
+    </div>
+
+    @if (asignaciones.length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <h3>Sin asignaciones</h3>
+        <p>No tienes materias o paralelos asignados actualmente.</p>
+      </div>
+    }
+  }
+
+  <!-- Vista: Seleccion Admin -->
+  @if (!loading && !error && vistaActual === 'seleccion' && esAdmin) {
+    <div class="admin-view">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="admin-header">
+            <h3>Todos los Distributivos</h3>
+            <span class="count-badge">{{ distributivosFiltrados.length }} registros</span>
+          </div>
+        </ng-template>
+        <p-table [value]="distributivosFiltrados"
+                 [paginator]="true"
+                 [rows]="10"
+                 [showCurrentPageReport]="true"
+                 [rowsPerPageOptions]="[10, 25, 50]"
+                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+                 styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="nombreMateria">Materia <p-sortIcon field="nombreMateria"></p-sortIcon></th>
+              <th pSortableColumn="nombreParalelo">Paralelo <p-sortIcon field="nombreParalelo"></p-sortIcon></th>
+              <th pSortableColumn="nombreDocente">Docente <p-sortIcon field="nombreDocente"></p-sortIcon></th>
+              <th>Alumnos</th>
+              <th>Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>{{ item.nombreMateria }}</td>
+              <td><p-tag [value]="item.nombreParalelo" severity="info"></p-tag></td>
+              <td>{{ item.nombreDocente }}</td>
+              <td>{{ item.cantidadAlumnos }}</td>
+              <td>
+                <button pButton
+                        icon="pi pi-eye"
+                        class="p-button-sm p-button-outlined"
+                        pTooltip="Ver notas"
+                        (click)="seleccionarAsignacion(item)">
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center">No hay distributivos registrados</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    </div>
+  }
+
+  <!-- Vista: Ingreso de Notas -->
+  @if (vistaActual === 'ingreso-notas' && asignacionSeleccionada) {
+    <div class="ingreso-notas-container">
+      <!-- Info de la asignacion -->
+      <p-card styleClass="info-asignacion-card">
+        <div class="asignacion-info">
+          <div class="info-group">
+            <span class="label">Materia:</span>
+            <span class="value">{{ asignacionSeleccionada.nombreMateria }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Paralelo:</span>
+            <span class="value">{{ asignacionSeleccionada.nombreParalelo }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Alumnos:</span>
+            <span class="value">{{ asignacionSeleccionada.cantidadAlumnos }}</span>
+          </div>
+          @if (asignacionSeleccionada.nombrePlantilla) {
+            <div class="info-group">
+              <span class="label">Plantilla:</span>
+              <span class="value">{{ asignacionSeleccionada.nombrePlantilla }}</span>
+            </div>
+          }
+        </div>
+      </p-card>
+
+      <!-- Loading notas -->
+      @if (loadingNotas) {
+        <div class="loading-container">
+          <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+          <p>Cargando alumnos y notas...</p>
+        </div>
+      }
+
+      <!-- Tabla de notas -->
+      @if (!loadingNotas && alumnos.length > 0) {
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="notas-header">
+              <h3>Ingreso de Notas</h3>
+              <button pButton
+                      label="Guardar Todo"
+                      icon="pi pi-save"
+                      [loading]="guardando"
+                      (click)="guardarTodasLasNotas()">
+              </button>
+            </div>
+          </ng-template>
+
+          <div class="table-responsive">
+            <p-table [value]="alumnos"
+                     [scrollable]="true"
+                     scrollHeight="500px"
+                     styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="sticky-col">#</th>
+                  <th class="sticky-col nombre-col">Alumno</th>
+                  <th>Documento</th>
+                  @for (nodo of nodosHoja; track nodo.idPlantillaEstructura) {
+                    <th class="nota-col">
+                      <div class="nodo-header">
+                        <span>{{ nodo.nodoNombre }}</span>
+                        <small>({{ nodo.peso }}%)</small>
+                      </div>
+                    </th>
+                  }
+                  <th class="nota-final-col">Nota Final</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-alumno let-i="rowIndex">
+                <tr>
+                  <td class="sticky-col">{{ i + 1 }}</td>
+                  <td class="sticky-col nombre-col">{{ alumno.nombreAlumno }}</td>
+                  <td>{{ alumno.documentoAlumno }}</td>
+                  @for (nodo of nodosHoja; track nodo.idPlantillaEstructura) {
+                    <td class="nota-col">
+                      <p-inputNumber
+                        [(ngModel)]="alumno.notas[nodo.idPlantillaEstructura]"
+                        [min]="0"
+                        [max]="10"
+                        [minFractionDigits]="0"
+                        [maxFractionDigits]="2"
+                        mode="decimal"
+                        inputStyleClass="nota-input"
+                        [ngClass]="{'invalid-nota': !validarNota(alumno.notas[nodo.idPlantillaEstructura])}"
+                        (ngModelChange)="calcularNotaFinal(alumno)">
+                      </p-inputNumber>
+                    </td>
+                  }
+                  <td class="nota-final-col">
+                    <span class="nota-final-value" [ngClass]="{'nota-aprobada': alumno.notaFinal && alumno.notaFinal >= 7, 'nota-reprobada': alumno.notaFinal && alumno.notaFinal < 7}">
+                      {{ alumno.notaFinal ? (alumno.notaFinal | number:'1.2-2') : '-' }}
+                    </span>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td [attr.colspan]="nodosHoja.length + 4" class="text-center">
+                    No hay alumnos en este paralelo
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <!-- Acciones por nodo -->
+          @if (nodosHoja.length > 0) {
+            <div class="acciones-nodos">
+              <h4>Guardar por componente:</h4>
+              <div class="nodos-buttons">
+                @for (nodo of nodosHoja; track nodo.idPlantillaEstructura) {
+                  <button pButton
+                          [label]="nodo.nodoNombre"
+                          icon="pi pi-save"
+                          class="p-button-sm p-button-outlined"
+                          [loading]="guardando"
+                          (click)="guardarNotasNodo(nodo.idPlantillaEstructura)">
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </p-card>
+      }
+
+      <!-- Sin estructura de evaluacion -->
+      @if (!loadingNotas && nodosHoja.length === 0) {
+        <div class="warning-container">
+          <i class="pi pi-exclamation-circle"></i>
+          <h3>Sin estructura de evaluacion</h3>
+          <p>Esta materia no tiene una plantilla de evaluacion configurada.</p>
+          @if (esAdmin) {
+            <p><strong>Como administrador:</strong> Puedes configurar la estructura desde el módulo de configuración de plantillas.</p>
+          } @else {
+            <p>Contacta al administrador para configurar la estructura de notas.</p>
+          }
+          
+          <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            <small><strong>Información técnica:</strong></small><br>
+            <small>Materia: {{ asignacionSeleccionada.nombreMateria }}</small><br>
+            <small>ID DetalleMalla: {{ asignacionSeleccionada.idDetalleMalla }}</small><br>
+            {{asignacionSeleccionada | json}}
+            <small>ID Plantilla: {{ asignacionSeleccionada.idPlantillaEvaluacion || 'No asignada' }}</small>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,167 @@
+<div class="landing-page">
+  <p-toast></p-toast>
+  <app-header></app-header>
+
+  <main class="mt-[70px]">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <i class="pi pi-rocket" style="font-size: 3rem; margin-right: 1rem;"></i>
+          Modalidad <span class="highlight">Acelerado Virtual</span>
+        </h1>
+        <p class="hero-description">
+          Aprende rápido sin sacrificar calidad. Programa intensivo diseñado para profesionales ocupados.
+        </p>
+        <div class="hero-actions">
+          <button class="scroll-down-btn" onclick="document.querySelector('.section').scrollIntoView({behavior: 'smooth'})">
+            <i class="pi pi-chevron-down"></i>
+            <span>Ver más</span>
+          </button>
+          <button class="postulate-btn" (click)="openPostulationDialog()">
+            <i class="pi pi-send"></i>
+            Postulate ahora
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Información del Programa Section -->
+    <section class="section">
+      <div class="container">
+        <h2><i class="pi pi-info-circle" style="margin-right: 0.5rem;"></i>Información del Programa</h2>
+        <div class="program-grid">
+          <!-- Left Column -->
+          <div class="program-left">
+            <!-- Modalidad -->
+            <div class="subsection">
+              <h3><i class="pi pi-info-circle" style="margin-right: 0.5rem;"></i>Modalidad</h3>
+              <p class="text-base text-gray-600 leading-snug">
+                Esta modalidad está diseñada para estudiantes que buscan completar su formación en un tiempo reducido, con clases virtuales intensivas y prácticas enfocadas en resultados inmediatos.
+              </p>
+            </div>
+
+            <!-- Características -->
+            <div class="subsection">
+              <h3><i class="pi pi-star" style="margin-right: 0.5rem;"></i>Características</h3>
+              <div class="grid grid-cols-1 gap-4">
+                <div class="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                  <i class="pi pi-clock text-yellow-500 text-xl mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">Duración: 3-6 meses</h4>
+                    <p class="text-gray-600 text-xs">Programa intensivo de corta duración</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                  <i class="pi pi-video text-blue-500 text-xl mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">Clases en vivo</h4>
+                    <p class="text-gray-600 text-xs">Interacción directa con instructores</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                  <i class="pi pi-cog text-green-500 text-xl mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">Proyectos prácticos</h4>
+                    <p class="text-gray-600 text-xs">Aprendizaje hands-on</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                  <i class="pi pi-check-circle text-purple-500 text-xl mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">Certificación inmediata</h4>
+                    <p class="text-gray-600 text-xs">Diploma al finalizar el programa</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                  <i class="pi pi-users text-indigo-500 text-xl mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">Mentorías 1:1</h4>
+                    <p class="text-gray-600 text-xs">Apoyo personalizado</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="program-right">
+            <!-- Requisitos -->
+            <div class="subsection">
+              <h3><i class="pi pi-list" style="margin-right: 0.5rem;"></i>Requisitos</h3>
+              <div class="space-y-3">
+                <div class="flex items-start">
+                  <i class="pi pi-check text-green-500 mt-1 mr-3"></i>
+                  <span class="text-gray-700">Título de bachillerato</span>
+                </div>
+                <div class="flex items-start">
+                  <i class="pi pi-check text-green-500 mt-1 mr-3"></i>
+                  <span class="text-gray-700">Acceso a internet estable</span>
+                </div>
+                <div class="flex items-start">
+                  <i class="pi pi-check text-green-500 mt-1 mr-3"></i>
+                  <span class="text-gray-700">Computadora con cámara y micrófono</span>
+                </div>
+                <div class="flex items-start">
+                  <i class="pi pi-check text-green-500 mt-1 mr-3"></i>
+                  <span class="text-gray-700">Disponibilidad de tiempo completo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Precios -->
+            <div class="subsection">
+              <h3><i class="pi pi-dollar" style="margin-right: 0.5rem;"></i>Precios</h3>
+              <div class="text-center bg-white p-6 rounded-lg shadow-sm border">
+                <div class="price-highlight">$1,500 USD</div>
+                <p class="text-base text-gray-600 mt-3">
+                  <i class="pi pi-info-circle text-blue-500 mr-2"></i>
+                  Incluye materiales, certificación y acceso a plataforma
+                </p>
+              </div>
+            </div>
+
+            <!-- Registro de Postulación -->
+            <div class="subsection">
+              <div class="postulation-card">
+                <h3><i class="pi pi-send" style="margin-right: 0.5rem;"></i>Registro de Postulación</h3>
+                <p class="text-gray-600 mb-4">Únete a nuestro programa acelerado y transforma tu carrera profesional</p>
+                <button class="postulate-btn" (click)="openPostulationDialog()">
+                  <i class="pi pi-send"></i>
+                  Postulate ahora
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <p-dialog 
+    [(visible)]="showPostulationDialog" 
+    [modal]="true" 
+    [blockScroll]="true"
+    [dismissableMask]="true"
+    [style]="{width: '95vw', maxWidth: '1600px'}"
+    [contentStyle]="{height: '85vh', overflow: 'hidden', padding: '0'}"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [maximizable]="true"
+    appendTo="body"
+    styleClass="postulation-modal">
+    <ng-template pTemplate="header">
+      <span class="hidden md:inline">Nueva Postulación - Acelerado Virtual</span>
+      <span class="md:hidden">Acelerado Virtual</span>
+    </ng-template>
+    <app-create-postulation-externo 
+      [tipoOfertaAcademica]="'acelerado-virtual'"
+      (postulacionCompleted)="onPostulacionCompleted($event)">
+    </app-create-postulation-externo>
+  </p-dialog>
+
+  <app-whatsapp-social-icon></app-whatsapp-social-icon>
+
+  <app-footer></app-footer>
+</div>

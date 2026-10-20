@@ -1,0 +1,16 @@
+using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.DTOs.Payments;
+using MediatR;
+
+namespace AMMI_Online_API.Application.Features.Payments.Commands;
+
+public record CreateEspecieCicloCommand(
+    int IdCiclo,
+    int IdEspecie,
+    decimal ValorEspecie
+) : IRequest<Response<EspecieCicloDTO>>;
+
+public record UpdateEspecieCicloValorCommand(
+    int IdEspecieCiclo,
+    decimal ValorEspecie
+) : IRequest<Response<EspecieCicloDTO>>;

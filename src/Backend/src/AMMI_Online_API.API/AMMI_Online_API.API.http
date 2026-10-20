@@ -1,0 +1,6 @@
+@AMMI_Online_API.API_HostAddress = http://localhost:5014
+
+GET {{AMMI_Online_API.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
