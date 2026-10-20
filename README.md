@@ -39,7 +39,7 @@ npm start --prefix src/Frontend
 
 `develop` integra cambios desde ramas `feature/*`, `fix/*`, `docs/*`, `chore/*`, `refactor/*`, `test/*` y `ci/*`. `main` recibe releases desde `develop` y arreglos `hotfix/*`. Los PR deben tener un título `<tipo>: <resumen en minúsculas>`. El detalle está en [CONTRIBUTING.md](CONTRIBUTING.md).
 
-El CI valida la política de ramas y escanea secretos en todos los PR. Compila y ejecuta las pruebas disponibles del backend y frontend en cada PR. En `develop` compila en Debug/desarrollo; en `main`, en Release/producción. `ci-ok` reúne los resultados. El despliegue no está configurado: se necesita definir el entorno de destino, secretos y mecanismo de reversión antes de habilitar CD.
+El CI valida la política de ramas y escanea secretos en todos los PR. Compila y ejecuta las pruebas disponibles del backend y frontend en cada PR. En `develop` compila en Debug/desarrollo; en `main`, en Release/producción. También prueba los validadores de la política; `ci-ok` exige que todos los jobs requeridos hayan terminado correctamente. El despliegue no está configurado: se necesita definir el entorno de destino, secretos y mecanismo de reversión antes de habilitar CD.
 
 La importación conserva Angular 20 y PrimeNG 21 tal como estaban en el frontend. `npm ci` usa temporalmente `--legacy-peer-deps` por el conflicto de dependencias entre esas versiones; hay que alinear las versiones y retirar esa opción antes de considerar el CI estable.
 
@@ -51,9 +51,6 @@ Este directorio tiene su propio `.git` y es el punto de trabajo del monoreposito
 
 ## Ajustes de GitHub
 
-1. Crear el repositorio remoto y publicar `main` y `develop` desde el mismo commit.
-2. Configurar rulesets: PR obligatorio en ambas ramas, `ci-ok` requerido, sin force push ni borrado; exigir una aprobación en `main`.
-3. Asignar responsables reales en `.github/CODEOWNERS` antes de exigir revisión de CODEOWNERS.
-4. Revisar la primera ejecución de CI y corregir fallas preexistentes de compilación o pruebas antes de activar `ci-ok` como check requerido.
+Seguir la [guía de activación de GitHub](docs/activacion-github.md). Incluye el orden para publicar ambas ramas, comprobar el primer PR y después activar los rulesets sin bloquear el arranque del repositorio.
 
 La decisión de usar un único historial nuevo y mantener los dos proyectos separados está documentada en [ADR-0001](docs/decisiones/ADR-0001-monorepositorio-y-ramas.md).

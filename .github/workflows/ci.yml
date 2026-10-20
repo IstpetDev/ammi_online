@@ -82,10 +82,23 @@ jobs:
       - name: Pruebas Angular
         run: npm test -- --watch=false --browsers=ChromeHeadless
 
+  validadores:
+    name: Validadores de CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - run: bash .github/scripts/pruebas/validar-rama.test.sh
+      - run: bash .github/scripts/pruebas/validar-ci.test.sh
+
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [politica, secretos, backend, frontend]
+    needs: [politica, secretos, backend, frontend, validadores]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,4 +113,5 @@ jobs:
           SECRETOS: ${{ needs.secretos.result }}
           BACKEND: ${{ needs.backend.result }}
           FRONTEND: ${{ needs.frontend.result }}
-        run: bash .github/scripts/validar-ci.sh "$EVENTO" "$POLITICA" "$SECRETOS" "$BACKEND" "$FRONTEND"
+          VALIDADORES: ${{ needs.validadores.result }}
+        run: bash .github/scripts/validar-ci.sh "$EVENTO" "$POLITICA" "$SECRETOS" "$BACKEND" "$FRONTEND" "$VALIDADORES"

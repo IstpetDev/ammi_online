@@ -42,7 +42,7 @@
 
 - [x] Mover el contenido preparado a `monorepo/`, sin incluir `src/AMMI_Online_FrontEnd` ni `src/Ammi_Online_Backend`.
 - [x] Ejecutar `git init -b main` y revisar `git status --short` antes del primer commit.
-- [ ] Crear `develop` desde el mismo commit inicial de `main`.
+- [x] Crear `develop` desde el mismo commit inicial de `main`.
 - [ ] Definir los responsables reales en `.github/CODEOWNERS` y configurar rulesets para requerir PR y `ci-ok`.
 
 El `.git` del directorio padre está montado en solo lectura; `monorepo/.git` es escribible y contiene el repositorio nuevo.
