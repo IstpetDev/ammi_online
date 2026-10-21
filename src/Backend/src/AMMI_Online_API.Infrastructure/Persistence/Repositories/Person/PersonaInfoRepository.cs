@@ -17,7 +17,6 @@ public class PersonaInfoRepository : IPersonaInfo
         DateOnly? fechaNacimiento,
         int? idEstadoCivil,
         int? idNacionalidadEtnica,
-        int? idTipoSangre,
         CancellationToken cancellationToken)
     {
         IQueryable<PersonaInfo> query =
@@ -30,8 +29,6 @@ public class PersonaInfoRepository : IPersonaInfo
             query = query.Where(x => x.IdEstadoCivil == idEstadoCivil.Value);
         if (idNacionalidadEtnica.HasValue)
             query = query.Where(x => x.IdNacionalidadEtnica == idNacionalidadEtnica.Value);
-        if (idTipoSangre.HasValue)
-            query = query.Where(x => x.IdTipoSangre == idTipoSangre.Value);
         return await query.ToListAsync(cancellationToken);
     }
 

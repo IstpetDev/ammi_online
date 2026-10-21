@@ -21,8 +21,13 @@ public class DetalleMallaRepository : IDetalleMallaRepository
             .Include(dm => dm.IdPlantillaEvaluacionNavigation)
             .Include(dm => dm.IdAreaCompetenciaNavigation)
             .Include(dm => dm.IdMallaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
             .Include(dm => dm.Distributivo)
-                .ThenInclude(d => d.IdParaleloNavigation)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(dm => dm.Distributivo)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.Matricula)
             .FirstOrDefaultAsync(dm => dm.IdDetalleMalla == id, cancellationToken);
     }
 
@@ -33,8 +38,21 @@ public class DetalleMallaRepository : IDetalleMallaRepository
             .Include(dm => dm.IdMateriaNavigation)
             .Include(dm => dm.IdPlantillaEvaluacionNavigation)
             .Include(dm => dm.IdAreaCompetenciaNavigation)
+            .Include(dm => dm.IdMallaNavigation)
+                .ThenInclude(m => m.MallaParalelo)
+                    .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(dm => dm.IdMallaNavigation)
+                .ThenInclude(m => m.MallaParalelo)
+                    .ThenInclude(mp => mp.Matricula)
             .Include(dm => dm.Distributivo)
-                .ThenInclude(d => d.IdParaleloNavigation)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(dm => dm.Distributivo)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.Matricula)
+            .Include(dm => dm.Distributivo)
+                .ThenInclude(d => d.IdPersonaNavigation)
+                    .ThenInclude(u => u.IdPersonaNavigation)
             .ToListAsync(cancellationToken);
     }
 
@@ -54,8 +72,21 @@ public class DetalleMallaRepository : IDetalleMallaRepository
             .Include(dm => dm.IdMateriaNavigation)
             .Include(dm => dm.IdPlantillaEvaluacionNavigation)
             .Include(dm => dm.IdAreaCompetenciaNavigation)
+            .Include(dm => dm.IdMallaNavigation)
+                .ThenInclude(m => m.MallaParalelo)
+                    .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(dm => dm.IdMallaNavigation)
+                .ThenInclude(m => m.MallaParalelo)
+                    .ThenInclude(mp => mp.Matricula)
             .Include(dm => dm.Distributivo)
-                .ThenInclude(d => d.IdParaleloNavigation)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(dm => dm.Distributivo)
+                .ThenInclude(d => d.IdMallaParaleloNavigation)
+                    .ThenInclude(mp => mp.Matricula)
+            .Include(dm => dm.Distributivo)
+                .ThenInclude(d => d.IdPersonaNavigation)
+                    .ThenInclude(u => u.IdPersonaNavigation)
             .OrderBy(dm => dm.IdDetalleMalla)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -78,9 +109,10 @@ public class DetalleMallaRepository : IDetalleMallaRepository
 
     public async Task<IEnumerable<DetalleMalla>> AddRangeAsync(IEnumerable<DetalleMalla> detallesMalla, CancellationToken cancellationToken)
     {
-        _context.DetalleMalla.AddRange(detallesMalla);
+        var list = detallesMalla.ToList();
+        _context.DetalleMalla.AddRange(list);
         await _context.SaveChangesAsync(cancellationToken);
-        return detallesMalla;
+        return list;
     }
 
     public async Task<DetalleMalla> UpdateAsync(DetalleMalla detalleMalla, CancellationToken cancellationToken)
@@ -111,4 +143,45 @@ public class DetalleMallaRepository : IDetalleMallaRepository
         return await _context.DetalleMalla
             .AnyAsync(dm => dm.IdMalla == idMalla && dm.IdMateria == idMateria, cancellationToken);
     }
+
+    public async Task<bool> TieneNotasAsync(int idDetalleMalla, CancellationToken cancellationToken)
+    {
+        return await _context.DetalleMatricula
+            .Where(dm => dm.IdDetalleMalla == idDetalleMalla)
+            .AnyAsync(dm => dm.NotaFinal != null || dm.NotasAlumno.Any(), cancellationToken);
+    }
+
+    public async Task<(DateOnly? FechaInicio, DateOnly? FechaFin)> GetFechasSugeridasModuloAsync(int idCiclo, int modulo, CancellationToken cancellationToken)
+    {
+        // 1. Obtener Periodo de Referencia del ciclo actual
+        var cicloActual = await _context.Ciclo
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.IdCiclo == idCiclo, cancellationToken);
+
+        if (cicloActual == null) return (null, null);
+
+        // 2. Buscar en cualquier otra malla configurada dentro del MISMO Periodo para ese número de Módulo
+        var query = _context.DetalleMalla
+            .AsNoTracking()
+            .Where(dm => dm.IdMallaNavigation.IdCicloNavigation.IdPeriodo == cicloActual.IdPeriodo
+                         && dm.Modulo == modulo
+                         && (dm.FechaInicio != null || dm.FechaFin != null));
+
+        var match = await query
+            .Select(dm => new
+            {
+                dm.FechaInicio,
+                dm.FechaFin
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (match != null)
+        {
+            return (match.FechaInicio, match.FechaFin);
+        }
+
+        return (null, null);
+    }
 }
+
+

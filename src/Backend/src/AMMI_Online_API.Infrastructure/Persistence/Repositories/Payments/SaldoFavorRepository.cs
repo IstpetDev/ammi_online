@@ -71,12 +71,11 @@ public class SaldoFavorRepository : ISaldoFavorRepository
             saldoFavor.UpdatedAt = DateTime.Now;
             _context.SaldoFavorAlumno.Update(saldoFavor);
 
-            // 7. Actualizar DetalleCredito
             detalleCredito.SaldoCuota -= monto;
             if (detalleCredito.SaldoCuota <= 0)
             {
                 detalleCredito.Pagado = true;
-                detalleCredito.Estado = "PAGADO";
+                detalleCredito.Estado = "PAGADA";
             }
             _context.DetalleCredito.Update(detalleCredito);
 
@@ -130,38 +129,28 @@ public class SaldoFavorRepository : ISaldoFavorRepository
             .ToListAsync(cancellationToken);
     }
 
+    // Versión sin transacción interna para usar dentro de otra transacción
     public async Task AgregarSaldoAsync(int idPersona, decimal monto, string concepto, int? idCredito, CancellationToken cancellationToken)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        // 1. GetOrCreate del SaldoFavorAlumno
+        var saldoFavor = await GetOrCreateByPersonaAsync(idPersona, cancellationToken);
 
-        try
+        // 2. SaldoFavorAlumno.Saldo += monto
+        saldoFavor.Saldo = (saldoFavor.Saldo ?? 0) + monto;
+        saldoFavor.UpdatedAt = DateTime.Now;
+        _context.SaldoFavorAlumno.Update(saldoFavor);
+
+        // 4. Crear SaldoFavorMovimiento:
+        var movimiento = new SaldoFavorMovimiento
         {
-            // 1. GetOrCreate del SaldoFavorAlumno
-            var saldoFavor = await GetOrCreateByPersonaAsync(idPersona, cancellationToken);
+            IdSaldoFavor = saldoFavor.IdSaldoFavor,
+            Monto = monto,
+            Concepto = concepto,
+            IdCredito = idCredito,
+            FechaMovimiento = DateTime.Now
+        };
+        _context.SaldoFavorMovimiento.Add(movimiento);
 
-            // 2. SaldoFavorAlumno.Saldo += monto
-            saldoFavor.Saldo = (saldoFavor.Saldo ?? 0) + monto;
-            saldoFavor.UpdatedAt = DateTime.Now;
-            _context.SaldoFavorAlumno.Update(saldoFavor);
-
-            // 4. Crear SaldoFavorMovimiento:
-            var movimiento = new SaldoFavorMovimiento
-            {
-                IdSaldoFavor = saldoFavor.IdSaldoFavor,
-                Monto = monto, // positivo = ingreso
-                Concepto = concepto,
-                IdCredito = idCredito,
-                FechaMovimiento = DateTime.Now
-            };
-            _context.SaldoFavorMovimiento.Add(movimiento);
-
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

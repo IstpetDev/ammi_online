@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Payments;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +24,8 @@ public class HistorialPagoRepository : IHistorialPagoRepository
     {
         // Consulta base con todas las relaciones necesarias
         var query = _context.Pago
+            .Include(dp => dp.IdEstadoPagoNavigation)
+            .Include(ad => ad.UrlComprobanteNavigation)
             .Include(p => p.PagoCuota)
                 .ThenInclude(pc => pc.IdDetalleCreditoNavigation)
                     .ThenInclude(dc => dc.IdCreditoNavigation)
@@ -36,6 +38,9 @@ public class HistorialPagoRepository : IHistorialPagoRepository
                         .ThenInclude(c => c.IdEspecieCicloNavigation)
                             .ThenInclude(ec => ec.IdEspecieNavigation)
             .Include(p => p.IdTipoPagoNavigation)
+            .Include(p => p.IdCuentaBancariaNavigation)
+            .Include(p => p.UsuarioApruebaNavigation)
+                .ThenInclude(u => u.IdPersonaNavigation)
             .AsQueryable();
 
         // Filtros
@@ -62,11 +67,6 @@ public class HistorialPagoRepository : IHistorialPagoRepository
         {
             var hasta = fechaHasta.Value.ToDateTime(TimeOnly.MaxValue);
             query = query.Where(p => p.FechaPago <= hasta);
-        }
-
-        if (esValidado.HasValue)
-        {
-            query = query.Where(p => p.EsValidado == esValidado);
         }
 
         return await query
