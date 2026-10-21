@@ -39,7 +39,7 @@ function Copiar {
 function Detalle-Http {
     # El log de Actions es publico en este repositorio: al log solo van identificadores del error
     # (codigo HTTP.subcodigo, codigo hexadecimal y modulo). El texto completo se guarda en un
-    # archivo que solo leen SYSTEM y los administradores.
+    # archivo local (C:\respaldos-despliegue: SYSTEM, administradores y svc-deploy; sin acceso para otros usuarios).
     param($Respuesta, [string]$Etiqueta)
     try {
         $lector = New-Object System.IO.StreamReader($Respuesta.GetResponseStream())
