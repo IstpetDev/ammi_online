@@ -11,7 +11,6 @@ public class EspecieController : ApiController
 {
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<EspecieDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetAllEspeciesQuery(), cancellationToken);
@@ -19,7 +18,6 @@ public class EspecieController : ApiController
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<ActionResult<EspecieDTO>> Create([FromBody] EspecieCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new CreateEspecieCommand(dto), cancellationToken);
@@ -27,7 +25,6 @@ public class EspecieController : ApiController
     }
 
     [HttpPut]
-    [AllowAnonymous]
     public async Task<ActionResult<EspecieDTO>> Update([FromBody] EspecieUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new UpdateEspecieCommand(dto), cancellationToken);
@@ -35,7 +32,6 @@ public class EspecieController : ApiController
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new DeleteEspecieCommand(id), cancellationToken);

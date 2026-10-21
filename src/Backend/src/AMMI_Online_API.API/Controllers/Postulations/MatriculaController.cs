@@ -12,60 +12,70 @@ namespace AMMI_Online_API.API.Controllers.Postulations;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class MatriculaController : ApiController
 {
     [HttpPost]
-    [Authorize]
     public async Task<Response<GenerarMatriculaResultDTO>> GenerarMatricula([FromBody] GenerarMatriculaCommand command, CancellationToken cancellationToken)
         => await Mediator.Send(command, cancellationToken);
 
     [HttpPut("Actualizar")]
-    [AllowAnonymous]
+    
     public async Task<Response<bool>> Update([FromBody] UpdateMatriculaCommand request, CancellationToken cancellationToken)
         => await Mediator.Send(request, cancellationToken);
 
     [HttpPut("DetalleMatricula/{idDetalleMatricula}/Remedial")]
-    [AllowAnonymous]
-    public async Task<Response<bool>> RegistrarRemedial(int idDetalleMatricula, [FromBody] decimal notaRemedial, CancellationToken cancellationToken)
-        => await Mediator.Send(new RegistrarExamenRemedialCommand(idDetalleMatricula, notaRemedial), cancellationToken);
+    public async Task<Response<bool>> RegistrarRemedial(int idDetalleMatricula, [FromBody] RegistrarRemedialDTO request, CancellationToken cancellationToken)
+        => await Mediator.Send(new RegistrarExamenRemedialCommand(idDetalleMatricula, request.NotaRemedial), cancellationToken);
 
     [HttpGet]
-    [AllowAnonymous]
-    public async Task<Response<PaginatedResult<MatriculaDTO>>> GetMatriculas([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
-        => await Mediator.Send(new GetMatriculasQuery(pageNumber, pageSize), cancellationToken);
+    
+    public async Task<Response<PaginatedResult<MatriculaDTO>>> GetMatriculas([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] int? idCiclo = null, [FromQuery] int? idOfertaAcademica = null, [FromQuery] string? documentoNombre = null, [FromQuery] int? idMalla = null, CancellationToken cancellationToken = default)
+        => await Mediator.Send(new GetMatriculasQuery(pageNumber, pageSize, idCiclo, idOfertaAcademica, documentoNombre, idMalla), cancellationToken);
 
     [HttpGet("datos-faltantes-persona")]
-    [AllowAnonymous]
+    
      public async Task<Response<IEnumerable<MatriculaFaltantesDTO>>> GetMatriculasDatosFaltantesPersona(CancellationToken cancellationToken)
         => await Mediator.Send(new GetMatriculasDatosFaltantesPersonaQuery(), cancellationToken);
 
-    [AllowAnonymous]
+    
     [HttpGet("{id}/notas")]
     public async Task<Response<BoletinAlumnoDTO>> GetBoletin(int id)
         => await Mediator.Send(new GetBoletinQuery(id));
 
-    [AllowAnonymous]
+    
     [HttpGet("ByMalla/{idMalla}")]
     public async Task<Response<PaginatedResult<MatriculaDTO>>> GetByMalla(int idMalla, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
         => await Mediator.Send(new GetMatriculasByMallaQuery(idMalla, pageNumber, pageSize), cancellationToken);
 
-    [AllowAnonymous]
-    [HttpGet("ByParalelo/{idParalelo}")]
-    public async Task<Response<IEnumerable<MatriculaDTO>>> GetByParalelo(int idParalelo)
-        => await Mediator.Send(new GetMatriculasByParaleloQuery(idParalelo));
+    
+    [HttpGet("ByMallaParalelo/{idMallaParalelo}")]
+    public async Task<Response<IEnumerable<MatriculaDTO>>> GetByMallaParalelo(int idMallaParalelo)
+        => await Mediator.Send(new GetMatriculasByMallaParaleloQuery(idMallaParalelo));
 
-    [AllowAnonymous]
+    
     [HttpGet("ByAlumno/{idUsuario}")]
     public async Task<Response<IEnumerable<MatriculaDTO>>> GetByAlumno(int idUsuario)
         => await Mediator.Send(new GetMatriculasByAlumnoQuery(idUsuario));
 
-    [AllowAnonymous]
+    
+    [HttpPut("{id}/Estado")]
+    [Authorize(Roles = "ADMINISTRADOR,SUPERVISOR")]
+    public async Task<Response<bool>> CambiarEstado(int id, [FromBody] int idEstadoMatricula)
+        => await Mediator.Send(new CambiarEstadoMatriculaCommand(id, idEstadoMatricula));
+
+    
     [HttpGet("ByAlumno/{idUsuario}/Completo")]
     public async Task<Response<HistorialAcademicoDTO>> GetHistorialCompleto(int idUsuario)
         => await Mediator.Send(new GetHistorialAcademicoQuery(idUsuario));
 
+    
+    [HttpGet("ByMallaParalelo/{idMallaParalelo}/Materia/{idDetalleMalla}")]
+    public async Task<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>> GetByMallaParaleloAndMateria(int idMallaParalelo, int idDetalleMalla)
+        => await Mediator.Send(new GetDetallesMatriculaByMallaParaleloYMateriaQuery(idMallaParalelo, idDetalleMalla));
+
     [AllowAnonymous]
-    [HttpGet("ByParalelo/{idParalelo}/Materia/{idDetalleMalla}")]
-    public async Task<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>> GetByParaleloAndMateria(int idParalelo, int idDetalleMalla)
-        => await Mediator.Send(new GetDetallesMatriculaByParaleloYMateriaQuery(idParalelo, idDetalleMalla));
+    [HttpPut("{id}/CambiarParalelo")]
+    public async Task<Response<CambiarParaleloResultDTO>> CambiarParalelo(int id, [FromBody] int idMallaParaleloNuevo, CancellationToken cancellationToken)
+        => await Mediator.Send(new CambiarParaleloMatriculaCommand(id, idMallaParaleloNuevo), cancellationToken);
 }

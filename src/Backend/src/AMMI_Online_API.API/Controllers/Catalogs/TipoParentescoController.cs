@@ -12,7 +12,7 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     {
 
         [HttpGet]
-        [AllowAnonymous]
+        
         public async Task<Response<IEnumerable<TipoParentescoDTO>>> GetAllTipoParentesco([FromQuery] GetAllTipoParentescoQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 

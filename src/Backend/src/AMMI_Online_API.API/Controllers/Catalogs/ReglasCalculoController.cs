@@ -19,28 +19,28 @@ public class ReglasCalculoController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetById(int id)
     {
         return Ok(await _mediator.Send(new GetReglasCalculoByIdQuery(id)));
     }
 
     [HttpGet("ByEstructura/{idPlantillaEstructura}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetByEstructura(int idPlantillaEstructura)
     {
         return Ok(await _mediator.Send(new GetReglasCalculoByPlantillaEstructuraQuery(idPlantillaEstructura)));
     }
 
     [HttpGet("ByPlantilla/{idPlantillaEvaluacion}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetByPlantilla(int idPlantillaEvaluacion)
     {
         return Ok(await _mediator.Send(new GetReglasCalculoByPlantillaEvaluacionQuery(idPlantillaEvaluacion)));
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> Create([FromBody] ReglasCalculoCreateDTO command)
     {
         return Ok(await _mediator.Send(new CreateReglasCalculoCommand(
@@ -51,7 +51,7 @@ public class ReglasCalculoController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> Update([FromBody] ReglasCalculoUpdateDTO command)
     {
         return Ok(await _mediator.Send(new UpdateReglasCalculoCommand(
@@ -62,7 +62,7 @@ public class ReglasCalculoController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> Delete(int id)
     {
         return Ok(await _mediator.Send(new DeleteReglasCalculoCommand(id)));

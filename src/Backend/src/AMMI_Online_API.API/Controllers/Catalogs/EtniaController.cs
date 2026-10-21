@@ -16,17 +16,14 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<int>> CreateEtnia([FromBody] CreateEtniaCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<bool>> UpdateEtnia([FromBody] UpdateEtniaCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeleteEtnia(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteEtniaCommand(id), cancellationToken);
     }

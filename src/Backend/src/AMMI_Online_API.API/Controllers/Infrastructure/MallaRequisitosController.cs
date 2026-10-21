@@ -9,6 +9,7 @@ namespace AMMI_Online_API.API.Controllers.Infrastructure;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MallaRequisitosController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -27,7 +28,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<MallaRequisitosDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetMallaRequisitosByIdQuery(id), cancellationToken);
@@ -36,7 +37,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpGet("ByMalla/{idMalla}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<MallaRequisitosDTO>>> GetByMalla(int idMalla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetRequistosByMallaIdQuery(idMalla), cancellationToken);
@@ -44,7 +45,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpGet("ByRequisito/{idRequisito}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<MallaRequisitosDTO>>> GetByRequisito(int idRequisito, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetMallasByRequisitoIdQuery(idRequisito), cancellationToken);
@@ -52,7 +53,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<MallaRequisitosDTO>> Create([FromBody] MallaRequisitosCreateDTO dto, CancellationToken cancellationToken)
     {
         try
@@ -67,7 +68,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpPost("AsignarRequisitos")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<MallaRequisitosDTO>>> AsignarRequisitos([FromBody] AsignarRequisitosAMallaDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new AsignarRequisitosAMallaCommand(dto), cancellationToken);
@@ -75,7 +76,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpPut("ReemplazarRequisitos")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<MallaRequisitosDTO>>> ReemplazarRequisitos([FromBody] ReemplazarRequisitosDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new ReemplazarRequisitosCommand(dto), cancellationToken);
@@ -83,7 +84,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteMallaRequisitosCommand(id), cancellationToken);
@@ -92,7 +93,7 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpDelete("ByMalla/{idMalla}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> DeleteByMalla(int idMalla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteRequisitosDemallaCommand(idMalla), cancellationToken);

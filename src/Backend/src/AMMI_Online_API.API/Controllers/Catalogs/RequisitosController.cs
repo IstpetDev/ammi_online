@@ -19,7 +19,7 @@ public class RequisitosController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<RequisitosDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllRequisitosQuery(), cancellationToken);
@@ -27,7 +27,7 @@ public class RequisitosController : ControllerBase
     }
 
     [HttpGet("GetRequisitosByMalla/{idMalla}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<RequisitosDTO>>> GetByMalla(int idMalla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetRequisitosByMallaQuery(idMalla), cancellationToken);
@@ -37,7 +37,7 @@ public class RequisitosController : ControllerBase
 
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<RequisitosDTO>> Create([FromBody] RequisitosCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateRequisitosCommand(dto), cancellationToken);
@@ -45,7 +45,7 @@ public class RequisitosController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<RequisitosDTO>> Update([FromBody] RequisitosUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdateRequisitosCommand(dto), cancellationToken);
@@ -53,7 +53,7 @@ public class RequisitosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteRequisitosCommand(id), cancellationToken);

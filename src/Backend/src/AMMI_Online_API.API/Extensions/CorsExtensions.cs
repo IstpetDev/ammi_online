@@ -1,4 +1,4 @@
-﻿namespace AMMI_Online_API.API.Extensions;
+namespace AMMI_Online_API.API.Extensions;
 public static class CorsExtensions
 {
     public static IServiceCollection AddCorsPolicies(
@@ -8,10 +8,11 @@ public static class CorsExtensions
         {
             options.AddPolicy("AngularDev", policy =>
             {
-                policy.WithOrigins("http://localhost:4200")
+                policy.WithOrigins("http://localhost:4200", "http://localhost", "https://localhost", "https://ammionline.ammi.edu.ec")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
-                      .AllowCredentials();
+                      .AllowCredentials()
+                      .WithExposedHeaders("Content-Disposition");
             });
         });
 

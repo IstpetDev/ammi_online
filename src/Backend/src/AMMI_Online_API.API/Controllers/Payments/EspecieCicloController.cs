@@ -9,24 +9,24 @@ using Microsoft.AspNetCore.Mvc;
 namespace AMMI_Online_API.API.Controllers.Payments;
 
 [Route("api/[controller]")]
-[ApiController]
+[Authorize]
 public class EspecieCicloController : ApiController
 {
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<Response<IEnumerable<EspecieCicloDTO>>> GetAll(
         CancellationToken cancellationToken)
         => await Mediator.Send(new GetAllEspecieCicloQuery(), cancellationToken);
 
-    [HttpGet("ciclo/{idCiclo}")]
-    [AllowAnonymous]
-    public async Task<Response<IEnumerable<EspecieCicloDTO>>> GetByCiclo(
-        int idCiclo,
+    [HttpGet("malla/{idMalla}")]
+
+    public async Task<Response<IEnumerable<EspecieCicloDTO>>> GetByMalla(
+        int idMalla,
         CancellationToken cancellationToken)
-        => await Mediator.Send(new GetEspecieCicloByCicloQuery(idCiclo), cancellationToken);
+        => await Mediator.Send(new GetEspecieCicloByMallaQuery(idMalla), cancellationToken);
 
     [HttpGet("{idEspecieCiclo}")]
-    [AllowAnonymous]
+    
     public async Task<Response<EspecieCicloDTO>> GetById(
         int idEspecieCiclo,
         CancellationToken cancellationToken)

@@ -8,6 +8,8 @@ namespace AMMI_Online_API.API.Controllers.Segurity;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
+
 public class DevUtilsController : ControllerBase
 {
     private readonly IPasswordHasher _passwordHasher;
@@ -22,7 +24,7 @@ public class DevUtilsController : ControllerBase
     }
 
     [HttpPost("hash-password")]
-    [AllowAnonymous]
+    
     public ActionResult<Response<HashPasswordResponseDTO>> HashPassword(
         [FromBody] HashPasswordRequestDTO request)
     {
@@ -51,7 +53,7 @@ public class DevUtilsController : ControllerBase
     }
 
     [HttpPost("verify-password")]
-    [AllowAnonymous]
+    
     public ActionResult<Response<VerifyPasswordResponseDTO>> VerifyPassword(
         [FromBody] VerifyPasswordRequestDTO request)
     {

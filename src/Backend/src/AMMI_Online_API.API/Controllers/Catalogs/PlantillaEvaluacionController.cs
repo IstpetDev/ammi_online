@@ -19,7 +19,7 @@ public class PlantillaEvaluacionController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<PlantillaEvaluacionDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllPlantillasEvaluacionQuery(), cancellationToken);
@@ -27,7 +27,7 @@ public class PlantillaEvaluacionController : ControllerBase
     }
 
     [HttpGet("activos")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<PlantillaEvaluacionDTO>>> GetActivos(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetPlantillasEvaluacionActivasQuery(), cancellationToken);
@@ -35,7 +35,7 @@ public class PlantillaEvaluacionController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<PlantillaEvaluacionDTO>> Create([FromBody] PlantillaEvaluacionCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreatePlantillaEvaluacionCommand(dto), cancellationToken);
@@ -43,7 +43,7 @@ public class PlantillaEvaluacionController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<PlantillaEvaluacionDTO>> Update([FromBody] PlantillaEvaluacionUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdatePlantillaEvaluacionCommand(dto), cancellationToken);
@@ -51,7 +51,7 @@ public class PlantillaEvaluacionController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeletePlantillaEvaluacionCommand(id), cancellationToken);

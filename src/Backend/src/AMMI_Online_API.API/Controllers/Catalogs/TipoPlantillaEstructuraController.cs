@@ -19,7 +19,7 @@ public class TipoPlantillaEstructuraController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<TipoPlantillaEstructuraDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllTipoPlantillaEstructurasQuery(), cancellationToken);
@@ -27,7 +27,7 @@ public class TipoPlantillaEstructuraController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<TipoPlantillaEstructuraDTO>> Create([FromBody] TipoPlantillaEstructuraCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateTipoPlantillaEstructuraCommand(dto), cancellationToken);
@@ -35,7 +35,7 @@ public class TipoPlantillaEstructuraController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<TipoPlantillaEstructuraDTO>> Update([FromBody] TipoPlantillaEstructuraUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdateTipoPlantillaEstructuraCommand(dto), cancellationToken);
@@ -43,7 +43,7 @@ public class TipoPlantillaEstructuraController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteTipoPlantillaEstructuraCommand(id), cancellationToken);
