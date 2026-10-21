@@ -28,7 +28,7 @@ npm ci --legacy-peer-deps --prefix src/Frontend
 npm run build --prefix src/Frontend
 ```
 
-Para ejecutar el backend, configurar `ConnectionStrings__DefaultConnection`, `JwtSettings__SecretKey` y las variables de correo necesarias en el entorno local. El archivo versionado `src/Backend/src/AMMI_Online_API.API/appsettings.json` contiene esos campos vacíos. No guardar valores reales en Git. El frontend utiliza por ahora la URL local definida en `src/Frontend/src/app/environments/environment.ts`.
+Para ejecutar el backend, configurar `ConnectionStrings__DefaultConnection`, `JwtSettings__SecretKey` y las variables de correo necesarias en el entorno local. El archivo versionado `src/Backend/src/AMMI_Online_API.API/appsettings.json` contiene esos campos vacíos. No guardar valores reales en Git. El frontend usa en desarrollo la URL local de `src/Frontend/src/app/environments/environment.ts`. La compilación de producción la sustituye por `environment.production.ts` (ruta relativa `/apiAmmiOnline`, mismo dominio que la API) y genera solo la parte de navegador, sin SSR, porque el destino es un sitio estático en IIS.
 
 ```bash
 dotnet run --project src/Backend/src/AMMI_Online_API.API

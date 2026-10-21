@@ -1,3 +1,7 @@
+// Entorno de desarrollo. En producción se sustituye por environment.production.ts (angular.json).
+const apiBaseUrl = 'https://localhost:7267';
+
 export const environment = {
-    apiUrl: 'https://localhost:7267/api'
+    apiBaseUrl,
+    apiUrl: `${apiBaseUrl}/api`
 };
