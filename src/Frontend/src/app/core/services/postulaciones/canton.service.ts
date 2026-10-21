@@ -35,5 +35,11 @@ export class CantonService {
       map(response => response.data)
     );
   }
+
+  create(data: Partial<CantonDTO>): Observable<any> {
+    return this.http.post<IResponse<any>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.canton.create}`, { cantonDTO: data }).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

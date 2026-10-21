@@ -1,0 +1,43 @@
+<app-shared-modal [(visible)]="visible" [title]="editando ? 'Editar Ciclo' : 'Nuevo Ciclo'"
+  customWidth="500px" [showFooter]="true" cancelText="Cancelar"
+  [confirmText]="editando ? 'Actualizar' : 'Crear Ciclo'"
+  [confirmDisabled]="!formDetalle.trim() || !formIdRegimen || !formIdTipoOferta || guardando"
+  (confirm)="guardar()" (cancel)="close()">
+  <div class="ccp-dialog-body">
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Régimen *</label>
+      <app-custom-select [items]="regimenes" labelField="detalle" valueField="idRegimen"
+        [selectedValue]="formIdRegimen" (selectedValueChange)="formIdRegimen = $event; cicloAutoDetalle()"
+        placeholder="Seleccione régimen">
+      </app-custom-select>
+    </div>
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Tipo de Oferta *</label>
+      <app-custom-select [items]="tiposOferta" labelField="detalle" valueField="idtipoOferta"
+        [selectedValue]="formIdTipoOferta"
+        (selectedValueChange)="formIdTipoOferta = $event; cicloAutoDetalle()" placeholder="Seleccione tipo">
+      </app-custom-select>
+    </div>
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Detalle *</label>
+      <input type="text" class="form-control ccp-input" [ngModel]="formDetalle"
+        (ngModelChange)="formDetalle = $event ? $event.toUpperCase() : ''; detalleManual = true"
+        placeholder="Ej: CICLO I COSTA ACELERADO" style="text-transform: uppercase;">
+    </div>
+    <div class="ccp-form-grid">
+      <div class="ccp-dialog-field">
+        <label class="ccp-field-label">Fecha inicio estimada</label>
+        <input type="date" class="form-control ccp-input" [(ngModel)]="formFechaInicio"
+          (input)="fechasAutoAsignadas = true">
+      </div>
+      <div class="ccp-dialog-field">
+        <label class="ccp-field-label">Fecha fin estimada</label>
+        <input type="date" class="form-control ccp-input" [(ngModel)]="formFechaFin"
+          (input)="fechasAutoAsignadas = true">
+      </div>
+    </div>
+    <p *ngIf="editando" class="ccp-info-text">
+      <i class="pi pi-info-circle"></i> El detalle, régimen y tipo de oferta se asociarán al ciclo
+    </p>
+  </div>
+</app-shared-modal>

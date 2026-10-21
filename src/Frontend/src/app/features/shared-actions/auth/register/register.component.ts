@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/index';
+import { ThemeService } from '../../../../core/services/theme.service';
 
 @Component({
   selector: 'app-register',
@@ -14,10 +15,16 @@ import { AuthService } from '../../../../core/auth/index';
 export class RegisterComponent {
   registerForm: FormGroup;
   registerError: string = '';
-  
+  showPassword: boolean = false;
+  showConfirmPassword: boolean = false;
+  currentYear: number = new Date().getFullYear();
+
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private themeService = inject(ThemeService);
+
+  logoSrc = computed(() => this.themeService.layoutConfig().darkTheme ? 'assets/shared/Logo-sin-fondo-oscuro.png' : 'assets/shared/Logo-sin-fondo.png');
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -45,10 +52,10 @@ export class RegisterComponent {
       const { username, password, email, nombre, apellido } = this.registerForm.value;
 
       this.authService.register({ username, password, email, nombre, apellido }).subscribe({
-        next: (user) => {
+        next: (user: any) => {
           this.router.navigate(['/dashboard']);
         },
-        error: (error) => {
+        error: (error: any) => {
           this.registerError = error.message;
         }
       });

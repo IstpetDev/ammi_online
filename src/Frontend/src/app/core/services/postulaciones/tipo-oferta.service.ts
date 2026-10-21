@@ -35,5 +35,11 @@ export class TipoOfertaService {
       map(tipos => tipos.filter(t => t.esActivo))
     );
   }
+
+  create(data: Partial<TipoOfertaDTO>): Observable<TipoOfertaDTO> {
+    return this.http.post<IResponse<TipoOfertaDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.tipoOferta.create}`, data).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

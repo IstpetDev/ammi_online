@@ -1,3 +1,16 @@
 :host ::ng-deep .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
     background: var(--green-500);
 }
+
+
+/* Force inputs and dropdowns in plantilla-form to full width */
+:host ::ng-deep input.p-inputtext,
+:host ::ng-deep textarea.p-inputtextarea,
+:host ::ng-deep .p-dropdown,
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-select .p-select-label,
+:host ::ng-deep .p-calendar,
+:host ::ng-deep .p-inputnumber {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}

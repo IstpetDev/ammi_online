@@ -16,17 +16,14 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<int>> CreatePeriodoLectivo([FromBody] CreatePeriodoLectivoCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<bool>> UpdatePeriodoLectivo([FromBody] UpdatePeriodoLectivoCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeletePeriodoLectivo(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeletePeriodoLectivoCommand(id), cancellationToken);
     }

@@ -17,13 +17,15 @@ public class GetMatriculasHandler : IRequestHandler<GetMatriculasQuery, Response
 
     public async Task<Response<PaginatedResult<MatriculaDTO>>> Handle(GetMatriculasQuery request, CancellationToken cancellationToken)
     {
-        var totalCount = await _repository.CountAllMatriculasAsync(cancellationToken);
-        var matriculas = await _repository.GetAllMatriculasPagedAsync(request.PageNumber, request.PageSize, cancellationToken);
+        var totalCount = await _repository.CountAllMatriculasAsync(request.IdCiclo, request.IdOfertaAcademica, request.DocumentoNombre, request.IdMalla, cancellationToken);
+        var matriculas = await _repository.GetAllMatriculasPagedAsync(request.PageNumber, request.PageSize, request.IdCiclo, request.IdOfertaAcademica, request.DocumentoNombre, request.IdMalla, cancellationToken);
+        var fotoCodigos = await _repository.GetFotoRequisitoCodigosAsync(cancellationToken);
 
         var dtoList = matriculas.Select(m => {
             var detalleTipoOferta = m.DetalleMatricula
                 .Select(dm => dm.IdDetalleMallaNavigation?
                     .IdMallaNavigation?
+                    .IdCicloNavigation?
                     .IdTipoOfertaNavigation?
                     .Detalle)
                 .FirstOrDefault(d => d != null);
@@ -35,8 +37,15 @@ public class GetMatriculasHandler : IRequestHandler<GetMatriculasQuery, Response
             var persona = m.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
 
             var detalleCiclo = m.Credito
-                .Select(c => c.IdEspecieCicloNavigation?.IdCicloNavigation?.Detalle)
+                .Select(c => c.IdEspecieCicloNavigation?.IdMallaNavigation?.IdCicloNavigation?.Detalle)
                 .FirstOrDefault(d => d != null);
+            var IdCiclo = m.Credito
+                .Select(c => c.IdEspecieCicloNavigation?.IdMallaNavigation?.IdCiclo ?? 0)
+                .FirstOrDefault(d => d != 0);
+
+            var pathFoto = persona?.DocumentosPersonales?
+                .FirstOrDefault(dp => fotoCodigos.Contains(dp.CodigoRequisito) && dp.IdAdjuntoNavigation != null)?
+                .IdAdjuntoNavigation?.Path;
 
             return new MatriculaDTO
             {
@@ -44,15 +53,20 @@ public class GetMatriculasHandler : IRequestHandler<GetMatriculasQuery, Response
                 IdMalla = detalleMalla?.IdMalla ?? 0,
                 DetalleMalla = detalleMalla?.Detalle ?? string.Empty,
                 IdUsuarioAlumno = m.IdUsuarioAlumno,
-                DetalleParalelo = m.IdParaleloNavigation?.NombreParalelo ?? string.Empty,
-                EsFinalizada = m.EsFinalizada,
+                IdMallaParalelo = m.IdMallaParalelo,
+                DetalleParalelo = m.IdMallaParaleloNavigation?.IdParaleloNavigation?.Detalle ?? string.Empty,
+                IdEstadoMatricula = m.IdEstadoMatricula,
+                DetalleEstado = m.IdEstadoMatriculaNavigation?.Detalle ?? string.Empty,
+                EstadoCompletado = m.IdEstadoMatriculaNavigation?.Completado ?? false,
                 DetalleTipoOferta = detalleTipoOferta ?? string.Empty,
                 PrimerNombre = persona?.PrimerNombre ?? string.Empty,
                 PrimerApellido = persona?.PrimerApellido ?? string.Empty,
                 SegundoNombre = persona?.SegundoNombre ?? string.Empty,
                 SegundoApellido = persona?.SegundoApellido ?? string.Empty,
                 NumeroDocumento = persona?.Documento ?? string.Empty,
-                DetalleCiclo = detalleCiclo ?? string.Empty
+                IdCiclo = IdCiclo,
+                DetalleCiclo = detalleCiclo ?? string.Empty,
+                PathFoto = pathFoto
             };
         }).ToList();
 
@@ -152,8 +166,6 @@ public class GetMatriculasDatosFaltantesPersonaHandler : IRequestHandler<GetMatr
             var tieneDiscapacidad = persona.PersonaDiscapacidad?.Any() ?? false;
             // No contamos como faltante si no tiene discapacidad
 
-            // 9. Alergias (1 campo) - Similar a discapacidad
-            var tieneAlergias = persona.PersonaAlergias?.Any() ?? false;
             // No contamos como faltante si no tiene alergias
 
             resultados.Add(new MatriculaFaltantesDTO
@@ -180,11 +192,13 @@ public class GetMatriculasByMallaHandler : IRequestHandler<GetMatriculasByMallaQ
     {
         var totalCount = await _repository.CountByMallaAsync(request.IdMalla, cancellationToken);
         var matriculas = await _repository.GetByMallaPagedAsync(request.IdMalla, request.PageNumber, request.PageSize, cancellationToken);
+        var fotoCodigos = await _repository.GetFotoRequisitoCodigosAsync(cancellationToken);
 
         var dtoList = matriculas.Select(m => {
             var detalleTipoOferta = m.DetalleMatricula
                 .Select(dm => dm.IdDetalleMallaNavigation?
                     .IdMallaNavigation?
+                    .IdCicloNavigation?
                     .IdTipoOfertaNavigation?
                     .Detalle)
                 .FirstOrDefault(d => d != null);
@@ -196,8 +210,12 @@ public class GetMatriculasByMallaHandler : IRequestHandler<GetMatriculasByMallaQ
             var persona = m.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
 
             var detalleCiclo = m.Credito
-                .Select(c => c.IdEspecieCicloNavigation?.IdCicloNavigation?.Detalle)
+                .Select(c => c.IdEspecieCicloNavigation?.IdMallaNavigation?.IdCicloNavigation?.Detalle)
                 .FirstOrDefault(d => d != null);
+
+            var pathFoto = persona?.DocumentosPersonales?
+                .FirstOrDefault(dp => fotoCodigos.Contains(dp.CodigoRequisito) && dp.IdAdjuntoNavigation != null)?
+                .IdAdjuntoNavigation?.Path;
 
             return new MatriculaDTO
             {
@@ -205,15 +223,19 @@ public class GetMatriculasByMallaHandler : IRequestHandler<GetMatriculasByMallaQ
                 IdMalla = detalleMalla?.IdMalla ?? 0,
                 DetalleMalla = detalleMalla?.Detalle ?? string.Empty,
                 IdUsuarioAlumno = m.IdUsuarioAlumno,
-                DetalleParalelo = m.IdParaleloNavigation?.NombreParalelo ?? string.Empty,
-                EsFinalizada = m.EsFinalizada,
+                IdMallaParalelo = m.IdMallaParalelo,
+                DetalleParalelo = m.IdMallaParaleloNavigation?.IdParaleloNavigation?.Detalle ?? string.Empty,
+                IdEstadoMatricula = m.IdEstadoMatricula,
+                DetalleEstado = m.IdEstadoMatriculaNavigation?.Detalle ?? string.Empty,
+                EstadoCompletado = m.IdEstadoMatriculaNavigation?.Completado ?? false,
                 DetalleTipoOferta = detalleTipoOferta ?? string.Empty,
                 PrimerNombre = persona?.PrimerNombre ?? string.Empty,
                 PrimerApellido = persona?.PrimerApellido ?? string.Empty,
                 SegundoNombre = persona?.SegundoNombre ?? string.Empty,
                 SegundoApellido = persona?.SegundoApellido ?? string.Empty,
                 NumeroDocumento = persona?.Documento ?? string.Empty,
-                DetalleCiclo = detalleCiclo ?? string.Empty
+                DetalleCiclo = detalleCiclo ?? string.Empty,
+                PathFoto = pathFoto
             };
         }).ToList();
 

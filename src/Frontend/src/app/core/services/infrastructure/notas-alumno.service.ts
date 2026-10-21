@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../../constants/app.constants';
@@ -21,6 +21,15 @@ export class NotasAlumnoService {
   constructor(private http: HttpClient) {}
 
   /**
+   * Extraer array de respuesta paginada o directa
+   */
+  private extractArray<T>(data: any): T[] {
+    if (Array.isArray(data)) return data;
+    if (data?.items && Array.isArray(data.items)) return data.items;
+    return [];
+  }
+
+  /**
    * Obtener nota por ID
    */
   getById(id: number): Observable<NotasAlumnoDTO> {
@@ -34,9 +43,9 @@ export class NotasAlumnoService {
    * NUEVO: Método principal para cargar notas
    */
   getByDetalleMatricula(idDetalleMatricula: number): Observable<NotasAlumnoDTO[]> {
-    return this.http.get<IResponse<NotasAlumnoDTO[]>>(
+    return this.http.get<IResponse<any>>(
       `${this.apiUrl}${API_ENDPOINTS.notas.notasAlumno.getByDetalleMatricula(idDetalleMatricula)}`
-    ).pipe(map(r => r.data || []));
+    ).pipe(map(r => this.extractArray<NotasAlumnoDTO>(r.data)));
   }
 
   /**
@@ -47,9 +56,39 @@ export class NotasAlumnoService {
     idMatricula: number,
     idDetalleMalla: number
   ): Observable<NotasAlumnoDTO[]> {
-    return this.http.get<IResponse<NotasAlumnoDTO[]>>(
+    return this.http.get<IResponse<any>>(
       `${this.apiUrl}${API_ENDPOINTS.notas.notasAlumno.getByMatriculaYMateria(idMatricula, idDetalleMalla)}`
-    ).pipe(map(r => r.data || []));
+    ).pipe(map(r => this.extractArray<NotasAlumnoDTO>(r.data)));
+  }
+
+  /**
+   * Obtener notas por malla/paralelo con filtros opcionales
+   * Endpoint: GET /NotasAlumno/ByMallaParalelo/{idMallaParalelo}
+   */
+  getByMallaParalelo(
+    idMallaParalelo: number,
+    filtros?: {
+      idDetalleMatricula?: number;
+      idDetalleMalla?: number;
+      idMatricula?: number;
+    }
+  ): Observable<NotasAlumnoDTO[]> {
+    let params = new HttpParams();
+
+    if (filtros?.idDetalleMatricula != null) {
+      params = params.set('idDetalleMatricula', filtros.idDetalleMatricula.toString());
+    }
+    if (filtros?.idDetalleMalla != null) {
+      params = params.set('idDetalleMalla', filtros.idDetalleMalla.toString());
+    }
+    if (filtros?.idMatricula != null) {
+      params = params.set('idMatricula', filtros.idMatricula.toString());
+    }
+
+    return this.http.get<IResponse<any>>(
+      `${this.apiUrl}${API_ENDPOINTS.notas.notasAlumno.getByMallaParalelo(idMallaParalelo)}`,
+      { params }
+    ).pipe(map(r => this.extractArray<NotasAlumnoDTO>(r.data)));
   }
 
   /**

@@ -30,6 +30,8 @@ public class CicloRepository : ICiclo
             .Include(c => c.IdPeriodoNavigation)
             .Include(c => c.IdRegimenNavigation)
             .Include(c => c.IdPadreNavigation)
+            .Include(c => c.IdTipoOfertaNavigation)
+            .Include(c => c.Malla)
             .AsQueryable();
 
         if (idCiclo.HasValue)

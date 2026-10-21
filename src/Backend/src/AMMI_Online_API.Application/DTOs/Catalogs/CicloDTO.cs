@@ -6,15 +6,18 @@ public record CicloDTO
     public int? IdPadre { get; set; }
     public int IdPeriodo { get; set; }
     public int IdRegimen { get; set; }
+    public int IdTipoOferta { get; set; }
     public string Detalle { get; set; }
     public DateOnly? FechaInicioEstimada { get; set; }
     public DateOnly? FechaFinEstimada { get; set; }
     public bool EsActivo { get; set; }
 
-    // NUEVO: Datos relacionados
+    // Datos relacionados
     public string NombrePeriodo { get; set; }
     public string NombreRegimen { get; set; }
     public string NombreCicloPadre { get; set; }
+    public string NombreTipoOferta { get; set; }
+    public int CantidadMallas { get; set; }
 }
 
 public record CreateCicloDTO
@@ -22,6 +25,7 @@ public record CreateCicloDTO
     public int? IdPadre { get; set; }
     public int IdPeriodo { get; set; }
     public int IdRegimen { get; set; }
+    public int IdTipoOferta { get; set; }
     public string Detalle { get; set; }
     public DateOnly? FechaInicioEstimada { get; set; }
     public DateOnly? FechaFinEstimada { get; set; }
@@ -34,6 +38,7 @@ public record UpdateCicloDTO
     public int? IdPadre { get; set; }
     public int IdPeriodo { get; set; }
     public int IdRegimen { get; set; }
+    public int IdTipoOferta { get; set; }
     public string Detalle { get; set; }
     public DateOnly? FechaInicioEstimada { get; set; }
     public DateOnly? FechaFinEstimada { get; set; }

@@ -11,4 +11,5 @@ namespace AMMI_Online_API.Application.DTOs.Payments
         public string Estado { get; set; } = string.Empty;
         public bool Pagado { get; set; }
     }
+
 }

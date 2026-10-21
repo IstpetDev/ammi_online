@@ -6,3 +6,7 @@ namespace AMMI_Online_API.Application.Features.Infrastructure.Queries;
 
 public record GetDetalleMallaByIdQuery(int Id) : IRequest<DetalleMallaDTO>;
 public record GetDetalleMallaByMallaIdQuery(int IdMalla, int PageNumber = 1, int PageSize = 10) : IRequest<PaginatedResult<DetalleMallaDTO>>;
+public record GetDetalleMallaPorModuloQuery(int IdMalla) : IRequest<IEnumerable<DetalleMallaModuloDTO>>;
+public record GetFechasSugeridasModuloQuery(int IdCiclo, int Modulo) : IRequest<FechasSugeridasModuloDTO>;
+
+

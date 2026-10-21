@@ -1,0 +1,193 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Mallas</h1>
+        <p>Aquí se gestionarán las mallas curriculares relacionadas con cursos y tipos de oferta.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros + Tabla -->
+  <div class="seasons-content-card">
+    <div class="rol-filtros-container mb-4">
+      <div class="seasons-form-row" style="width: 100%; align-items: flex-end;">
+
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Período Lectivo</label>
+          <p-select [(ngModel)]="selectedPeriodo" [options]="periodos" optionLabel="detalle"
+            (onChange)="onPeriodoChange()" placeholder="Seleccione" [disabled]="false" [showClear]="true"
+            appendTo="body" styleClass="w-full"></p-select>
+        </div>
+
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Ciclo</label>
+          <p-select [(ngModel)]="selectedCiclo" [options]="ciclos" optionLabel="detalle" (onChange)="onCicloChange()"
+            [placeholder]="selectedPeriodo ? 'Seleccione' : 'Req. período'" [disabled]="!selectedPeriodo"
+            [showClear]="true" appendTo="body" styleClass="w-full"></p-select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; white-space: nowrap; align-items: flex-end;">
+          <!-- Mostrar Agregar sólo cuando hay ciclo seleccionado -->
+          <p-button *ngIf="selectedCiclo" label="Agregar" icon="pi pi-plus" (onClick)="openCreateDialog()"
+            styleClass="btn-accion-agregar"></p-button>
+          <!-- Duplicar también requiere ciclo seleccionado -->
+          <p-button *ngIf="selectedCiclo" label="Duplicar" icon="pi pi-copy" (onClick)="openDuplicateDialog()"
+            styleClass="btn-accion-duplicar"></p-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor de tabla -->
+    <div class="seasons-content-card">
+      <!-- Mensaje de selección requerida -->
+      <ng-container *ngIf="!selectedPeriodo || !selectedCiclo">
+        <div class="select-warning-box">
+          <div style="font-size:1.08rem; color:var(--text-color); font-weight:500;">Seleccione período y ciclo para visualizar las mallas.</div>
+        </div>
+      </ng-container>
+      <!-- Tabla de mallas -->
+      <ng-container *ngIf="selectedCiclo">
+        <p-table [value]="mallas" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mallas">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Detalle</th>
+              <th>Curso</th>
+              <th>Tipo de Oferta</th>
+              <th>Ciclo</th>
+              <th *ngIf="selectedCiclo">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-malla>
+            <tr>
+              <td>{{ malla.detalle }}</td>
+              <td>{{ getCursoName(malla.idCursos!) }}</td>
+              <td>{{ malla.nombreTipoOferta || 'N/A' }}</td>
+              <td>{{ getCicloName(malla.idCiclo!) }}</td>
+              <td *ngIf="selectedCiclo" class="seasons-actions-cell" style="justify-content:center">
+                <p-button icon="pi pi-pencil" (onClick)="openEditDialog(malla)" pTooltip="Editar" tooltipPosition="top"
+                          styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+                <p-button icon="pi pi-trash" (onClick)="confirmDelete(malla)" pTooltip="Eliminar" tooltipPosition="top"
+                          styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="selectedCiclo ? 5 : 4">
+                <div class="empty-state-box">
+                  <i class="pi pi-inbox" style="font-size:2.2rem; color:var(--brand-yellow-dark); margin-bottom:0.5rem;"></i>
+                  <div style="font-size:1.05rem; color:var(--text-color-secondary); font-weight:500;">No hay mallas registradas.</div>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dialog duplicar mallas -->
+<p-dialog [(visible)]="showDuplicateDialog" [modal]="true" [style]="{width: '720px'}" header="Duplicar Mallas de Ciclo"
+  [draggable]="false" [resizable]="false">
+  <div class="p-fluid formgrid grid" style="padding-top: 0.5rem;">
+    <div class="field col-12">
+      <p class="text-color-secondary mb-3">
+        <i class="pi pi-info-circle mr-1"></i>
+        Seleccione el ciclo fuente (inactivo) y el ciclo destino (activo) para duplicar todas las mallas.
+      </p>
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Ciclo Fuente</label>
+      <p-select [(ngModel)]="sourceCiclo" [options]="sourceCiclos" optionLabel="detalle"
+        (onChange)="onSourceCicloChange()" placeholder="Seleccione ciclo fuente" appendTo="body"
+        styleClass="w-full"></p-select>
+      <div *ngIf="inactiveCiclosCount > 10 && !showAllSource" style="margin-top: 0.5rem;">
+        <p-button label="Ver más ciclos" (onClick)="toggleShowAllSource()"
+          styleClass="p-button-link p-button-sm"></p-button>
+      </div>
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Ciclo Destino</label>
+      <p-select [(ngModel)]="destinationCiclo" [options]="destinationCiclos" optionLabel="detalle"
+        placeholder="Seleccione ciclo destino" appendTo="body" styleClass="w-full"></p-select>
+      <div *ngIf="activeCiclosCount > 10 && !showAllDest" style="margin-top: 0.5rem;">
+        <p-button label="Ver más ciclos" (onClick)="toggleShowAllDest()"
+          styleClass="p-button-link p-button-sm"></p-button>
+      </div>
+    </div>
+
+    <div class="field col-12" *ngIf="sourceMallas.length > 0">
+      <p-divider></p-divider>
+      <h4 class="mb-2">Mallas a duplicar ({{ sourceMallas.length }}):</h4>
+      <p-table [value]="sourceMallas" [paginator]="false" [scrollable]="true" scrollHeight="260px">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Detalle</th>
+            <th>Curso</th>
+            <th>Tipo de Oferta</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-malla>
+          <tr>
+            <td>{{ malla.detalle }}</td>
+            <td>{{ getCursoName(malla.idCursos!) }}</td>
+            <td>{{ malla.nombreTipoOferta || 'N/A' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="cancelDuplicate()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Duplicar" icon="pi pi-copy" (onClick)="confirmDuplicate()"
+      [disabled]="!sourceCiclo || !destinationCiclo || sourceMallas.length === 0"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog crear/editar malla -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '540px'}"
+  [header]="isEditing ? 'Editar Malla' : 'Nueva Malla'" (onHide)="hideDialog()" [draggable]="false" [resizable]="false">
+  <form [formGroup]="mallaForm">
+    <div class="p-fluid formgrid grid" style="padding-top: 0.5rem;">
+
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Curso <span class="text-red-400">*</span></label>
+        <p-select formControlName="idCursos" [options]="isEditing ? cursos : availableCursos" optionLabel="detalle" optionValue="idCursos"
+          placeholder="Seleccione un curso" appendTo="body" styleClass="w-full"></p-select>
+      </div>
+
+      <div class="field col-12">
+        <label class="font-semibold block mb-2">Ciclo <span class="text-red-400">*</span></label>
+        <p-select formControlName="idCiclo" [options]="ciclos" optionLabel="detalle" optionValue="idCiclo"
+          placeholder="Seleccione un ciclo" appendTo="body" styleClass="w-full"></p-select>
+      </div>
+
+      <!-- Campo detalle al final: autogenerado pero editable -->
+      <div class="field col-12">
+        <label class="font-semibold block mb-2">Detalle <span class="text-red-400">*</span></label>
+        <input pInputText formControlName="detalle" placeholder="Nombre de la malla" (input)="onDetalleInput()" style="width:100%" />
+      </div>
+
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="displayDialog = false" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="saveMalla()" [disabled]="!mallaForm.valid"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal confirmación eliminar -->
+<app-confirmation-modal [visible]="showConfirmDelete" title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar esta malla?" acceptLabel="Eliminar" rejectLabel="Cancelar"
+  (accept)="deleteMalla()" (reject)="cancelDelete()" (hide)="cancelDelete()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>

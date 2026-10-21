@@ -1,41 +1,50 @@
+<app-shared-toast></app-shared-toast>
+
 <div class="seasons-container">
-  <div class="seasons-header">
-    <div class="seasons-header-content">
-      <div class="seasons-header-title">
-        <h1>Gestión de Régimen</h1>
-        <p>Aquí se gestionarán los regímenes académicos que proporcionan información general sobre los tipos de oferta educativa.</p>
-      </div>
-      <div class="seasons-header-actions">
-        <p-button label="Agregar Régimen" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
-      </div>
+
+  <!-- Header -->
+  <div class="settings-header">
+    <div class="seasons-header-title">
+      <h1>Regímenes Académicos</h1>
+      <p>Clasifica los tipos de oferta educativa disponibles en la institución.</p>
     </div>
+    <p-button label="Nuevo Régimen" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="btn-nuevo"></p-button>
   </div>
 
+  <!-- Tabla -->
   <div class="seasons-content-card">
     <p-table [value]="regimenes" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} regimenes">
+             currentPageReportTemplate="{first}–{last} de {totalRecords} regímenes">
       <ng-template pTemplate="header">
         <tr>
-          <th>Detalle</th>
-          <th>Acciones</th>
+          <th>Nombre del régimen</th>
+          <th style="width: 90px; text-align:center">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-regimen>
         <tr>
-          <td>{{ regimen.detalle }}</td>
-          <td class="seasons-actions-cell">
-            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(regimen)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
-            <p-button icon="pi pi-trash" (onClick)="confirmDelete(regimen)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          <td class="col-primary">{{ regimen.detalle }}</td>
+          <td class="seasons-actions-cell" style="justify-content:center">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(regimen)" pTooltip="Editar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(regimen)" pTooltip="Eliminar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="2">No hay regímenes registrados.</td>
+          <td colspan="2">
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-color-secondary)">
+              <i class="pi pi-inbox" style="font-size:2rem; display:block; margin-bottom:0.5rem"></i>
+              No hay regímenes registrados aún.
+            </div>
+          </td>
         </tr>
       </ng-template>
     </p-table>
   </div>
+
 </div>
 
 <!-- Dialog para crear/editar regimen -->
@@ -69,4 +78,4 @@
   (hide)="onRejectDelete()">
 </app-confirmation-modal>
 
-<p-toast></p-toast>
+<app-shared-toast></app-shared-toast>

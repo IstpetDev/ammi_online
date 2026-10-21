@@ -15,5 +15,5 @@ public partial class TipoOferta
 
     public bool EsActivo { get; set; }
 
-    public virtual ICollection<Malla> Malla { get; set; } = new List<Malla>();
+    public virtual ICollection<Ciclo> Ciclo { get; set; } = new List<Ciclo>();
 }

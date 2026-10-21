@@ -21,6 +21,8 @@ public class CreditoDTO
     public int IdEspecie { get; set; }
     public string DetalleEspecie { get; set; } = string.Empty;
     public bool EsDiferible { get; set; }
+    public bool EsPension { get; set; }
+    public bool EsMatricula { get; set; }
 
     // Detalle de créditos (cuotas)
     public List<DetalleCreditoItemDTO> DetallesCredito { get; set; } = new();
@@ -59,4 +61,9 @@ public class CuotaGeneradaDTO
     public int Numero { get; set; }
     public decimal Valor { get; set; }
     public DateOnly FechaLimite { get; set; }
+}
+
+public class ActualizarFechaLimiteCuotaDTO
+{
+    public DateOnly NuevaFechaLimite { get; set; }
 }

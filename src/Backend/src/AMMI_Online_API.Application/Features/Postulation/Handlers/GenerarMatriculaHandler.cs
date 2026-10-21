@@ -20,9 +20,16 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
     private readonly IEmailService _emailService;
     private readonly IDatosContacto _datosContactoRepository;
     private readonly IAuthRepository _authRepository;
+    private readonly IInfraestructuraValidationService _validationService;
 
-    public GenerarMatriculaHandler(IGenerarMatricula generarMatriculaRepository, IPersona personaRepository, IPasswordHasher passwordHasher,
-        IEmailService emailService, IDatosContacto datosContactoRepository, IAuthRepository authRepository)
+    public GenerarMatriculaHandler(
+        IGenerarMatricula generarMatriculaRepository,
+        IPersona personaRepository,
+        IPasswordHasher passwordHasher,
+        IEmailService emailService,
+        IDatosContacto datosContactoRepository,
+        IAuthRepository authRepository,
+        IInfraestructuraValidationService validationService)
     {
         _generarMatriculaRepository = generarMatriculaRepository;
         _personaRepository = personaRepository;
@@ -30,6 +37,7 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
         _emailService = emailService;
         _datosContactoRepository = datosContactoRepository;
         _authRepository = authRepository;
+        _validationService = validationService;
     }
 
     public async Task<Response<GenerarMatriculaResultDTO>> Handle(GenerarMatriculaCommand request, CancellationToken cancellationToken)
@@ -38,7 +46,13 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
 
         try
         {
-            // 1. Obtener persona
+            // 1. Validar que la malla esté completamente configurada
+            var (mallaValida, mensajeMalla) = await _validationService
+                .ValidarMallaListaParaMatricularAsync(data.IdMalla, cancellationToken);
+            if (!mallaValida)
+                return Response<GenerarMatriculaResultDTO>.Failure(mensajeMalla);
+
+            // 2. Obtener persona
             var persona = await _personaRepository.GetByIdAsync(data.IdPersona, cancellationToken);
 
             if (persona == null)
@@ -51,7 +65,7 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
             RolUsuario? rolUsuario = null;
             string plainPassword = string.Empty;
 
-            // 2. Verificar si ya existe usuario para esta persona
+            // 3. Verificar si ya existe usuario para esta persona
             var usuarioExiste = await _generarMatriculaRepository
                 .ExisteUsuarioPorIdPersonaAsync(persona.IdPersona, cancellationToken);
 
@@ -87,7 +101,7 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
             var resultadoRepo = await _generarMatriculaRepository.GenerarMatriculaCompletaAsync(
                 data.IdPersona,
                 data.IdMalla,
-                data.IdParalelo,
+                data.IdMallaParalelo,
                 nuevoUsuario,
                 rolUsuario,
                 cancellationToken);
@@ -102,24 +116,102 @@ public class GenerarMatriculaHandler : IRequestHandler<GenerarMatriculaCommand, 
                     idPersona: data.IdPersona,
                     idTipoDatoContacto: null,
                     detalle: null,
-                    esPrincipal: true,
+                    esPrincipal: null,
                     cancellationToken: cancellationToken);
 
-                var correoContacto = contactos.FirstOrDefault(c => c.Detalle.Contains("@"));
+                var correoContacto = contactos.FirstOrDefault(c => (c.IdTipoDatoContacto == 1 || (c.Detalle != null && c.Detalle.Contains("@"))) && !string.IsNullOrWhiteSpace(c.Detalle))?.Detalle?.Trim();
 
-                if (correoContacto != null)
+                if (!string.IsNullOrWhiteSpace(correoContacto))
                 {
-                    var correoDestino = correoContacto.Detalle;
-                    var asunto = "Credenciales de Acceso - AMMI Online";
-                    var cuerpo = $@"
-                        <h3>Bienvenido a AMMI Online</h3>
-                        <p>Se le ha generado una matrícula y asignado una cuenta de usuario.</p>
-                        <p><strong>Usuario:</strong> {nuevoUsuario.Username}</p>
-                        <p><strong>Contraseña temporal:</strong> {plainPassword}</p>
-                        <p><strong>Al ingresar por primera vez, el sistema le pedirá obligatoriamente que establezca una nueva contraseña personal.</strong></p>";
+                    var nombreEstudiante = $"{persona.PrimerNombre} {persona.PrimerApellido}".Trim();
+                    if (string.IsNullOrWhiteSpace(nombreEstudiante)) nombreEstudiante = "Estudiante";
 
-                    await _emailService.SendEmailAsync(correoDestino, asunto, cuerpo, true, cancellationToken);
+                    var asunto = "¡Bienvenido/a a AMMI Online! - Credenciales de Acceso";
+                    var cuerpo = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1D1E1C; margin: 0; padding: 0; background-color: #F4F6F9; }}
+        .wrapper {{ width: 100%; padding: 30px 0; background-color: #F4F6F9; }}
+        .container {{ max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-top: 5px solid #E9B902; }}
+        .header {{ background-color: #1D1E1C; color: #FFFFFF; padding: 35px 25px; text-align: center; }}
+        .badge {{ display: inline-block; background-color: #E9B902; color: #1D1E1C; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 23px; font-weight: 700; color: #FFFFFF; }}
+        .header p {{ margin: 6px 0 0 0; color: #FCEA1E; font-size: 13px; font-weight: 500; letter-spacing: 0.5px; }}
+        .content {{ padding: 35px 30px; }}
+        .credentials {{ background-color: #FAFAFA; border: 1px solid #E9ECEF; border-left: 4px solid #E9B902; padding: 20px; margin: 25px 0; border-radius: 6px; }}
+        .credentials h3 {{ margin-top: 0; color: #1D1E1C; font-size: 15px; font-weight: 700; margin-bottom: 12px; }}
+        .steps {{ background-color: #FFFDF0; border: 1px solid #F5E6A3; padding: 18px 20px; margin: 25px 0; border-radius: 6px; }}
+        .steps h4 {{ margin-top: 0; color: #1D1E1C; font-size: 14px; margin-bottom: 10px; font-weight: 700; }}
+        .steps ol {{ margin: 0; padding-left: 20px; }}
+        .steps li {{ font-size: 13.5px; color: #363636; margin-bottom: 6px; }}
+        .footer {{ text-align: center; padding: 25px 20px; font-size: 12px; color: #888888; background-color: #FAFAFA; border-top: 1px solid #EEEEEE; }}
+        .signature {{ margin-top: 30px; border-top: 1px solid #EEEEEE; padding-top: 15px; font-size: 13.5px; color: #555; }}
+    </style>
+</head>
+<body>
+    <div class='wrapper'>
+        <div class='container'>
+            <div class='header'>
+                <div class='badge'>Matrícula Generada</div>
+                <h1>Credenciales de Acceso</h1>
+                <p>AMMI ONLINE &bull; COMUNIDAD ESTUDIANTIL</p>
+            </div>
+            <div class='content'>
+                <p>Estimado/a <strong>{nombreEstudiante}</strong>,</p>
+                <p>Se ha formalizado tu matrícula en <strong>AMMI Online</strong> y se ha generado tu cuenta de usuario institucional.</p>
+                
+                <div class='credentials'>
+                    <h3>Tus Credenciales de Acceso</h3>
+                    <p style='margin: 6px 0; font-size: 14px;'><strong>Usuario:</strong> <span style='font-family: monospace; font-size: 15px; color: #1D1E1C;'>{nuevoUsuario.Username}</span></p>
+                    <p style='margin: 6px 0; font-size: 14px;'><strong>Contraseña temporal:</strong> <span style='font-family: monospace; font-size: 15px; color: #1D1E1C;'>{plainPassword}</span></p>
+                </div>
+                
+                <div class='steps'>
+                    <h4>Pasos para ingresar al portal:</h4>
+                    <ol>
+                        <li>Ingresa a la plataforma con tu usuario y tu contraseña temporal.</li>
+                        <li>El sistema te solicitará que establezcas tu nueva contraseña personal.</li>
+                        <li>Accede a tu panel para ver tus materias y horarios.</li>
+                    </ol>
+                </div>
+                
+                <p style='font-size: 12.5px; color: #777;'><em>Por tu seguridad, no compartas estas credenciales con nadie.</em></p>
+                
+                <div class='signature'>
+                    Atentamente,<br>
+                    <strong style='color: #1D1E1C;'>Secretaría General y Admisiones</strong><br>
+                    <span>AMMI Online</span>
+                </div>
+            </div>
+            <div class='footer'>
+                <p style='margin: 0 0 5px 0;'>&copy; {DateTime.Now.Year} AMMI Online. Todos los derechos reservados.</p>
+                <p style='margin: 0;'>Este es un correo automático, por favor no responder a este mensaje.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _emailService.SendEmailAsync(correoContacto, asunto, cuerpo, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[GenerarMatriculaHandler] ❌ Error al enviar correo de matrícula: {ex.Message}");
+                        }
+                    });
+
                     correoEnviado = true;
+                }
+                else
+                {
+                    Console.WriteLine($"[GenerarMatriculaHandler] ⚠️ No se encontró correo para la persona #{data.IdPersona}");
                 }
             }
 
@@ -187,10 +279,47 @@ public class UpdateMatriculaHandler : IRequestHandler<UpdateMatriculaCommand, Re
         if (entity == null)
             return Response<bool>.Failure($"Matrícula con ID {request.IdMatricula} no encontrada.");
         entity.IdUsuarioAlumno = request.IdUsuarioAlumno;
-        entity.IdParalelo = request.IdParalelo;
-        entity.EsFinalizada = request.EsFinalizada;
+        entity.IdMallaParalelo = request.IdMallaParalelo;
+        entity.IdEstadoMatricula = request.IdEstadoMatricula;
         var result = await _generarMatriculaRepository.UpdateAsync(entity, cancellationToken);
         return Response<bool>.Success(true, "Matrícula actualizada exitosamente.");
+    }
+}
+
+public class CambiarParaleloMatriculaHandler : IRequestHandler<CambiarParaleloMatriculaCommand, Response<CambiarParaleloResultDTO>>
+{
+    private readonly IGenerarMatricula _repository;
+
+    public CambiarParaleloMatriculaHandler(IGenerarMatricula repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<Response<CambiarParaleloResultDTO>> Handle(CambiarParaleloMatriculaCommand request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var resultado = await _repository.CambiarParaleloAsync(
+                request.IdMatricula,
+                request.IdMallaParaleloNuevo,
+                cancellationToken);
+
+            var mensaje = resultado.NotasBorradas
+                ? "Paralelo cambiado exitosamente. Las notas anteriores fueron eliminadas."
+                : "Paralelo cambiado exitosamente.";
+
+            return Response<CambiarParaleloResultDTO>.Success(
+                new CambiarParaleloResultDTO
+                {
+                    NotasBorradas = resultado.NotasBorradas,
+                    Advertencia = resultado.Advertencia
+                },
+                mensaje);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Response<CambiarParaleloResultDTO>.Failure(ex.Message);
+        }
     }
 }
 

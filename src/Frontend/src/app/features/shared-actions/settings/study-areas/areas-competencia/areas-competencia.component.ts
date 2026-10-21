@@ -5,18 +5,19 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
+import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { AreaCompetenciaDTO, AreaDTO } from '../../../../../data/models/Entities';
 import { AreaCompetenciaService } from '../../../../../core/services/infrastructure/area-competencia.service';
 import { AreaService } from '../../../../../core/services/infrastructure/area.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-areas-competencia',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, SelectModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './areas-competencia.component.html',
   styleUrls: ['./areas-competencia.component.css'],
   providers: [MessageService]

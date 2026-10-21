@@ -1,0 +1,681 @@
+<div class="malla-wizard">
+  <app-shared-toast></app-shared-toast>
+
+  <!-- ══ Header ══ -->
+  <div class="wizard-header">
+    <button type="button" class="btn-back" (click)="goBack()">
+      <i class="pi pi-arrow-left"></i>
+      <span>Parametrización</span>
+    </button>
+    <div class="wizard-title-block">
+      <div class="wizard-title-icon">
+        <i class="pi pi-bolt"></i>
+      </div>
+      <div>
+        <h1>Crear Malla Completa</h1>
+        <p>Configure ciclo, malla, materias y extras en un solo proceso atómico</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Stepper ══ -->
+  <div class="wizard-stepper">
+    <div class="stepper-nav-row">
+      <button type="button" class="btn-stepper-icon" *ngIf="currentStep > 1" (click)="prevStep()" title="Anterior">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+      <div class="btn-stepper-spacer" *ngIf="currentStep === 1"></div>
+
+      <div class="stepper-inner">
+        <ng-container *ngFor="let step of steps; let i = index">
+          <div class="stepper-node-wrap">
+            <div class="stepper-bubble" [class.active]="step.active" [class.completed]="step.completed"
+              [class.clickable]="step.id <= getMaxAccessibleStep()" (click)="setStep(step.id)">
+              <i *ngIf="!step.completed" [class]="step.icon"></i>
+              <i *ngIf="step.completed" class="pi pi-check"></i>
+            </div>
+            <span class="stepper-label" [class.active]="step.active" [class.completed]="step.completed">{{ step.title
+              }}</span>
+          </div>
+          <div *ngIf="i < steps.length - 1" class="stepper-line" [class.done]="step.completed"></div>
+        </ng-container>
+      </div>
+
+      <button type="button" class="btn-stepper-icon btn-stepper-icon-next"
+        *ngIf="currentStep < steps.length && currentStep > 1" (click)="nextStep()" title="Siguiente">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+      <div class="btn-stepper-spacer" *ngIf="currentStep === 1 || currentStep === steps.length"></div>
+    </div>
+  </div>
+
+  <!-- ══ Contenido ══ -->
+  <div class="wizard-content">
+    <form [formGroup]="form" style="display:flex; flex-direction:column; height:100%;">
+      <div class="wizard-scroll-area">
+
+        <!-- ══════════════════════════════════════
+             PASO 1: Ciclo
+             ══════════════════════════════════════ -->
+        <div *ngIf="currentStep === 1" class="step-form">
+          <div class="step-header">
+            <div class="step-header-icon"><i class="pi pi-calendar"></i></div>
+            <div>
+              <h2>Configuración del Ciclo</h2>
+              <p>Seleccione un ciclo existente o cree uno nuevo</p>
+            </div>
+          </div>
+
+          <!-- Toggle selector de modo -->
+          <div class="ciclo-mode-toggle">
+            <button type="button" class="mode-btn" [class.mode-btn-active]="usarCicloExistente"
+              (click)="toggleCicloMode(true)">
+              <i class="pi pi-search"></i>
+              Usar ciclo existente
+            </button>
+            <button type="button" class="mode-btn" [class.mode-btn-active]="!usarCicloExistente"
+              (click)="toggleCicloMode(false)">
+              <i class="pi pi-plus-circle"></i>
+              Crear nuevo ciclo
+            </button>
+          </div>
+
+          <!-- ── Opción A: Seleccionar ciclo existente ── -->
+          <div *ngIf="usarCicloExistente" formGroupName="cicloExistente" class="ciclo-existente-block">
+            <div class="form-row row-1">
+              <div class="form-group">
+                <label>Ciclo <span class="req">*</span></label>
+                <p-select formControlName="idCiclo" [options]="cicloOptions" optionLabel="label" optionValue="value"
+                  placeholder="Seleccione un ciclo existente" [filter]="true" filterPlaceholder="Buscar ciclo..."
+                  [fluid]="true" appendTo="body"
+                  [class.p-invalid]="form.get('cicloExistente.idCiclo')?.invalid && form.get('cicloExistente.idCiclo')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloExistente.idCiclo')?.invalid && form.get('cicloExistente.idCiclo')?.touched">
+                  <i class="pi pi-times-circle"></i> Seleccione un ciclo
+                </small>
+              </div>
+            </div>
+            <div *ngIf="form.get('cicloExistente.idCiclo')?.value" class="ciclo-selected-info">
+              <i class="pi pi-check-circle"></i>
+              <span>Ciclo seleccionado: <strong>{{ getLabel(cicloOptions, form.get('cicloExistente.idCiclo')?.value)
+                  }}</strong></span>
+            </div>
+          </div>
+
+          <!-- ── Opción B: Crear nuevo ciclo ── -->
+          <div *ngIf="!usarCicloExistente" formGroupName="cicloNuevo">
+            <div class="form-row row-2">
+              <div class="form-group">
+                <label>Período Lectivo <span class="req">*</span></label>
+                <p-select formControlName="idPeriodo" [options]="periodoOptions" optionLabel="label" optionValue="value"
+                  placeholder="Seleccione período" [filter]="true" filterPlaceholder="Buscar..." [fluid]="true"
+                  appendTo="body"
+                  [class.p-invalid]="form.get('cicloNuevo.idPeriodo')?.invalid && form.get('cicloNuevo.idPeriodo')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.idPeriodo')?.invalid && form.get('cicloNuevo.idPeriodo')?.touched">
+                  <i class="pi pi-times-circle"></i> Requerido
+                </small>
+              </div>
+              <div class="form-group">
+                <label>Régimen <span class="req">*</span></label>
+                <p-select formControlName="idRegimen" [options]="regimenOptions" optionLabel="label" optionValue="value"
+                  placeholder="Seleccione régimen" [fluid]="true" appendTo="body"
+                  [class.p-invalid]="form.get('cicloNuevo.idRegimen')?.invalid && form.get('cicloNuevo.idRegimen')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.idRegimen')?.invalid && form.get('cicloNuevo.idRegimen')?.touched">
+                  <i class="pi pi-times-circle"></i> Requerido
+                </small>
+              </div>
+            </div>
+
+            <div class="form-row row-1">
+              <div class="form-group">
+                <label>Tipo de Oferta <span class="req">*</span></label>
+                <p-select formControlName="idTipoOferta" [options]="tipoOfertaOptions" optionLabel="label"
+                  optionValue="value" placeholder="Seleccione tipo de oferta" [fluid]="true" appendTo="body"
+                  [class.p-invalid]="form.get('cicloNuevo.idTipoOferta')?.invalid && form.get('cicloNuevo.idTipoOferta')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.idTipoOferta')?.invalid && form.get('cicloNuevo.idTipoOferta')?.touched">
+                  <i class="pi pi-times-circle"></i> Requerido
+                </small>
+              </div>
+            </div>
+
+            <div class="form-row row-2">
+              <div class="form-group">
+                <label>Nombre del Ciclo <span class="req">*</span></label>
+                <input pInputText formControlName="detalle" placeholder="Ej: CICLO I SIERRA ACELERADO PERIODO 2026"
+                  class="form-control"
+                  [class.p-invalid]="form.get('cicloNuevo.detalle')?.invalid && form.get('cicloNuevo.detalle')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.detalle')?.invalid && form.get('cicloNuevo.detalle')?.touched">
+                  <i class="pi pi-times-circle"></i> Mínimo 3 caracteres
+                </small>
+              </div>
+              <div class="form-group">
+                <label>Ciclo Padre <span class="hint-inline">(opcional)</span></label>
+                <p-select formControlName="idPadre" [options]="cicloOptions" optionLabel="label" optionValue="value"
+                  placeholder="Ninguno" [showClear]="true" [filter]="true" [fluid]="true" appendTo="body" />
+                <small class="hint-message"><i class="pi pi-info-circle"></i> Solo si este ciclo es hijo de otro</small>
+              </div>
+            </div>
+
+            <div class="form-row row-2">
+              <div class="form-group">
+                <label>Fecha Inicio Estimada <span class="req">*</span></label>
+                <p-datepicker formControlName="fechaInicioEstimada" dateFormat="dd/mm/yy" [showIcon]="true"
+                  placeholder="DD/MM/AAAA" [fluid]="true" appendTo="body"
+                  [class.p-invalid]="form.get('cicloNuevo.fechaInicioEstimada')?.invalid && form.get('cicloNuevo.fechaInicioEstimada')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.fechaInicioEstimada')?.invalid && form.get('cicloNuevo.fechaInicioEstimada')?.touched">
+                  <i class="pi pi-times-circle"></i> Requerido
+                </small>
+              </div>
+              <div class="form-group">
+                <label>Fecha Fin Estimada <span class="req">*</span></label>
+                <p-datepicker formControlName="fechaFinEstimada" dateFormat="dd/mm/yy" [showIcon]="true"
+                  placeholder="DD/MM/AAAA" [fluid]="true" appendTo="body"
+                  [class.p-invalid]="form.get('cicloNuevo.fechaFinEstimada')?.invalid && form.get('cicloNuevo.fechaFinEstimada')?.touched" />
+                <small class="error-message"
+                  *ngIf="form.get('cicloNuevo.fechaFinEstimada')?.invalid && form.get('cicloNuevo.fechaFinEstimada')?.touched">
+                  <i class="pi pi-times-circle"></i> Requerido
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             PASO 2: Malla
+             ══════════════════════════════════════ -->
+        <div *ngIf="currentStep === 2" class="step-form" formGroupName="malla">
+          <div class="step-header">
+            <div class="step-header-icon"><i class="pi pi-sitemap"></i></div>
+            <div>
+              <h2>Datos de la Malla</h2>
+              <p>El nombre se completa automáticamente con el curso seleccionado</p>
+            </div>
+          </div>
+
+          <div class="form-row row-1">
+            <div class="form-group">
+              <label>Curso <span class="req">*</span></label>
+              <p-select formControlName="idCursos" [options]="cursoOptions" optionLabel="label" optionValue="value"
+                placeholder="Seleccione curso" [filter]="true" filterPlaceholder="Buscar..." [fluid]="true"
+                appendTo="body"
+                [class.p-invalid]="form.get('malla.idCursos')?.invalid && form.get('malla.idCursos')?.touched" />
+              <small class="error-message"
+                *ngIf="form.get('malla.idCursos')?.invalid && form.get('malla.idCursos')?.touched">
+                <i class="pi pi-times-circle"></i> Requerido
+              </small>
+            </div>
+          </div>
+
+          <div class="form-row row-1">
+            <div class="form-group">
+              <label>Nombre de la Malla <span class="req">*</span></label>
+              <input pInputText formControlName="detalle" placeholder="Se completa automáticamente con el curso"
+                class="form-control" maxlength="100"
+                [class.p-invalid]="form.get('malla.detalle')?.invalid && form.get('malla.detalle')?.touched" />
+              <div class="field-footer">
+                <small class="hint-message"><i class="pi pi-info-circle"></i> Puede editar el nombre manualmente</small>
+                <small class="char-counter"
+                  [class.char-counter-warn]="(form.get('malla.detalle')?.value?.length ?? 0) >= 90"
+                  [class.char-counter-max]="(form.get('malla.detalle')?.value?.length ?? 0) >= 100">
+                  {{ form.get('malla.detalle')?.value?.length ?? 0 }}/100
+                </small>
+              </div>
+              <small class="error-message"
+                *ngIf="form.get('malla.detalle')?.invalid && form.get('malla.detalle')?.touched">
+                <i class="pi pi-times-circle"></i>
+                <ng-container *ngIf="form.get('malla.detalle')?.errors?.['maxlength']">Máximo 100 caracteres</ng-container>
+                <ng-container *ngIf="form.get('malla.detalle')?.errors?.['minlength'] && !form.get('malla.detalle')?.errors?.['maxlength']">Mínimo 3 caracteres</ng-container>
+                <ng-container *ngIf="form.get('malla.detalle')?.errors?.['required'] && !form.get('malla.detalle')?.errors?.['minlength'] && !form.get('malla.detalle')?.errors?.['maxlength']">Requerido</ng-container>
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             PASO 3: Materias
+             ══════════════════════════════════════ -->
+        <div *ngIf="currentStep === 3" class="step-form">
+          <div class="step-header">
+            <div class="step-header-icon"><i class="pi pi-book"></i></div>
+            <div>
+              <h2>Materias</h2>
+              <p>Las fechas se replican automáticamente entre materias del mismo módulo</p>
+            </div>
+          </div>
+
+          <div class="modulo-info-banner">
+            <i class="pi pi-info-circle"></i>
+            <span>
+              Si asigna el mismo <strong>número de módulo</strong> a varias materias,
+              las <strong>fechas de inicio y fin</strong> se sincronizarán automáticamente entre ellas.
+            </span>
+          </div>
+
+          <div formArrayName="materias">
+            <div *ngFor="let ctrl of materiasArray.controls; let i = index" [formGroupName]="i" class="materia-card">
+
+              <div class="materia-card-header">
+                <span class="materia-badge">
+                  <i class="pi pi-book"></i> Materia {{ i + 1 }}
+                  <span *ngIf="ctrl.get('modulo')?.value" class="modulo-tag">
+                    Módulo {{ ctrl.get('modulo')?.value }}
+                  </span>
+                </span>
+                <button type="button" class="btn-remove" *ngIf="materiasArray.length > 1" (click)="removeMateria(i)"
+                  pTooltip="Eliminar materia" tooltipPosition="left">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+
+              <div class="form-row row-2">
+                <div class="form-group">
+                  <label>Materia <span class="req">*</span></label>
+                  <p-select formControlName="idMateria" [options]="materiaOptions" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione materia" [filter]="true" filterPlaceholder="Buscar..."
+                    [fluid]="true" appendTo="body" />
+                  <small class="error-message" *ngIf="ctrl.get('idMateria')?.invalid && ctrl.get('idMateria')?.touched">
+                    <i class="pi pi-times-circle"></i> Requerido
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label>Plantilla de Evaluación <span class="req">*</span></label>
+                  <p-select formControlName="idPlantillaEvaluacion" [options]="plantillaOptions" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione plantilla" [fluid]="true" appendTo="body" />
+                  <small class="error-message"
+                    *ngIf="ctrl.get('idPlantillaEvaluacion')?.invalid && ctrl.get('idPlantillaEvaluacion')?.touched">
+                    <i class="pi pi-times-circle"></i> Requerido
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-row row-2">
+                <div class="form-group">
+                  <label>Área de Competencia <span class="req">*</span></label>
+                  <p-select formControlName="idAreaCompetencia" [options]="areaOptions" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione área" [filter]="true" [fluid]="true" appendTo="body" />
+                  <small class="error-message"
+                    *ngIf="ctrl.get('idAreaCompetencia')?.invalid && ctrl.get('idAreaCompetencia')?.touched">
+                    <i class="pi pi-times-circle"></i> Requerido
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label>Módulo <span class="hint-inline">(opcional — sincroniza fechas)</span></label>
+                  <p-inputnumber formControlName="modulo" [min]="1" placeholder="Ej: 1" [fluid]="true"
+                    (onChange)="onMateriaModuloChange(i)" />
+                </div>
+              </div>
+
+              <div class="form-row row-3">
+                <div class="form-group">
+                  <label>Duración (horas)</label>
+                  <p-inputnumber formControlName="duracionHoras" [min]="0" placeholder="Ej: 40" suffix=" h"
+                    [fluid]="true" />
+                </div>
+                <div class="form-group">
+                  <label>
+                    Fecha Inicio
+                    <span *ngIf="ctrl.get('modulo')?.value && !isMateriaFechaLocked(i)" class="hint-inline sync-hint">
+                      <i class="pi pi-sync"></i> sincroniza módulo
+                    </span>
+                    <span *ngIf="isMateriaFechaLocked(i)" class="locked-hint">
+                      <i class="pi pi-lock"></i>
+                    </span>
+                  </label>
+                  <p-datepicker *ngIf="!isMateriaFechaLocked(i)"
+                    formControlName="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true"
+                    placeholder="Opcional" [fluid]="true" appendTo="body" [minDate]="today"
+                    (onSelect)="onMateriaFechaChange(i, 'fechaInicio')" />
+                  <div *ngIf="isMateriaFechaLocked(i)" class="fecha-locked-display">
+                    <i class="pi pi-calendar"></i>
+                    <span>{{ (getLockedFecha(i, 'fechaInicio') | date:'dd/MM/yyyy') || '—' }}</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>
+                    Fecha Fin
+                    <span *ngIf="ctrl.get('modulo')?.value && !isMateriaFechaLocked(i)" class="hint-inline sync-hint">
+                      <i class="pi pi-sync"></i> sincroniza módulo
+                    </span>
+                    <span *ngIf="isMateriaFechaLocked(i)" class="locked-hint">
+                      <i class="pi pi-lock"></i>
+                    </span>
+                  </label>
+                  <p-datepicker *ngIf="!isMateriaFechaLocked(i)"
+                    formControlName="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true"
+                    placeholder="Opcional" [fluid]="true" appendTo="body" [minDate]="today"
+                    (onSelect)="onMateriaFechaChange(i, 'fechaFin')" />
+                  <div *ngIf="isMateriaFechaLocked(i)" class="fecha-locked-display">
+                    <i class="pi pi-calendar"></i>
+                    <span>{{ (getLockedFecha(i, 'fechaFin') | date:'dd/MM/yyyy') || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-add-materia" (click)="addMateria()">
+            <i class="pi pi-plus"></i> Agregar materia
+          </button>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             PASO 4: Extras (Requisitos + Paralelo)
+             ══════════════════════════════════════ -->
+        <div *ngIf="currentStep === 4" class="step-form step-form-wide">
+          <div class="step-header">
+            <div class="step-header-icon"><i class="pi pi-list"></i></div>
+            <div>
+              <h2>Extras</h2>
+              <p>Especies del ciclo son obligatorias. Requisitos de admisión y paralelo son opcionales.</p>
+            </div>
+          </div>
+
+          <!-- Especies del Ciclo (siempre requeridas) -->
+          <div class="section-block">
+            <div class="section-block-header">
+              <i class="pi pi-dollar"></i>
+              <h3>Especies del Ciclo <span class="req">*</span></h3>
+            </div>
+            <p class="section-desc">
+              Defina exactamente 2 especies (tipos de cobro) y sus valores para el ciclo.
+            </p>
+
+            <div formArrayName="especies">
+              <div *ngFor="let ctrl of especiesArray.controls; let i = index" [formGroupName]="i" class="materia-card">
+                <div class="materia-card-header">
+                  <span class="materia-badge"><i class="pi pi-dollar"></i> Especie {{ i + 1 }}</span>
+                  <button type="button" class="btn-remove" (click)="removeEspecie(i)"
+                    pTooltip="Eliminar especie" tooltipPosition="left">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+                <div class="form-row row-2">
+                  <div class="form-group">
+                    <label>Tipo de Especie <span class="req">*</span></label>
+                    <p-select formControlName="idEspecie" [options]="especieOptions" optionLabel="label"
+                      optionValue="value" placeholder="Seleccione especie" [fluid]="true" appendTo="body"
+                      [class.p-invalid]="ctrl.get('idEspecie')?.invalid && ctrl.get('idEspecie')?.touched" />
+                    <small class="error-message" *ngIf="ctrl.get('idEspecie')?.invalid && ctrl.get('idEspecie')?.touched">
+                      <i class="pi pi-times-circle"></i> Requerido
+                    </small>
+                  </div>
+                  <div class="form-group">
+                    <label>Valor <span class="req">*</span></label>
+                    <p-inputnumber formControlName="valorEspecie" [min]="0" placeholder="Ej: 150.00"
+                      mode="decimal" [minFractionDigits]="2" [fluid]="true"
+                      [class.p-invalid]="ctrl.get('valorEspecie')?.invalid && ctrl.get('valorEspecie')?.touched" />
+                    <small class="error-message" *ngIf="ctrl.get('valorEspecie')?.invalid && ctrl.get('valorEspecie')?.touched">
+                      <i class="pi pi-times-circle"></i> Requerido (mínimo 0)
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn-add-materia" (click)="addEspecie()" *ngIf="especiesArray.length < 2">
+              <i class="pi pi-plus"></i> Agregar especie
+            </button>
+
+            <small *ngIf="especiesArray.length !== 2" class="error-message" style="display:block; margin-top:0.5rem;">
+              <i class="pi pi-times-circle"></i> Se requieren exactamente 2 especies
+            </small>
+          </div>
+
+          <!-- Requisitos — PickList -->
+          <div class="section-block">
+            <div class="section-block-header">
+              <i class="pi pi-file-check"></i>
+              <h3>Requisitos de Admisión</h3>
+            </div>
+            <p class="section-desc">
+              Mueva los requisitos al panel derecho para asignarlos a esta malla.
+              Puede usar el filtro de búsqueda en cada panel.
+            </p>
+            <p-picklist [source]="sourceRequisitos" [target]="targetRequisitos" sourceHeader="Disponibles"
+              targetHeader="Seleccionados" [dragdrop]="true" filterBy="label"
+              sourceFilterPlaceholder="Buscar requisito..." targetFilterPlaceholder="Buscar requisito..."
+              (onMoveToTarget)="onPickListChange()" (onMoveToSource)="onPickListChange()"
+              (onMoveAllToTarget)="onPickListChange()" (onMoveAllToSource)="onPickListChange()" breakpoint="640px"
+              [style]="{'width':'100%'}">
+              <ng-template let-item pTemplate="item">
+                <div class="picklist-item">
+                  <i class="pi pi-file-check"></i>
+                  <span>{{ item.label }}</span>
+                </div>
+              </ng-template>
+            </p-picklist>
+            <small class="hint-message" style="margin-top:0.5rem; display:block;">
+              <i class="pi pi-info-circle"></i>
+              {{ targetRequisitos.length }} requisito(s) seleccionado(s)
+            </small>
+          </div>
+
+          <!-- Paralelo -->
+          <div class="section-block">
+            <div class="section-block-header">
+              <i class="pi pi-users"></i>
+              <h3>Paralelo</h3>
+            </div>
+            <p class="section-desc">
+              Si ya conoce el paralelo para esta malla, puede configurarlo ahora.
+              El sistema creará automáticamente un distributivo por cada materia.
+            </p>
+
+            <div class="toggle-row">
+              <p-checkbox formControlName="incluirParalelo" [binary]="true" inputId="incluirParalelo" />
+              <label for="incluirParalelo" class="toggle-label">Incluir paralelo en esta creación</label>
+            </div>
+
+            <div *ngIf="form.get('incluirParalelo')?.value" class="paralelo-fields" formGroupName="paralelo">
+              <div class="form-row row-2">
+                <div class="form-group">
+                  <label>Paralelo <span class="req">*</span></label>
+                  <p-select formControlName="idParalelo" [options]="paraleloOptions" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione paralelo" [fluid]="true" appendTo="body"
+                    [class.p-invalid]="form.get('paralelo.idParalelo')?.invalid && form.get('paralelo.idParalelo')?.touched" />
+                  <small class="error-message"
+                    *ngIf="form.get('paralelo.idParalelo')?.invalid && form.get('paralelo.idParalelo')?.touched">
+                    <i class="pi pi-times-circle"></i> Seleccione un paralelo
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label>Cupo Máximo <span class="hint-inline">(opcional)</span></label>
+                  <p-inputnumber formControlName="cupoMaximo" [min]="1" placeholder="Ej: 30" [fluid]="true" />
+                  <small class="hint-message"><i class="pi pi-info-circle"></i> Número máximo de estudiantes</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             PASO 5: Resumen / Confirmar
+             ══════════════════════════════════════ -->
+        <div *ngIf="currentStep === 5" class="step-form">
+
+          <!-- Estado de éxito post-submit -->
+          <div *ngIf="submitResult" class="success-state">
+            <div class="success-icon-wrap">
+              <i class="pi pi-check-circle"></i>
+            </div>
+            <h2>¡Malla creada exitosamente!</h2>
+            <p>Todos los registros fueron creados y confirmados en la base de datos.</p>
+            <div class="result-grid">
+              <div class="result-item">
+                <span class="result-label">Ciclo</span>
+                <strong>ID {{ submitResult.idCiclo }}</strong>
+              </div>
+              <div class="result-item">
+                <span class="result-label">Malla</span>
+                <strong>ID {{ submitResult.idMalla }}</strong>
+              </div>
+              <div class="result-item">
+                <span class="result-label">Materias</span>
+                <strong>{{ submitResult.idsDetalleMalla.length }}</strong>
+              </div>
+              <div class="result-item">
+                <span class="result-label">Paralelo</span>
+                <strong>{{ submitResult.idMallaParalelo ?? 'Sin paralelo' }}</strong>
+              </div>
+            </div>
+            <div class="success-actions">
+              <button type="button" class="btn btn-primary" (click)="goBack()">
+                <i class="pi pi-arrow-left"></i> Volver a Parametrización
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumen pre-submit -->
+          <div *ngIf="!submitResult">
+            <div class="step-header">
+              <div class="step-header-icon"><i class="pi pi-eye"></i></div>
+              <div>
+                <h2>Resumen</h2>
+                <p>Revise los datos antes de confirmar la creación</p>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <!-- Ciclo -->
+              <div class="summary-card">
+                <div class="summary-card-header">
+                  <i class="pi pi-calendar"></i>
+                  <h4>Ciclo</h4>
+                </div>
+                <div class="summary-card-body">
+                  <div class="summary-row">
+                    <span class="summary-key">Modo</span>
+                    <span>{{ usarCicloExistente ? 'Existente' : 'Nuevo' }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-key">Ciclo</span>
+                    <span>{{ getCicloResumenLabel() }}</span>
+                  </div>
+                  <ng-container *ngIf="!usarCicloExistente">
+                    <div class="summary-row">
+                      <span class="summary-key">Período</span>
+                      <span>{{ getLabel(periodoOptions, form.get('cicloNuevo.idPeriodo')?.value) }}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span class="summary-key">Régimen</span>
+                      <span>{{ getLabel(regimenOptions, form.get('cicloNuevo.idRegimen')?.value) }}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span class="summary-key">Inicio</span>
+                      <span>{{ form.get('cicloNuevo.fechaInicioEstimada')?.value | date:'dd/MM/yyyy' }}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span class="summary-key">Fin</span>
+                      <span>{{ form.get('cicloNuevo.fechaFinEstimada')?.value | date:'dd/MM/yyyy' }}</span>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+
+              <!-- Malla -->
+              <div class="summary-card">
+                <div class="summary-card-header">
+                  <i class="pi pi-sitemap"></i>
+                  <h4>Malla</h4>
+                </div>
+                <div class="summary-card-body">
+                  <div class="summary-row">
+                    <span class="summary-key">Nombre</span>
+                    <span>{{ form.get('malla.detalle')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-key">Curso</span>
+                    <span>{{ getLabel(cursoOptions, form.get('malla.idCursos')?.value) }}</span>
+                  </div>
+                  <div class="summary-row" *ngIf="!usarCicloExistente">
+                    <span class="summary-key">Tipo Oferta</span>
+                    <span>{{ getLabel(tipoOfertaOptions, form.get('cicloNuevo.idTipoOferta')?.value) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Materias -->
+              <div class="summary-card summary-card-full">
+                <div class="summary-card-header">
+                  <i class="pi pi-book"></i>
+                  <h4>Materias ({{ materiasArray.length }})</h4>
+                </div>
+                <div class="summary-card-body">
+                  <div *ngFor="let m of materiasArray.controls; let i = index" class="summary-materia-item">
+                    <span class="summary-idx">{{ i + 1 }}.</span>
+                    <span class="summary-materia-name">{{ getLabel(materiaOptions, m.get('idMateria')?.value) }}</span>
+                    <span class="summary-muted"> · {{ getLabel(plantillaOptions, m.get('idPlantillaEvaluacion')?.value)
+                      }}</span>
+                    <span *ngIf="m.get('modulo')?.value" class="modulo-tag modulo-tag-sm">M{{ m.get('modulo')?.value
+                      }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Extras -->
+              <div class="summary-card">
+                <div class="summary-card-header">
+                  <i class="pi pi-list-check"></i>
+                  <h4>Extras</h4>
+                </div>
+                <div class="summary-card-body">
+                  <div class="summary-row">
+                    <span class="summary-key">Requisitos</span>
+                    <span>{{ targetRequisitos.length }} seleccionado(s)</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-key">Paralelo</span>
+                    <span *ngIf="form.get('incluirParalelo')?.value">
+                      {{ getLabel(paraleloOptions, form.get('paralelo.idParalelo')?.value) }}
+                    </span>
+                    <span *ngIf="!form.get('incluirParalelo')?.value" class="summary-muted">Sin paralelo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="atomic-info-box">
+              <div class="atomic-info-top">
+                <div class="atomic-info-icon"><i class="pi pi-shield"></i></div>
+                <strong>¿Qué pasa si algo sale mal?</strong>
+              </div>
+              <p class="atomic-info-text">
+                El sistema guarda <strong>todo o nada</strong>: si ocurre un error durante el proceso,
+                se cancela todo automáticamente y <strong>no queda ningún dato guardado a medias</strong>.
+                Sus registros quedan exactamente como estaban antes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /scroll-area -->
+
+      <!-- ══ Navegación inferior ══ -->
+      <div class="step-navigation">
+        <button type="button" class="btn btn-secondary" (click)="prevStep()" *ngIf="currentStep > 1 && !submitResult">
+          <i class="pi pi-arrow-left"></i> Anterior
+        </button>
+        <span *ngIf="currentStep < 5" class="step-indicator">Paso {{ currentStep }} de {{ steps.length }}</span>
+        <span *ngIf="currentStep === 5 && !submitResult" class="step-indicator">Revise y confirme</span>
+        <span *ngIf="submitResult"></span>
+
+        <button type="button" class="btn btn-primary" (click)="nextStep()" *ngIf="currentStep < 5 && !submitResult">
+          Siguiente <i class="pi pi-arrow-right"></i>
+        </button>
+
+        <button type="button" class="btn btn-success" (click)="onSubmit()" [disabled]="isSubmitting"
+          *ngIf="currentStep === 5 && !submitResult">
+          <i class="pi pi-check-circle" *ngIf="!isSubmitting"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting"></i>
+          {{ isSubmitting ? 'Creando...' : 'Crear Malla Completa' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

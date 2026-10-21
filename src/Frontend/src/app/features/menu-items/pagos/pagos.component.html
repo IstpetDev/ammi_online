@@ -1,506 +1,632 @@
-<div class="pagos-container">
+<div class="menu-container">
   <!-- VISTA: Lista de Estudiantes -->
   @if (!mostrarDetalle) {
-    <!-- Header Section -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <div class="title-icon">
-            <i class="pi pi-money-bill"></i>
-          </div>
-          <div>
-            <h1 class="page-title">Gestión de Pagos</h1>
-            <p class="page-subtitle">Administra y controla los pagos de estudiantes</p>
-          </div>
+
+  <app-shared-header materialIcon="attach_money" title="Gestión de Pagos"
+    subtitle="Administra y controla los pagos de estudiantes">
+  </app-shared-header>
+
+  <!-- Filtros -->
+  <div class="mp-filters">
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Período Lectivo:</label>
+      <app-custom-select [items]="periodos" labelField="detalle" valueField="idPeriodoLectivo"
+        [(selectedValue)]="filtroPeriodoId" (selectedValueChange)="onPeriodoChange()"
+        placeholder="Seleccione un período" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Ciclo:</label>
+      <app-custom-select [items]="ciclos" labelField="detalle" valueField="idCiclo" [(selectedValue)]="filtroCicloId"
+        (selectedValueChange)="onCicloChange()" placeholder="Seleccione un ciclo" [disabled]="!filtroPeriodoId"
+        [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Curso:</label>
+      <app-custom-select [items]="mallasFiltradas" labelField="detalle" valueField="idMalla"
+        [(selectedValue)]="filtroCursoId" (selectedValueChange)="onCursoChange()"
+        placeholder="Todos los cursos" [disabled]="!filtroCicloId" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Buscar:</label>
+      <input type="text" class="mp-search-input" [ngModel]="searchValue" (ngModelChange)="onSearchInput($event)"
+        placeholder="Cédula, nombre, modalidad..." />
+    </div>
+    <div class="mp-filter-actions">
+      <button class="mp-btn-clear" type="button" (click)="clearFilters()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-btn-icon">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+      @if (puedeAsignarCostos) {
+      <button class="mp-btn-masivo" type="button" (click)="abrirModalAsignacionMasiva()" title="Asignar arancel a múltiples cursos de forma masiva">
+        <i class="pi pi-users"></i>
+        <span>Asignación Masiva</span>
+      </button>
+      }
+    </div>
+  </div>
+
+  <!-- Estado de carga de matrículas -->
+  @if (loadingMatriculas) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando matrículas...</span>
+  </div>
+  }
+
+  <!-- Estado vacío cuando no hay resultados -->
+  @if (!loadingMatriculas && pagos.length === 0) {
+  <app-shared-empty-state materialIcon="inbox" title="No se encontraron matrículas"
+    description="No hay matrículas registradas para los filtros seleccionados." actionText="Ir a Postulaciones"
+    materialActionIcon="open_in_new" minHeight="max(360px, calc(100vh - 400px))" (action)="navigateToPostulaciones()">
+  </app-shared-empty-state>
+  }
+
+  <!-- Tabla -->
+  @if (pagos.length > 0 && !loadingMatriculas) {
+  <app-shared-table [columns]="tablaColumnas" [data]="pagos" [loading]="loadingMatriculas"
+    [totalRecords]="totalRecords" [page]="currentPage" [rowsPerPage]="filasPorPagina"
+    (pageChange)="onPageChange($event)">
+    <ng-template stColTemplate="cedula" let-pago>
+      <span class="font-semibold">{{ pago.cedula }}</span>
+    </ng-template>
+    <ng-template stColTemplate="modalidad" let-pago>
+      <span class="custom-tag" [class.tag-info]="pago.modalidad === 'Formal virtual'"
+        [class.tag-warn]="pago.modalidad !== 'Formal virtual'">
+        @if (pago.modalidad === 'Formal virtual') {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="tag-icon"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
+        } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="tag-icon"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+        }
+        {{ pago.modalidad }}
+      </span>
+    </ng-template>
+    <ng-template stColTemplate="progreso" let-pago>
+      @if (pago.cargandoProgreso) {
+      <div class="flex items-center gap-2">
+        <svg class="spinner-small" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="31.4 31.4" />
+        </svg>
+        <span class="text-sm text-color-secondary">Cargando...</span>
+      </div>
+      } @else if (pago.totalDeuda > 0) {
+      <div class="custom-progress-wrap">
+        <div class="custom-progress-bar">
+          <div class="custom-progress-fill" [style.width.%]="getProgreso(pago.totalDeuda, pago.totalPagado)"></div>
+        </div>
+        <div class="progreso-info">
+          <span class="text-sm text-color-secondary">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
+          @if (pago.tienePagosEnRevision) {
+          <span class="pago-revision-badge" [title]="'Tiene ' + ((pago.montoEnRevision ?? 0) > 0 ? (pago.montoEnRevision | currency:'USD':'symbol':'1.2-2') : 'pagos') + ' pendientes de validación por contabilidad'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" class="r-icon"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            En revisión@if ((pago.montoEnRevision ?? 0) > 0) { ({{ pago.montoEnRevision | currency:'USD':'symbol':'1.2-2' }})}
+          </span>
+          }
+          @if (pago.tieneObservaciones) {
+          <span class="pago-revision-badge pago-obs-badge cursor-pointer" 
+                title="Haz clic para ver el detalle de la observación"
+                (click)="abrirModalObservacion(pago, $event)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="r-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Observado
+          </span>
+          }
         </div>
       </div>
-    </div>
+      } @else {
+      <span class="text-sm text-color-secondary">Sin pagos registrados</span>
+      }
+    </ng-template>
+    <ng-template stColTemplate="acciones" let-pago>
+      <div class="actions-cell">
+        <button class="btn-icon-action" title="Ver detalles de pago" (click)="verDetalle(pago)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="action-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+        </button>
+        @if (puedeAsignarCostos) {
+        <button class="btn-icon-action btn-icon-costo" title="Asignar Arancel / Costo Extra" (click)="abrirDrawerCostoExtra(pago, $event)">
+          <i class="pi pi-wallet action-icon-pi"></i>
+        </button>
+        }
+      </div>
+    </ng-template>
+  </app-shared-table>
+  }
 
-    <!-- Main Card -->
-    <div class="card">
-      <p-table 
-        #dt
-        [value]="pagos" 
-        dataKey="idMatricula"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [paginator]="true"
-        [globalFilterFields]="['cedula', 'nombreEstudiante', 'modalidad', 'detalleCiclo']"
-        [showGridlines]="true"
-        (onPage)="onPageChange($event)">
-        
-        <ng-template #caption>
-          <div class="table-header">
-            <p-button label="Limpiar" [outlined]="true" icon="pi pi-filter-slash" (click)="clearFilters()" />
-            <div class="search-container">
-              <i class="pi pi-search search-icon"></i>
-              <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Buscar..." class="search-input" />
-            </div>
-          </div>
-        </ng-template>
-        
-        <ng-template #header>
-          <tr>
-            <th style="min-width: 12rem">
-              <div class="flex items-center justify-between">
-                Cédula
-                <p-columnFilter type="text" field="cedula" display="menu" />
-              </div>
-            </th>
-            <th style="min-width: 14rem">
-              <div class="flex items-center justify-between">
-                Estudiante
-                <p-columnFilter type="text" field="nombreEstudiante" display="menu" />
-              </div>
-            </th>
-            <th style="min-width: 12rem">
-              <div class="flex items-center justify-between">
-                Modalidad
-                <p-columnFilter field="modalidad" matchMode="equals" display="menu">
-                  <ng-template #filter let-filter="filterCallback">
-                    <p-select [options]="modalidades" (onChange)="filter($event.value)" placeholder="Seleccionar" class="w-full">
-                      <ng-template let-option #item>
-                        <p-tag [value]="option.label" [severity]="option.value === 'Formal virtual' ? 'info' : 'warn'" />
-                      </ng-template>
-                    </p-select>
-                  </ng-template>
-                </p-columnFilter>
-              </div>
-            </th>
-            <th style="min-width: 10rem">
-              <div class="flex items-center">
-                Progreso
-              </div>
-            </th>
-            <th style="min-width: 10rem">
-              <div class="flex items-center justify-between">
-                Ciclo
-                <p-columnFilter type="text" field="detalleCiclo" display="menu" />
-              </div>
-            </th>
-            <th style="width: 5rem">
-              <div class="flex items-center justify-center">
-                Acciones
-              </div>
-            </th>
-          </tr>
-        </ng-template>
-        
-        <ng-template #body let-pago>
-          <tr>
-            <td>
-              <span class="font-semibold">{{ pago.cedula }}</span>
-            </td>
-            <td>
-              {{ pago.nombreEstudiante }}
-            </td>
-            <td>
-              <p-tag 
-                [value]="pago.modalidad" 
-                [severity]="pago.modalidad === 'Formal virtual' ? 'info' : 'warn'"
-                [icon]="pago.modalidad === 'Formal virtual' ? 'pi pi-desktop' : 'pi pi-bolt'" />
-            </td>
-            <td>
-              @if (pago.totalDeuda > 0) {
-                <p-progressBar [value]="getProgreso(pago.totalDeuda, pago.totalPagado)" [showValue]="false" />
-                <span class="text-sm text-color-secondary">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
-              } @else {
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-spin pi-spinner text-color-secondary"></i>
-                  <span class="text-sm text-color-secondary">Cargando...</span>
-                </div>
-              }
-            </td>
-            <td>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-bookmark text-primary"></i>
-                <span>{{ pago.detalleCiclo }}</span>
-              </div>
-            </td>
-            <td class="text-center">
-              <p-button 
-                icon="pi pi-eye" 
-                [rounded]="true"
-                [text]="true"
-                severity="info"
-                pTooltip="Ver detalles"
-                tooltipPosition="top"
-                (onClick)="verDetalle(pago)" />
-            </td>
-          </tr>
-        </ng-template>
-        
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="8">
-              <div class="flex flex-col items-center justify-center py-6">
-                <i class="pi pi-inbox text-4xl text-color-secondary mb-4"></i>
-                <span class="text-xl text-color-secondary">No se encontraron estudiantes</span>
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
   }
 
   <!-- VISTA: Detalle del Estudiante -->
   @if (mostrarDetalle && estudianteSeleccionado) {
-    <!-- Header con nombre del estudiante -->
-    <div class="page-header detalle-header">
-      <div class="header-content">
-        <div class="title-section">
-          <p-button 
-            icon="pi pi-arrow-left" 
-            [rounded]="true"
-            [outlined]="true"
-            severity="secondary"
-            styleClass="back-btn"
-            pTooltip="Volver a la lista"
-            (onClick)="volverALista()">
-          </p-button>
-          <div class="student-header-info">
-            <div class="student-avatar-large">
-              <i class="pi pi-user"></i>
-            </div>
-            <div>
-              <h1 class="page-title">{{ estudianteSeleccionado.nombreEstudiante }}</h1>
-              <p class="page-subtitle">
-                <span class="cedula-text">CI: {{ estudianteSeleccionado.cedula }}</span>
-                <span class="separator">•</span>
-                <span class="modalidad-text">{{ estudianteSeleccionado.modalidad }}</span>
-              </p>
-            </div>
+  <app-ver-detalles [estudianteSeleccionado]="estudianteSeleccionado" [detallesCreditoAPI]="detallesCreditoAPI"
+    (volver)="volverALista()" (volverYRecargar)="recargarProgresoLista()" (recargarEstudiante)="verDetalle($event)">
+  </app-ver-detalles>
+  }
+</div>
+
+<!-- Drawer: Asignar Arancel / Costo Extra al Estudiante -->
+<app-shared-drawer
+  [(visible)]="mostrarDrawerCostoExtra"
+  [title]="'Asignar Arancel / Costo Extra'"
+  [position]="'right'"
+  [size]="'lg'"
+  [showFooter]="false"
+  (visibleChange)="onDrawerVisibleChange($event)">
+
+  @if (alumnoCostoExtra) {
+  <div class="drawer-costos-container">
+    <!-- Card Resumen Alumno -->
+    <div class="student-summary-card">
+      <div class="student-avatar-circle">
+        <i class="pi pi-user"></i>
+      </div>
+      <div class="student-summary-info">
+        <h4 class="student-name">{{ alumnoCostoExtra.nombreEstudiante }}</h4>
+        <div class="student-meta-row">
+          <span class="meta-item"><i class="pi pi-id-card"></i> {{ alumnoCostoExtra.cedula }}</span>
+          <span class="meta-item"><i class="pi pi-bookmark"></i> {{ alumnoCostoExtra.modalidad }}</span>
+          <span class="meta-item"><i class="pi pi-calendar"></i> {{ alumnoCostoExtra.detalleCiclo }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de Asignación -->
+    <div class="assign-form-card">
+      <div class="flex items-center justify-between mb-3">
+        <h5 class="section-title mb-0"><i class="pi pi-plus-circle"></i> Nuevo Cargo / Arancel</h5>
+        @if (esAdmin) {
+        <button type="button" class="btn-text-action" (click)="abrirModalNuevoCosto()" title="Crear nuevo concepto en catálogo">
+          <i class="pi pi-plus"></i> Nuevo concepto
+        </button>
+        }
+      </div>
+
+      <!-- Concepto / Arancel con Buscador -->
+      <div class="form-group mb-3">
+        <label class="form-label">Arancel / Concepto *</label>
+        <app-custom-select
+          [items]="catalogoExtras"
+          labelField="detalle"
+          valueField="idEspecie"
+          [(selectedValue)]="especieSeleccionadaId"
+          placeholder="Buscar o seleccionar arancel..."
+          [searchable]="true">
+        </app-custom-select>
+      </div>
+
+      <!-- Monto y Fecha Límite -->
+      <div class="form-row-2">
+        <div class="form-group mb-3">
+          <label class="form-label">Monto ($) *</label>
+          <div class="input-money-wrap">
+            <span class="money-currency">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              class="form-control-input pl-currency"
+              [(ngModel)]="montoAsignacion"
+              placeholder="0.00"
+            />
           </div>
         </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Fecha Límite</label>
+          <input
+            type="date"
+            class="form-control-input"
+            [(ngModel)]="fechaLimiteAsignacion"
+          />
+        </div>
+      </div>
+
+      <!-- Observación -->
+      <div class="form-group mb-3">
+        <label class="form-label">Observaciones / Motivo (Opcional)</label>
+        <textarea
+          class="form-control-textarea"
+          rows="2"
+          [(ngModel)]="observacionesAsignacion"
+          placeholder="Motivo o detalle del arancel extraordinario..."
+        ></textarea>
+      </div>
+
+      <!-- Botón Asignar -->
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn-primary-action"
+          [disabled]="!especieSeleccionadaId || !montoAsignacion || montoAsignacion <= 0 || guardandoAsignacion"
+          (click)="asignarCostoExtra()">
+          @if (guardandoAsignacion) {
+            <i class="pi pi-spin pi-spinner"></i> Asignando...
+          } @else {
+            <i class="pi pi-check"></i> Asignar Cargo al Alumno
+          }
+        </button>
       </div>
     </div>
 
-    <!-- Resumen de pagos -->
-    <div class="resumen-cards">
-      <div class="resumen-card total-deuda">
-        <div class="resumen-icon">
-          <i class="pi pi-wallet"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Total Deuda</span>
-          <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
-        </div>
+    <!-- Historial de Aranceles del Alumno -->
+    <div class="student-history-card">
+      <div class="flex items-center justify-between mb-3">
+        <h5 class="section-title mb-0"><i class="pi pi-history"></i> Aranceles Asignados a este Alumno</h5>
+        <span class="badge-count">{{ creditosExtrasAlumno.length }}</span>
       </div>
-      <div class="resumen-card total-pagado">
-        <div class="resumen-icon">
-          <i class="pi pi-check-circle"></i>
+
+      @if (cargandoHistorialAlumno) {
+        <div class="history-loading">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Cargando historial de aranceles...</span>
         </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Total Pagado</span>
-          <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+      } @else if (creditosExtrasAlumno.length === 0) {
+        <div class="history-empty">
+          <i class="pi pi-info-circle"></i>
+          <span>No tiene costos extras registrados en esta matrícula.</span>
         </div>
-      </div>
-      <div class="resumen-card pendiente">
-        <div class="resumen-icon">
-          <i class="pi pi-clock"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Saldo Pendiente</span>
-          <span class="resumen-value">{{ (estudianteSeleccionado.totalDeuda - estudianteSeleccionado.totalPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cards de Especies -->
-    <div class="especies-section">
-      <h2 class="section-title">
-        <i class="pi pi-file-edit"></i>
-        Detalle de Pagos por Especie
-      </h2>
-      
-      <div class="especies-grid">
-        @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
-          <div class="especie-card" 
-               [class.especie-pagada]="especie.pagado" 
-               [class.especie-pendiente]="!especie.pagado"
-               [class.card-matricula]="especie.tipo === 'matricula'"
-               [class.card-pension]="especie.tipo === 'pension'">
-            <!-- Header de la card -->
-            <div class="especie-header">
-              <div class="especie-tipo">
-                <i [class]="especie.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
-                <span class="especie-nombre">{{ especie.nombre }}</span>
+      } @else {
+        <div class="history-list">
+          @for (item of creditosExtrasAlumno; track item.idCredito) {
+            <div class="history-item">
+              <div class="history-item-header">
+                <span class="history-title">{{ item.especieDetalle }}</span>
+                <span class="status-badge" [class.status-paid]="item.pagado" [class.status-pending]="!item.pagado">
+                  {{ item.pagado ? 'PAGADO' : 'PENDIENTE' }}
+                </span>
               </div>
-              <p-tag 
-                [value]="getEspecieEstado(especie)" 
-                [severity]="getEspecieSeverity(especie)"
-                styleClass="estado-tag">
-              </p-tag>
-            </div>
-
-            <!-- Ciclo -->
-            <div class="especie-ciclo">
-              <i class="pi pi-bookmark"></i>
-              <span>{{ especie.ciclo }}</span>
-            </div>
-
-            <!-- Valores -->
-            <div class="especie-valores">
-              <div class="valor-item">
-                <span class="valor-label">Valor Total</span>
-                <span class="valor-amount">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="valor-item">
-                <span class="valor-label">Pagado</span>
-                <span class="valor-amount pagado">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="valor-item">
-                <span class="valor-label">Pendiente</span>
-                <span class="valor-amount pendiente">{{ (especie.valor - especie.valorPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
-            </div>
-
-            <!-- Barra de progreso -->
-            <div class="especie-progreso">
-              <p-progressBar 
-                [value]="(especie.valorPagado / especie.valor) * 100" 
-                [showValue]="false"
-                styleClass="especie-progress-bar">
-              </p-progressBar>
-              <span class="progreso-porcentaje">{{ ((especie.valorPagado / especie.valor) * 100) | number:'1.0-0' }}%</span>
-            </div>
-
-            <!-- Fecha límite -->
-            <div class="especie-fecha">
-              <i class="pi pi-calendar-clock"></i>
-              <span>Fecha límite: {{ especie.fechaLimite }}</span>
-            </div>
-
-            <!-- Botones de acción -->
-            @if (!especie.pagado) {
-              <div class="especie-action">
-                @if (especie.esPensionNoDiferida) {
-                  <p-button 
-                    label="Diferir Pago" 
-                    icon="pi pi-calendar-plus"
-                    styleClass="btn-diferir"
-                    (onClick)="mostrarModalDiferirPension(especie)">
-                  </p-button>
-                } @else {
-                  <p-button 
-                    label="Realizar Pago" 
-                    icon="pi pi-credit-card"
-                    styleClass="btn-pagar"
-                    (onClick)="pagarEspecie(especie)">
-                  </p-button>
+              <div class="history-item-body">
+                <div class="history-amount">
+                  <span class="amount-val">{{ item.montoOriginal | currency:'USD':'symbol':'1.2-2' }}</span>
+                  @if (item.valorCancelado > 0 && !item.pagado) {
+                    <span class="amount-sub">Abonado: {{ item.valorCancelado | currency:'USD':'symbol':'1.2-2' }}</span>
+                  }
+                </div>
+                @if (item.fechaLimite) {
+                  <div class="history-date">
+                    <i class="pi pi-calendar"></i> Límite: {{ item.fechaLimite | date:'dd/MM/yyyy' }}
+                  </div>
                 }
               </div>
-            } @else {
-              <div class="especie-pagado-info">
-                <i class="pi pi-check-circle"></i>
-                <span>Pago completado</span>
-              </div>
-            }
-          </div>
-        }
+              @if (!item.tienePagos && !item.pagado && puedeAsignarCostos) {
+                <div class="history-item-actions">
+                  <button type="button" class="btn-cancel-extra" (click)="abrirModalAnularCosto(item, $event)" title="Anular arancel">
+                    <i class="pi pi-trash"></i> Anular
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+  }
+</app-shared-drawer>
+
+<!-- Modal: Crear Nuevo Costo en Catálogo -->
+<app-shared-modal
+  [(visible)]="mostrarModalNuevoCosto"
+  [title]="'Nuevo Arancel en Catálogo'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'460px'"
+  (confirm)="guardarNuevoCosto()"
+  (cancel)="cerrarModalNuevoCosto()">
+
+  <div class="p-3">
+    <label class="form-label">Nombre del Arancel / Costo Extra *</label>
+    <input
+      type="text"
+      class="form-control-input"
+      [(ngModel)]="nombreNuevoCosto"
+      placeholder="Ej: Examen de Suficiencia, Certificado de Matrícula..."
+      autofocus
+    />
+    <p class="text-xs text-gray-500 mt-1 mb-0">
+      Este arancel quedará registrado en el catálogo de especies y podrá ser asignado a cualquier estudiante.
+    </p>
+  </div>
+
+  <div modal-footer class="flex items-center justify-end gap-2">
+    <button type="button" class="btn btn-secondary-sm" (click)="cerrarModalNuevoCosto()">Cancelar</button>
+    <button
+      type="button"
+      class="btn btn-primary-sm"
+      [disabled]="!nombreNuevoCosto || !nombreNuevoCosto.trim() || guardandoNuevoCosto"
+      (click)="guardarNuevoCosto()">
+      @if (guardandoNuevoCosto) {
+        <i class="pi pi-spin pi-spinner"></i> Guardando...
+      } @else {
+        <i class="pi pi-check"></i> Guardar en Catálogo
+      }
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- Modal Confirmación Anular Arancel -->
+<app-confirmation-modal
+  [(visible)]="mostrarModalAnularCostoExtra"
+  title="Confirmar Anulación"
+  [message]="'¿Está seguro de anular el arancel \'' + (creditoAAnular?.especieDetalle || '') + '\' por ' + (creditoAAnular?.montoOriginal | currency:'USD':'symbol':'1.2-2') + ' asignado a este estudiante?'"
+  acceptLabel="Sí, anular"
+  rejectLabel="Cancelar"
+  [loading]="anulandoCreditoExtra"
+  (accept)="confirmarAnularCostoExtra()"
+  (reject)="cerrarModalAnularCosto()"
+  (hide)="cerrarModalAnularCosto()">
+</app-confirmation-modal>
+
+<!-- Modal: Ver Observación / Comprobante Compartido -->
+<app-shared-modal [(visible)]="mostrarModalObs" [title]="'Observación de Pago'" [showFooter]="true"
+  [showCloseButton]="true" [customWidth]="'480px'" (cancel)="cerrarModalObservacion()">
+  
+  <div class="p-3">
+    <div class="mb-3">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Estudiante:</span>
+      <div class="text-sm font-bold text-gray-800">{{ obsEstudianteNombre }}</div>
+    </div>
+    
+    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+      <div class="flex items-center gap-2 mb-1.5 text-amber-800 font-semibold text-xs uppercase tracking-wider">
+        <i class="pi pi-exclamation-circle text-amber-600"></i>
+        <span>Detalle Registrado</span>
+      </div>
+      <p class="text-sm text-amber-950 leading-relaxed m-0 whitespace-pre-wrap">{{ obsContenido }}</p>
+    </div>
+  </div>
+
+  <div modal-footer>
+    <button type="button" class="btn btn-secondary-sm" (click)="cerrarModalObservacion()">
+      Cerrar
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL: ASIGNACIÓN MASIVA DE ARANCEL / COSTO EXTRA -->
+<app-shared-modal
+  [(visible)]="mostrarModalAsignacionMasiva"
+  [title]="'Asignación Masiva de Arancel / Costo Extra'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'640px'"
+  (cancel)="cerrarModalAsignacionMasiva()">
+
+  <div class="modal-masivo-body">
+    <!-- Callout Informativo Anti-duplicados -->
+    <div class="masivo-info-banner">
+      <div class="banner-icon-wrap">
+        <i class="pi pi-shield"></i>
+      </div>
+      <div class="banner-text">
+        <span class="banner-title">Control Inteligente Anti-Duplicados</span>
+        <p class="banner-desc">
+          El sistema verificará cada matrícula antes de asignar. Si un estudiante ya tiene este arancel registrado, se omitirá automáticamente evitando cobros duplicados.
+        </p>
       </div>
     </div>
-  }
 
-  <!-- TOAST para mensajes -->
-  <p-toast />
+    <!-- PASO 1: Período y Ciclo -->
+    <div class="form-row-2 mb-3">
+      <div class="form-group">
+        <label class="form-label">Período Lectivo *</label>
+        <app-custom-select
+          [items]="periodos"
+          labelField="detalle"
+          valueField="idPeriodoLectivo"
+          [(selectedValue)]="masivoPeriodoId"
+          (selectedValueChange)="onMasivoPeriodoChange()"
+          placeholder="Seleccione período"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
 
-  <!-- MODAL: Realizar Pago -->
-  <p-dialog 
-    header="Realizar Pago" 
-    [(visible)]="mostrarModalPago" 
-    [modal]="true" 
-    [closable]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [style]="{ width: '500px' }"
-    styleClass="pago-modal">
-    
-    @if (especieSeleccionada) {
-      <div class="modal-pago-content">
-        <!-- Info de la especie -->
-        <div class="especie-info-modal">
-          <div class="especie-modal-header">
-            <i [class]="especieSeleccionada.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
-            <span>{{ especieSeleccionada.nombre }}</span>
-          </div>
-          <div class="especie-modal-ciclo">{{ especieSeleccionada.ciclo }}</div>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Ciclo Académico *</label>
+        <app-custom-select
+          [items]="masivoCiclos"
+          labelField="detalle"
+          valueField="idCiclo"
+          [(selectedValue)]="masivoCicloId"
+          (selectedValueChange)="onMasivoCicloChange()"
+          placeholder="Seleccione ciclo"
+          [disabled]="!masivoPeriodoId || masivoCiclos.length === 0"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
+    </div>
 
-        <!-- Resumen de valores -->
-        <div class="valores-resumen">
-          <div class="valor-row">
-            <span class="valor-label">Valor Total:</span>
-            <span class="valor-monto">{{ especieSeleccionada.valor | currency:'USD':'symbol':'1.2-2' }}</span>
-          </div>
-          <div class="valor-row">
-            <span class="valor-label">Ya Pagado:</span>
-            <span class="valor-monto pagado">{{ especieSeleccionada.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
-          </div>
-          <div class="valor-row destacado">
-            <span class="valor-label">Pendiente de esta especie:</span>
-            <span class="valor-monto pendiente">{{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2' }}</span>
-          </div>
-          @if (!esUltimaEspecie()) {
-            <div class="valor-row info">
-              <span class="valor-label">Total pendiente (incluye siguientes):</span>
-              <span class="valor-monto">{{ getTotalPendienteRestante() | currency:'USD':'symbol':'1.2-2' }}</span>
-            </div>
-          }
-        </div>
-
-        <!-- Tipo de Pago -->
-        <div class="campo-pago">
-          <label class="campo-label">Tipo de Pago <span class="requerido">*</span></label>
-          @if (loadingTiposPago) {
-            <div class="loading-tipos">
-              <i class="pi pi-spin pi-spinner"></i>
-              <span>Cargando tipos de pago...</span>
-            </div>
-          } @else {
-            <div class="tipos-pago-grid">
-              @for (tipo of tiposPago; track tipo.idTipoPago) {
-                <div 
-                  class="tipo-pago-card" 
-                  [class.seleccionado]="tipoPagoSeleccionado === tipo.idTipoPago"
-                  (click)="tipoPagoSeleccionado = tipo.idTipoPago ?? null">
-                  <i [class]="tipo.detalle === 'EFECTIVO' ? 'pi pi-money-bill' : 'pi pi-building-columns'"></i>
-                  <span>{{ tipo.detalle }}</span>
-                </div>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Monto a Pagar -->
-        <div class="campo-pago">
-          <label class="campo-label">Monto a Pagar <span class="requerido">*</span></label>
-          <p-inputNumber 
-            [(ngModel)]="montoPago" 
-            mode="currency" 
-            currency="USD" 
-            locale="en-US"
-            [min]="0.01"
-            [minFractionDigits]="2"
-            [maxFractionDigits]="2"
-            placeholder="Ingrese el monto"
-            styleClass="monto-input">
-          </p-inputNumber>
-          
-          <div class="monto-sugerencias">
-            <small class="sugerencia-label">Sugerencias:</small>
-            <div class="sugerencias-btns">
-              <button type="button" class="sugerencia-btn" (click)="montoPago = getMontoPendienteEspecie()">
-                Pendiente cuota ({{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2' }})
-              </button>
-              @if (!esUltimaEspecie()) {
-                <button type="button" class="sugerencia-btn" (click)="montoPago = getTotalPendienteRestante()">
-                  Todo pendiente ({{ getTotalPendienteRestante() | currency:'USD':'symbol':'1.2-2' }})
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Distribución del pago (si hay excedente) -->
-        @if (getDistribucionPago().length > 1) {
-          <div class="distribucion-pago">
-            <label class="campo-label">
-              <i class="pi pi-share-alt"></i>
-              Distribución del pago:
-            </label>
-            <div class="distribucion-lista">
-              @for (dist of getDistribucionPago(); track dist.especie) {
-                <div class="distribucion-item">
-                  <span class="dist-especie">{{ dist.especie }}</span>
-                  <span class="dist-monto">{{ dist.monto | currency:'USD':'symbol':'1.2-2' }}</span>
-                </div>
-              }
-            </div>
-          </div>
+    <!-- PASO 2: Selección de Cursos / Mallas -->
+    <div class="form-group mb-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label class="form-label mb-0">Cursos / Mallas a Asignar *</label>
+        @if (masivoCursos.length > 0) {
+        <span class="cursos-counter-badge">
+          {{ getCursosSeleccionadosCount() }} de {{ masivoCursos.length }} cursos seleccionados
+        </span>
         }
       </div>
-    }
 
-    <ng-template #footer>
-      <div class="modal-footer">
-        <p-button 
-          label="Cancelar" 
-          [outlined]="true" 
-          severity="secondary"
-          (onClick)="cerrarModalPago()">
-        </p-button>
-        <p-button 
-          label="Confirmar Pago" 
-          icon="pi pi-check"
-          (onClick)="confirmarPago()">
-        </p-button>
-      </div>
-    </ng-template>
-  </p-dialog>
-
-  <!-- MODAL: Diferir Pensión -->
-  <p-dialog 
-    header="Diferir Pensión en Cuotas" 
-    [(visible)]="mostrarModalDiferir" 
-    [modal]="true" 
-    [closable]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [style]="{ width: '500px' }"
-    styleClass="diferir-modal">
-    
-    @if (creditoPensionPorDiferir) {
-      <div class="modal-diferir-content">
-        <div class="info-pension">
-          <div class="info-row">
-            <span class="info-label">Especie:</span>
-            <span class="info-value">{{ creditoPensionPorDiferir.detalleEspecie }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Valor Total:</span>
-            <span class="info-value">{{ creditoPensionPorDiferir.valorEspecie | currency:'USD':'symbol':'1.2-2' }}</span>
-          </div>
+      @if (cargandoCursosMasivo) {
+        <div class="cursos-loading-state">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Cargando cursos del ciclo...</span>
         </div>
-
-        <div class="campo-cuotas">
-          <label class="campo-label">Número de Cuotas <span class="requerido">*</span></label>
-          <p-inputNumber 
-            [(ngModel)]="numeroCuotasDiferir" 
-            [min]="1"
-            [max]="12"
-            [showButtons]="true"
-            buttonLayout="horizontal"
-            incrementButtonIcon="pi pi-plus"
-            decrementButtonIcon="pi pi-minus"
-            placeholder="Ingrese número de cuotas"
-            styleClass="cuotas-input">
-          </p-inputNumber>
-          <small class="campo-ayuda">El valor de cada cuota será: {{ (creditoPensionPorDiferir.valorEspecie / numeroCuotasDiferir) | currency:'USD':'symbol':'1.2-2' }}</small>
-        </div>
-
-        <div class="nota-referencial">
+      } @else if (masivoCursos.length === 0) {
+        <div class="cursos-empty-state">
           <i class="pi pi-info-circle"></i>
-          <span>Este es un valor referencial. Puede pagar más o menos en cada cuota según su disponibilidad.</span>
+          <span>Seleccione un período y ciclo para listar los cursos disponibles.</span>
+        </div>
+      } @else {
+        <div class="cursos-selector-box">
+          <!-- Toggle Seleccionar Todos -->
+          <div class="toggle-all-row">
+            <label class="checkbox-label-main">
+              <input
+                type="checkbox"
+                [checked]="masivoSeleccionarTodosCursos"
+                (change)="toggleTodosCursosMasivo($event)"
+              />
+              <span class="font-semibold">Seleccionar todos los cursos del ciclo</span>
+            </label>
+          </div>
+
+          <!-- Lista de Cursos con Checkbox -->
+          <div class="cursos-grid-list">
+            @for (curso of masivoCursos; track (curso.idMalla || $index)) {
+              <label class="curso-item-checkbox" [class.curso-checked]="isCursoSeleccionado(curso.idMalla)">
+                <input
+                  type="checkbox"
+                  [checked]="isCursoSeleccionado(curso.idMalla)"
+                  (change)="setCursoSeleccionado(curso.idMalla, $any($event.target).checked)"
+                />
+                <span class="curso-name-text">{{ curso.detalle }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- PASO 3: Arancel / Especie -->
+    <div class="form-group mb-3">
+      <div class="flex items-center justify-between mb-1">
+        <label class="form-label mb-0">Arancel / Rubro Extra *</label>
+        @if (esAdmin) {
+        <button type="button" class="btn-text-action" (click)="abrirModalNuevoCosto()" title="Crear nuevo concepto en catálogo">
+          <i class="pi pi-plus"></i> Nuevo concepto
+        </button>
+        }
+      </div>
+      <app-custom-select
+        [items]="catalogoExtras"
+        labelField="detalle"
+        valueField="idEspecie"
+        [(selectedValue)]="masivoEspecieId"
+        placeholder="Seleccione el arancel a cobrar..."
+        [searchable]="true">
+      </app-custom-select>
+    </div>
+
+    <!-- PASO 4: Monto y Fecha Límite -->
+    <div class="form-row-2 mb-3">
+      <div class="form-group">
+        <label class="form-label">Valor a Cobrar ($) *</label>
+        <div class="input-money-wrap">
+          <span class="money-currency">$</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="form-control-input pl-currency"
+            [(ngModel)]="masivoMonto"
+            placeholder="0.00"
+          />
         </div>
       </div>
-    }
 
-    <ng-template #footer>
-      <div class="modal-footer">
-        <p-button 
-          label="Cancelar" 
-          [outlined]="true" 
-          severity="secondary"
-          (onClick)="omitirDiferimiento()">
-        </p-button>
-        <p-button 
-          label="Confirmar Diferimiento" 
-          icon="pi pi-check"
-          (onClick)="confirmarDiferimiento()">
-        </p-button>
+      <div class="form-group">
+        <label class="form-label">Fecha Límite de Pago</label>
+        <input
+          type="date"
+          class="form-control-input"
+          [(ngModel)]="masivoFechaLimite"
+        />
       </div>
-    </ng-template>
-  </p-dialog>
-</div>
+    </div>
+
+    <!-- PASO 5: Observaciones -->
+    <div class="form-group">
+      <label class="form-label">Observaciones / Motivo (Opcional)</label>
+      <textarea
+        class="form-control-textarea"
+        rows="2"
+        [(ngModel)]="masivoObservaciones"
+        placeholder="Ej: Costo general para trámites del ciclo académico..."
+      ></textarea>
+    </div>
+  </div>
+
+  <div modal-footer class="flex items-center justify-between w-full">
+    <button type="button" class="btn btn-secondary-sm" (click)="cerrarModalAsignacionMasiva()" [disabled]="guardandoAsignacionMasiva">
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary-sm btn-action-masivo"
+      [disabled]="guardandoAsignacionMasiva || getCursosSeleccionadosCount() === 0 || !masivoEspecieId || !masivoMonto || masivoMonto <= 0"
+      (click)="ejecutarAsignacionMasiva()">
+      @if (guardandoAsignacionMasiva) {
+        <i class="pi pi-spin pi-spinner"></i> Asignando a {{ getCursosSeleccionadosCount() }} cursos...
+      } @else {
+        <i class="pi pi-check-circle"></i> Asignar a {{ getCursosSeleccionadosCount() }} {{ getCursosSeleccionadosCount() === 1 ? 'curso' : 'cursos' }}
+      }
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL: RESULTADO DE ASIGNACIÓN MASIVA -->
+<app-shared-modal
+  [(visible)]="mostrarModalResultadoMasivo"
+  [title]="'Resumen de Asignación Masiva'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'500px'"
+  (cancel)="cerrarModalResultadoMasivo()">
+
+  @if (resultadoMasivo) {
+  <div class="resultado-masivo-container">
+    <div class="resultado-header-icon">
+      <i class="pi pi-check-circle text-green-600"></i>
+    </div>
+
+    <h4 class="resultado-title">¡Proceso de Asignación Finalizado!</h4>
+    <p class="resultado-sub">{{ resultadoMasivo.mensaje }}</p>
+
+    <!-- Métricas del Resultado -->
+    <div class="resultado-stats-grid">
+      <div class="stat-card stat-evaluados">
+        <span class="stat-num">{{ resultadoMasivo.totalMatriculasEvaluadas }}</span>
+        <span class="stat-lbl">Matrículas Evaluadas</span>
+      </div>
+
+      <div class="stat-card stat-asignados">
+        <span class="stat-num text-success">{{ resultadoMasivo.totalAsignados }}</span>
+        <span class="stat-lbl">Cargos Asignados</span>
+      </div>
+
+      <div class="stat-card stat-omitidos">
+        <span class="stat-num text-muted">{{ resultadoMasivo.totalOmitidosDuplicados }}</span>
+        <span class="stat-lbl">Omitidos (Ya existían)</span>
+      </div>
+    </div>
+
+    @if (resultadoMasivo.totalOmitidosDuplicados > 0) {
+    <div class="alert-omitidos-info">
+      <i class="pi pi-info-circle"></i>
+      <span>Se protegieron <strong>{{ resultadoMasivo.totalOmitidosDuplicados }} estudiantes</strong> de cobros duplicados porque ya contaban con este arancel asignado.</span>
+    </div>
+    }
+  </div>
+  }
+
+  <div modal-footer class="flex items-center justify-end">
+    <button type="button" class="btn btn-primary-sm" (click)="cerrarModalResultadoMasivo()">
+      Aceptar y Continuar
+    </button>
+  </div>
+</app-shared-modal>
+
+<app-shared-toast />
+

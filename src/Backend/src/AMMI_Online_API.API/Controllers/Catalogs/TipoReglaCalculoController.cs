@@ -19,7 +19,7 @@ public class TipoReglaCalculoController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<TipoReglaCalculoDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllTipoReglaCalculosQuery(), cancellationToken);
@@ -27,7 +27,7 @@ public class TipoReglaCalculoController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<TipoReglaCalculoDTO>> Create([FromBody] TipoReglaCalculoCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateTipoReglaCalculoCommand(dto), cancellationToken);
@@ -35,7 +35,7 @@ public class TipoReglaCalculoController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<TipoReglaCalculoDTO>> Update([FromBody] TipoReglaCalculoUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdateTipoReglaCalculoCommand(dto), cancellationToken);
@@ -43,7 +43,7 @@ public class TipoReglaCalculoController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteTipoReglaCalculoCommand(id), cancellationToken);

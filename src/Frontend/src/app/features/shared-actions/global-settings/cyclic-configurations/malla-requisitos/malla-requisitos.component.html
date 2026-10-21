@@ -1,0 +1,217 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Malla Requisitos</h1>
+        <p>Gestione los requisitos asignados a cada malla del ciclo seleccionado.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <div class="rol-filtros-container mb-4">
+      <div class="seasons-form-row" style="width: 100%; align-items: flex-end;">
+
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Período Lectivo</label>
+          <p-select [(ngModel)]="selectedPeriodo" [options]="periodos" optionLabel="detalle"
+            (onChange)="onPeriodoChange()" placeholder="Seleccione un período" [showClear]="true" appendTo="body"
+            styleClass="w-full"></p-select>
+        </div>
+
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Ciclo</label>
+          <p-select [(ngModel)]="selectedCiclo" [options]="ciclos" optionLabel="detalle" (onChange)="onCicloChange()"
+            [placeholder]="selectedPeriodo ? 'Seleccione un ciclo' : 'Primero seleccione período'"
+            [disabled]="!selectedPeriodo" [showClear]="true" appendTo="body" styleClass="w-full"></p-select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; white-space: nowrap; align-items: flex-end;">
+          <p-button *ngIf="selectedCiclo" label="Replicar entre Ciclos" icon="pi pi-clone"
+            (onClick)="openReplicateDialog()" styleClass="btn-accion-agregar"></p-button>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!selectedPeriodo || !selectedCiclo">
+      <div class="select-warning-box">
+        <i class="pi pi-filter select-warning-icon"></i>
+        <span class="select-warning-text">Seleccione período y ciclo para visualizar las mallas.</span>
+      </div>
+    </ng-container>
+
+    @if (selectedCiclo) {
+    <p-table [value]="mallasGrouped" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mallas">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 28%;">Malla</th>
+          <th>Requisitos Asignados</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-mallaGroup>
+        <tr>
+          <td style="font-weight: 600; vertical-align: top; padding-top: 0.75rem;">
+            {{ mallaGroup.malla.detalle }}
+          </td>
+          <td>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.25rem 0;">
+
+              <p-chip *ngFor="let req of mallaGroup.requisitos" [label]="req.detalle" [removable]="true"
+                (onRemove)="confirmDelete({idMallaRequisitos: req.idMallaRequisitos, idMalla: mallaGroup.malla.idMalla, idRequisitos: req.idRequisitos, detalleMalla: mallaGroup.malla.detalle, detalleRequisito: req.detalle, esObligatorio: false, bloqueaInscripcion: false, tipoDato: '', esMayorEdad: false})"
+                styleClass="p-chip-sm"></p-chip>
+
+              <span *ngIf="mallaGroup.requisitos.length === 0" class="sin-requisitos-text">
+                Sin requisitos asignados
+              </span>
+
+              <button *ngIf="selectedPeriodo" pButton icon="pi pi-plus" label="Agregar" class="p-button-outlined p-button-sm p-button-secondary"
+                style="font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 20px;"
+                (click)="openAddRequisitosDialog(mallaGroup)" pTooltip="Agregar requisitos a esta malla"
+                tooltipPosition="top">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2">
+            <div class="table-empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <span class="empty-text">
+                {{ selectedCiclo ? 'No hay mallas registradas para este ciclo.' : 'Seleccione un ciclo para ver las mallas.' }}
+              </span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+    }
+  </div>
+</div>
+
+<!-- Dialog: Agregar requisitos a una malla -->
+<p-dialog [(visible)]="displayAddRequisitosDialog" [modal]="true" [style]="{width: '780px'}"
+  [header]="'Asignar Requisitos — ' + (selectedMallaForAdd?.malla?.detalle || '')" (onHide)="hideAddRequisitosDialog()"
+  [draggable]="false" [resizable]="false">
+  <div style="padding-top: 0.5rem;">
+
+    <small *ngIf="pickListSourceReqs.length === 0 && pickListTargetReqs.length === 0" class="p-error block mb-2">
+      <i class="pi pi-info-circle mr-1"></i>No quedan requisitos disponibles para asignar a esta malla.
+    </small>
+
+    <p-pickList [(source)]="pickListSourceReqs" [(target)]="pickListTargetReqs" sourceHeader="Requisitos Disponibles"
+      targetHeader="Requisitos Seleccionados" filterBy="label" sourceFilterPlaceholder="Buscar requisito..."
+      targetFilterPlaceholder="Buscar requisito..." [sourceStyle]="{'height': '240px'}"
+      [targetStyle]="{'height': '240px'}" [dragdrop]="true" [showSourceControls]="true" [showTargetControls]="true"
+      [stripedRows]="true">
+      <ng-template let-req pTemplate="item">
+        <div style="font-size: 0.88rem; padding: 0.1rem 0;">{{ req.label }}</div>
+      </ng-template>
+    </p-pickList>
+
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideAddRequisitosDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="saveAddRequisitos()" [disabled]="false"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog: Replicar requisitos entre ciclos -->
+<p-dialog [(visible)]="displayReplicateDialog" [modal]="true" [style]="{width: '780px'}"
+  header="Replicar Requisitos entre Ciclos" (onHide)="hideReplicateDialog()" [draggable]="false" [resizable]="false">
+  <div style="padding-top: 0.5rem;">
+    <p class="text-color-secondary mb-3">
+      <i class="pi pi-info-circle mr-1"></i>
+      Seleccione el ciclo origen y destino. Los requisitos de cada malla del ciclo origen se copiarán a la malla
+      equivalente del ciclo destino.
+    </p>
+
+    <div class="p-fluid formgrid grid">
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Ciclo Origen</label>
+        <p-select [(ngModel)]="sourceCicloReplicate" [options]="sourceCiclosReplicate" optionLabel="detalle"
+          (onChange)="onSourceCicloReplicateChange()" placeholder="Seleccione ciclo origen" appendTo="body"
+          styleClass="w-full"></p-select>
+        <div *ngIf="sourceReplicateCount > 10 && !showAllSourceReplicate" style="margin-top: 0.4rem;">
+          <p-button label="Ver todos los ciclos" (onClick)="toggleShowAllSourceReplicate()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+        <small *ngIf="sourceMallasReplicate.length > 0" class="text-green-600 font-semibold block mt-1">
+          <i class="pi pi-check-circle mr-1"></i>{{ sourceMallasReplicate.length }} malla(s) encontradas
+        </small>
+      </div>
+
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Ciclo Destino</label>
+        <p-select [(ngModel)]="targetCicloReplicate" [options]="targetCiclosReplicate" optionLabel="detalle"
+          (onChange)="onTargetCicloReplicateChange()" placeholder="Seleccione ciclo destino" appendTo="body"
+          styleClass="w-full"></p-select>
+        <div *ngIf="targetReplicateCount > 10 && !showAllTargetReplicate" style="margin-top: 0.4rem;">
+          <p-button label="Ver todos los ciclos" (onClick)="toggleShowAllTargetReplicate()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+        <small *ngIf="targetMallasReplicate.length > 0" class="text-green-600 font-semibold block mt-1">
+          <i class="pi pi-check-circle mr-1"></i>{{ targetMallasReplicate.length }} malla(s) encontradas
+        </small>
+      </div>
+    </div>
+
+    <!-- Advertencia mallas sin equivalente -->
+    <div *ngIf="replicateMallaMismatch" class="flex align-items-start gap-2 p-3 border-round mt-2"
+      style="background: #fff3e0; border-left: 4px solid #ff9800;">
+      <i class="pi pi-exclamation-triangle mt-1" style="color: #e65100;"></i>
+      <div>
+        <strong style="color: #e65100;">Mallas sin equivalente en el ciclo destino</strong>
+        <ul style="margin: 0.35rem 0 0 1rem; font-size: 0.88rem; color: #bf360c;">
+          <li *ngFor="let nombre of unmatchedSourceMallas">{{ nombre }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Vista previa -->
+    <div *ngIf="sourceMallasReplicate.length > 0" style="margin-top: 1rem;">
+      <p-divider></p-divider>
+      <h4 class="mb-2">Mallas del ciclo origen ({{ sourceMallasReplicate.length }}):</h4>
+      <p-table [value]="sourceMallasReplicate" [paginator]="false" [scrollable]="true" scrollHeight="200px">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>#</th>
+            <th>Malla</th>
+            <th>Tipo de Oferta</th>
+            <th>Requisitos</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-malla let-rowIndex="rowIndex">
+          <tr>
+            <td>{{ rowIndex + 1 }}</td>
+            <td>{{ malla.detalle }}</td>
+            <td>{{ malla.nombreTipoOferta || 'N/A' }}</td>
+            <td>
+              <span class="req-count-text">
+                {{ getMallaRequisitoCount(malla.idMalla!) }} requisito(s)
+              </span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideReplicateDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Replicar" icon="pi pi-clone" (onClick)="saveReplicate()"
+      [disabled]="!sourceCicloReplicate || !targetCicloReplicate || sourceMallasReplicate.length === 0 || targetMallasReplicate.length === 0"
+      severity="info"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal confirmación eliminar requisito -->
+<app-confirmation-modal [visible]="showConfirmDelete" title="Confirmar Eliminación"
+  message="¿Está seguro de que desea quitar este requisito de la malla?" acceptLabel="Eliminar" rejectLabel="Cancelar"
+  (accept)="deleteMallaRequisito()" (reject)="cancelDelete()" (hide)="cancelDelete()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>

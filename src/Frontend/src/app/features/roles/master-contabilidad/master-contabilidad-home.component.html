@@ -1,0 +1,322 @@
+<app-shared-toast></app-shared-toast>
+
+<div class="master-contabilidad-home">
+  <!-- Header Banner / Titular Financiero -->
+  <div class="welcome-banner">
+    <div class="welcome-content">
+      <div class="header-badge">
+        <span class="material-icons">trending_up</span> Control & Conciliación Financiera
+      </div>
+      <h1>Panel de Contabilidad en Tiempo Real</h1>
+      <p>Supervisión de recaudación, desglose por banco y validaciones pendientes.</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/dashboard/historial-pagos" class="btn btn-warning">
+        <span class="material-icons">receipt_long</span>
+        Ver Historial Completo
+      </a>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros y Control de Rango -->
+  <p-card styleClass="filter-card">
+    <div class="filtros-rango">
+      <div class="filtro-item">
+        <label class="m-label">Fecha Desde</label>
+        <p-datepicker
+          [(ngModel)]="fechaDesde"
+          [showIcon]="true"
+          dateFormat="dd/mm/yy"
+          [appendTo]="'body'"
+        />
+      </div>
+
+      <div class="filtro-item">
+        <label class="m-label">Fecha Hasta</label>
+        <p-datepicker
+          [(ngModel)]="fechaHasta"
+          [showIcon]="true"
+          dateFormat="dd/mm/yy"
+          [appendTo]="'body'"
+        />
+      </div>
+
+      <div class="filtros-actions">
+        <button type="button" class="btn btn-primary" (click)="aplicarRango()" [disabled]="loading">
+          <span class="material-icons">filter_alt</span>
+          Filtrar Rango
+        </button>
+
+        <button type="button" class="btn btn-outline" (click)="irRangoHoy()" [disabled]="loading">
+          Hoy
+        </button>
+
+        <button type="button" class="btn btn-outline" (click)="irRangoEsteMes()" [disabled]="loading">
+          Este Mes
+        </button>
+
+        <button type="button" class="btn btn-outline" (click)="irRangoUltimoAnio()" [disabled]="loading">
+          Último Año
+        </button>
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Spinner de Carga -->
+  <div *ngIf="loading" class="loading-block">
+    <p-progressSpinner strokeWidth="4" />
+    <p>Calculando arqueos de caja y métricas contables...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Grid de Tarjetas KPI / Cuadro Mando Financiero -->
+    <div class="kpis-grid">
+      <div class="kpi-card total">
+        <div class="kpi-icon-wrapper">
+          <span class="material-icons">account_balance_wallet</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Recaudación Total</span>
+          <span class="kpi-value">{{ kpis.montoTotal | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="kpi-subtext">{{ kpis.totalPagos }} transacción(es)</span>
+        </div>
+      </div>
+
+      <div class="kpi-card success">
+        <div class="kpi-icon-wrapper">
+          <span class="material-icons">check_circle</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Monto Validado</span>
+          <span class="kpi-value">{{ kpis.montoValidado | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="kpi-subtext">{{ kpis.aprobados }} pagos confirmados</span>
+        </div>
+      </div>
+
+      <div class="kpi-card warn">
+        <div class="kpi-icon-wrapper">
+          <span class="material-icons">pending</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Monto Pendiente</span>
+          <span class="kpi-value">{{ kpis.montoPendiente | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="kpi-subtext">{{ kpis.pendientesValidacion }} pagos requieren revisión</span>
+        </div>
+      </div>
+
+      <div class="kpi-card danger">
+        <div class="kpi-icon-wrapper">
+          <span class="material-icons">cancel</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Monto Rechazado</span>
+          <span class="kpi-value">{{ kpis.montoRechazado | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="kpi-subtext">{{ kpis.rechazados }} comprobantes observados</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección Central: Conciliación de Bancos y Eficiencia de Validación -->
+    <div class="middle-grid">
+      <!-- Módulo: Conciliación por Cuentas Bancarias -->
+      <p-card styleClass="dashboard-card">
+        <ng-template pTemplate="header">
+          <div class="card-header-flex">
+            <div>
+              <h3 class="card-main-title">Conciliación Bancaria</h3>
+              <p class="card-sub-title">Comparativa de depósitos reportados por entidad bancaria en el rango seleccionado.</p>
+            </div>
+          </div>
+        </ng-template>
+
+        <p-table [value]="bancosResumen" responsiveLayout="scroll" styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Entidad Bancaria</th>
+              <th class="text-center">Transacciones</th>
+              <th class="text-right">Monto Validado</th>
+              <th class="text-right">Monto Pendiente</th>
+              <th class="text-right">Monto Acumulado Esperado</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-banco>
+            <tr>
+              <td>
+                <div class="banco-name-cell">
+                  <span>{{ banco.banco }}</span>
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="p-badge p-badge-info">{{ banco.totalPagos }}</span>
+              </td>
+              <td class="text-right text-success font-semibold">
+                {{ banco.montoValidado | currency:'USD':'symbol':'1.2-2' }}
+              </td>
+              <td class="text-right text-warn font-semibold">
+                {{ banco.montoPendiente | currency:'USD':'symbol':'1.2-2' }}
+              </td>
+              <td class="text-right font-bold text-lg">
+                {{ banco.montoTotal | currency:'USD':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="empty-state">No se registraron movimientos en bancos para este periodo.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+
+      <!-- Módulo: Salud del Flujo de Trabajo / Eficiencia -->
+      <p-card styleClass="dashboard-card">
+        <ng-template pTemplate="header">
+          <div class="card-header-flex">
+            <div>
+              <h3 class="card-main-title">Estado del Control Interno</h3>
+              <p class="card-sub-title">Proporción del volumen de pagos recaudados.</p>
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="workflow-health">
+          <div class="progress-bar-container">
+            <div class="bar-segment success" [style.width.%]="getPorcentajeValidados()" title="Validados"></div>
+            <div class="bar-segment warn" [style.width.%]="getPorcentajePendientes()" title="Pendientes"></div>
+            <div class="bar-segment danger" [style.width.%]="getPorcentajeRechazados()" title="Rechazados"></div>
+          </div>
+
+          <div class="health-legend">
+            <div class="legend-item">
+              <span class="dot success"></span>
+              <span class="legend-label">Validados ({{ getPorcentajeValidados() | number:'1.0-1' }}%)</span>
+              <span class="legend-value">{{ kpis.montoValidado | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="dot warn"></span>
+              <span class="legend-label">Pendientes ({{ getPorcentajePendientes() | number:'1.0-1' }}%)</span>
+              <span class="legend-value">{{ kpis.montoPendiente | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="dot danger"></span>
+              <span class="legend-label">Rechazados ({{ getPorcentajeRechazados() | number:'1.0-1' }}%)</span>
+              <span class="legend-value">{{ kpis.montoRechazado | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+    <!-- Grid Inferior: Tablas de Operaciones (Pendientes de Validación & Rechazados Recientes) -->
+    <div class="bottom-grid">
+      <!-- Tabla: Pagos Pendientes de Validar en Tiempo Real -->
+      <p-card styleClass="dashboard-card">
+        <ng-template pTemplate="header">
+          <div class="card-header-flex">
+            <div>
+              <h3 class="card-main-title text-warn">Pagos Pendientes de Validación</h3>
+              <p class="card-sub-title">Comprobantes recibidos que aguardan confirmación contable.</p>
+            </div>
+          </div>
+        </ng-template>
+
+        <p-table [value]="pagosPendientesRecientes" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th># Pago</th>
+              <th>Fecha Depósito</th>
+              <th>Alumno</th>
+              <th>Banco / Depósito</th>
+              <th class="text-right">Monto</th>
+              <th>Estado</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-pago>
+            <tr [class.pago-observado-row]="pago.observaciones && pago.esValidado === null">
+              <td class="font-semibold">#{{ pago.idPago }}</td>
+              <td>{{ pago.fechaPago | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <div class="alumno-cell">
+                  <span class="alumno-name">{{ pago.alumnoNombre || 'Sin Nombre' }}</span>
+                  <span class="alumno-doc">{{ pago.documento }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="font-medium">{{ pago.bancoDeposito || 'N/A' }}</span>
+                <div class="sub-deposito">#{{ pago.numeroDeposito || 'S/N' }}</div>
+                @if (pago.observaciones && pago.esValidado === null) {
+                <div class="observacion-alerta-chip" [title]="pago.observaciones">
+                  <span class="material-icons text-xs">warning</span>
+                  <span class="truncate max-w-[140px]">{{ pago.observaciones }}</span>
+                </div>
+                }
+              </td>
+              <td class="text-right font-bold text-warn">
+                {{ pago.valorPago | currency:'USD':'symbol':'1.2-2' }}
+              </td>
+              <td>
+                @if (pago.observaciones && pago.esValidado === null) {
+                  <span class="badge-alerta-revision" title="Comprobante con observación especial pendiente de revisión">
+                    <span class="material-icons text-xs">flag</span> Observado
+                  </span>
+                } @else {
+                  <p-tag [value]="getValidacionLabel(pago.esValidado)" [severity]="getValidacionSeverity(pago.esValidado)" />
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="empty-state">No existen pagos pendientes por validar.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+
+      <!-- Tabla: Pagos Rechazados Recientes -->
+      <p-card styleClass="dashboard-card">
+        <ng-template pTemplate="header">
+          <div class="card-header-flex">
+            <div>
+              <h3 class="card-main-title text-danger">Últimos Pagos Rechazados</h3>
+              <p class="card-sub-title">Transacciones no aprobadas para seguimiento contable.</p>
+            </div>
+          </div>
+        </ng-template>
+
+        <p-table [value]="pagosRechazadosRecientes" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th># Pago</th>
+              <th>Fecha</th>
+              <th>Alumno</th>
+              <th>Banco</th>
+              <th class="text-right">Monto</th>
+              <th>Observación</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-pago>
+            <tr>
+              <td class="font-semibold">#{{ pago.idPago }}</td>
+              <td>{{ pago.fechaPago | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ pago.alumnoNombre }}</td>
+              <td>{{ pago.bancoDeposito }}</td>
+              <td class="text-right font-bold text-danger">
+                {{ pago.valorPago | currency:'USD':'symbol':'1.2-2' }}
+              </td>
+              <td class="observaciones-cell">
+                {{ pago.observaciones || 'Rechazado en auditoría' }}
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="empty-state">No se registraron rechazos en este rango.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    </div>
+  </ng-container>
+</div>
+

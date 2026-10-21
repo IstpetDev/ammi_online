@@ -6,8 +6,8 @@ namespace AMMI_Online_API.Domain.Interfaces.Catalogs
     {
         Task<IEnumerable<Paralelo>> FindAsync(
             int? idParalelo,
-            string? nombreParalelo,
-            int? cupoMaximo,
+            string? detalle,
+            int? orden,
             CancellationToken cancellationToken);
         Task<Paralelo?> GetByIdAsync(int id, CancellationToken cancellationToken);
         Task<Paralelo> AddAsync(Paralelo paralelo, CancellationToken cancellationToken);

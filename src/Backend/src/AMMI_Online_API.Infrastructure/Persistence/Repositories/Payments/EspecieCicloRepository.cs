@@ -17,38 +17,43 @@ public class EspecieCicloRepository : IEspecieCicloRepository
     public async Task<IEnumerable<EspecieCiclo>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await _context.EspecieCiclo
-            .Include(ec => ec.IdCicloNavigation)
+            .Include(ec => ec.IdMallaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
             .Include(ec => ec.IdEspecieNavigation)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<EspecieCiclo>> GetByCicloAsync(int idCiclo, CancellationToken cancellationToken)
+    public async Task<IEnumerable<EspecieCiclo>> GetByMallaAsync(int idMalla, CancellationToken cancellationToken)
     {
         return await _context.EspecieCiclo
-            .Include(ec => ec.IdCicloNavigation)
+            .Include(ec => ec.IdMallaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
             .Include(ec => ec.IdEspecieNavigation)
-            .Where(ec => ec.IdCiclo == idCiclo)
+            .Where(ec => ec.IdMalla == idMalla 
+                      && (ec.IdEspecieNavigation.EsMatricula || ec.IdEspecieNavigation.EsPension))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<EspecieCiclo?> GetByIdAsync(int idEspecieCiclo, CancellationToken cancellationToken)
     {
         return await _context.EspecieCiclo
-            .Include(ec => ec.IdCicloNavigation)
+            .Include(ec => ec.IdMallaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
             .Include(ec => ec.IdEspecieNavigation)
             .FirstOrDefaultAsync(ec => ec.IdEspecieCiclo == idEspecieCiclo, cancellationToken);
     }
 
-    public async Task<bool> ExisteEspecieEnCicloAsync(int idCiclo, int idEspecie, CancellationToken cancellationToken)
+    public async Task<bool> ExisteEspecieEnMallaAsync(int idMalla, int idEspecie, CancellationToken cancellationToken)
     {
         return await _context.EspecieCiclo
-            .AnyAsync(ec => ec.IdCiclo == idCiclo && ec.IdEspecie == idEspecie, cancellationToken);
+            .AnyAsync(ec => ec.IdMalla == idMalla && ec.IdEspecie == idEspecie, cancellationToken);
     }
 
-    public async Task<bool> EsCicloActivoAsync(int idCiclo, CancellationToken cancellationToken)
+    public async Task<bool> EsMallaConCicloActivoAsync(int idMalla, CancellationToken cancellationToken)
     {
-        return await _context.Ciclo
-            .AnyAsync(c => c.IdCiclo == idCiclo && c.EsActivo, cancellationToken);
+        return await _context.Malla
+            .Include(m => m.IdCicloNavigation)
+            .AnyAsync(m => m.IdMalla == idMalla && m.IdCicloNavigation != null && m.IdCicloNavigation.EsActivo, cancellationToken);
     }
 
     public async Task<EspecieCiclo> CreateAsync(EspecieCiclo especieCiclo, CancellationToken cancellationToken)
@@ -60,7 +65,7 @@ public class EspecieCicloRepository : IEspecieCicloRepository
                ?? especieCiclo;
     }
 
-    public async Task<EspecieCiclo> UpdateValorAsync(int idEspecieCiclo, decimal valorEspecie, CancellationToken cancellationToken)
+    public async Task<EspecieCiclo> UpdateValorAsync(int idEspecieCiclo, int idEspecie, decimal valorEspecie, CancellationToken cancellationToken)
     {
         var especieCiclo = await _context.EspecieCiclo
             .FirstOrDefaultAsync(ec => ec.IdEspecieCiclo == idEspecieCiclo, cancellationToken);
@@ -68,6 +73,7 @@ public class EspecieCicloRepository : IEspecieCicloRepository
         if (especieCiclo == null)
             throw new KeyNotFoundException($"EspecieCiclo con ID {idEspecieCiclo} no encontrado");
 
+        especieCiclo.IdEspecie = idEspecie;
         especieCiclo.ValorEspecie = valorEspecie;
         await _context.SaveChangesAsync(cancellationToken);
 

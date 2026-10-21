@@ -11,15 +11,17 @@ public partial class Matricula
 
     public int IdUsuarioAlumno { get; set; }
 
-    public int IdParalelo { get; set; }
+    public int IdMallaParalelo { get; set; }
 
-    public bool EsFinalizada { get; set; }
+    public int IdEstadoMatricula { get; set; }
 
     public virtual ICollection<Credito> Credito { get; set; } = new List<Credito>();
 
     public virtual ICollection<DetalleMatricula> DetalleMatricula { get; set; } = new List<DetalleMatricula>();
 
-    public virtual Paralelo IdParaleloNavigation { get; set; }
+    public virtual EstadoMatricula IdEstadoMatriculaNavigation { get; set; }
+
+    public virtual MallaParalelo IdMallaParaleloNavigation { get; set; }
 
     public virtual Usuario IdUsuarioAlumnoNavigation { get; set; }
 }

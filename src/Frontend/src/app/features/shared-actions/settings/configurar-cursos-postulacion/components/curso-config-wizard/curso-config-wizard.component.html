@@ -1,0 +1,463 @@
+<app-shared-drawer [visible]="visible" (visibleChange)="onVisibleChange($event)"
+  [title]="'Configurar: ' + (curso?.detalle || '')"
+  [position]="'right'" [size]="'xl'" [showFooter]="false">
+  
+  <div class="wizard-container" *ngIf="curso">
+    
+    <!-- Progress Bar -->
+    <div class="wizard-progress-bar" style="height: 4px; background: var(--surface-border); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; position: relative;">
+      <div class="wizard-progress-fill" [style.width.%]="wizardProgress" style="height: 100%; background: var(--brand-yellow-dark); transition: width 0.3s ease;"></div>
+    </div>
+
+    <!-- Step Labels -->
+    <div class="wizard-steps" style="display: flex; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--surface-border); padding-bottom: 1rem;">
+      <div class="wizard-step" *ngFor="let step of stepsConfig; let i = index" 
+        [class.completed]="wizardStep > i + 1" [class.current]="wizardStep === i + 1"
+        (click)="clickStepHeader(i + 1)"
+        style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem; cursor: pointer; flex: 1;">
+        <div class="wizard-step-num" [style.background]="wizardStep === i + 1 ? 'var(--brand-yellow-dark)' : wizardStep > i + 1 ? '#22c55e' : 'var(--surface-ground)'"
+          [style.color]="wizardStep === i + 1 || wizardStep > i + 1 ? '#fff' : 'var(--text-color-secondary)'"
+          style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">
+          {{ wizardStep > i + 1 ? '✓' : i + 1 }}
+        </div>
+        <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-color);">{{ step.label }}</span>
+      </div>
+    </div>
+
+    <!-- Step Content -->
+    <div class="wizard-content" style="min-height: 450px;">
+      
+      <!-- STEP 1: Materias -->
+      <div *ngIf="wizardStep === 1" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-book" style="color: var(--brand-yellow-dark);"></i> Seleccionar Materias</h3>
+        <p class="wizard-step-desc" style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-color-secondary);">Seleccione las materias del curso, asigne el módulo, horas y área de competencia. Las horas no pueden ser 0.</p>
+
+        <div class="wizard-toolbar" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+          <div class="wizard-search-box" style="position: relative; flex: 1; display: flex; align-items: center;">
+            <i class="pi pi-search" style="position: absolute; left: 10px; color: var(--text-color-secondary); font-size: 0.85rem;"></i>
+            <input type="text" class="wizard-search-input" [(ngModel)]="materiasFilterText"
+              placeholder="Buscar materia..." style="width: 100%; padding: 0.45rem 2rem 0.45rem 2rem; border-radius: 6px; border: 1px solid var(--surface-border); font-size: 0.8rem; background: var(--surface-card); color: var(--text-color);">
+            <i class="pi pi-times wizard-search-clear" *ngIf="materiasFilterText"
+              (click)="materiasFilterText = ''" style="position: absolute; right: 10px; cursor: pointer; color: var(--text-color-secondary); font-size: 0.85rem;"></i>
+          </div>
+          <button type="button" class="wizard-btn-add" (click)="showMateriaDialog = true" style="background: var(--brand-yellow-dark); color: #fff; border: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem;">
+            <i class="pi pi-plus"></i> Nueva
+          </button>
+        </div>
+
+        <div class="wizard-plantilla-row" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600;">Plantilla de Evaluación</label>
+          <div style="width: 250px;">
+            <app-custom-select [items]="plantillas" labelField="detalle" valueField="idPlantillaEvaluacion"
+              [selectedValue]="materiaDefaultPlantilla"
+              (selectedValueChange)="onPlantillaChange($event)"
+              placeholder="Seleccione plantilla..." [searchable]="false">
+            </app-custom-select>
+          </div>
+        </div>
+
+        <div class="wizard-table-wrap">
+          <p-table [value]="materiasFiltradas" [tableStyle]="{ 'width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:36px"><input type="checkbox" [checked]="todasMateriasSel"
+                    (change)="toggleTodasMaterias($event)"></th>
+                <th>Materia</th>
+                <th style="width:80px">Mód.</th>
+                <th style="width:80px">Horas</th>
+                <th style="min-width:180px">Área</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr [class.ccp-row-selected]="row._selected" (click)="toggleMateriaRow(row)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="row._selected" (click)="$event.stopPropagation()"
+                    (change)="toggleMateriaRow(row)"></td>
+                <td style="font-size: 0.8rem;">{{ row.detalle }}</td>
+                <td>
+                  <input type="number" class="wizard-inline-input" [(ngModel)]="row._modulo" min="1" step="1"
+                    (click)="$event.stopPropagation()" (ngModelChange)="actualizarMateriasPorModulo(); markDirty()"
+                    style="width: 60px; text-align: center; border-radius: 4px; border: 1px solid var(--surface-border); padding: 0.25rem; font-size: 0.8rem;">
+                </td>
+                <td>
+                  <input type="number" class="wizard-inline-input" [(ngModel)]="row._horas" min="1" step="1"
+                    [class.invalid]="row._selected && (!row._horas || row._horas <= 0)"
+                    (click)="$event.stopPropagation()" (ngModelChange)="markDirty()"
+                    style="width: 60px; text-align: center; border-radius: 4px; border: 1px solid var(--surface-border); padding: 0.25rem; font-size: 0.8rem;">
+                </td>
+                <td (click)="$event.stopPropagation()">
+                  <app-custom-select [items]="areasCompetencia" labelField="detalle" valueField="idAreaCompetencia"
+                    [selectedValue]="row._area" (selectedValueChange)="row._area = $event; markDirty()"
+                    placeholder="Seleccione Área">
+                  </app-custom-select>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="ccp-empty" style="text-align: center; padding: 2rem; color: var(--text-color-secondary);">No hay materias disponibles. Cree una nueva materia.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+        
+        <div *ngIf="totalMateriasSeleccionadas === 0" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Debe seleccionar al menos una materia para continuar.
+        </div>
+        <div *ngIf="totalMateriasSeleccionadas > 0 && !validarHorasMaterias()" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Todas las materias seleccionadas deben tener horas mayores que 0.
+        </div>
+      </div>
+
+      <!-- STEP 2: Fechas por Módulo -->
+      <div *ngIf="wizardStep === 2" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-calendar" style="color: var(--brand-yellow-dark);"></i> Fechas por Módulo</h3>
+        <p class="wizard-step-desc" style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-color-secondary);">Configure las fechas de inicio y fin para cada módulo. Se aplicarán a todas las materias del módulo.</p>
+
+        <div class="wizard-fechas-grid" *ngIf="materiasPorModulo.length > 0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <div class="wizard-fecha-card" *ngFor="let grupo of materiasPorModulo; trackBy: trackByModulo" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-fecha-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="wizard-fecha-modulo" style="font-weight: 700; font-size: 0.85rem;">Módulo {{ grupo.modulo }}</span>
+              <span class="wizard-fecha-materias" style="font-size: 0.7rem; color: var(--text-color-secondary);">{{ grupo.materias.length }} materia(s)</span>
+            </div>
+            <div class="wizard-fecha-materias-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem;">
+              <span class="wizard-fecha-materia-tag" *ngFor="let mat of grupo.materias" style="background: var(--surface-ground); border: 1px solid var(--surface-border); border-radius: 4px; padding: 0.1rem 0.35rem; font-size: 0.65rem; color: var(--text-color-secondary);">{{ mat }}</span>
+            </div>
+            <div class="wizard-fecha-inputs" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="wizard-fecha-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.7rem; font-weight: 600;">Fecha Inicio</label>
+                <input type="date" class="wizard-fecha-input"
+                  [ngModel]="grupo.fechaInicio"
+                  (ngModelChange)="propagarFechaInicio(grupo.modulo, $event)"
+                  style="width: 100%; border: 1px solid var(--surface-border); border-radius: 4px; padding: 0.25rem; font-size: 0.75rem;">
+              </div>
+              <div class="wizard-fecha-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label style="font-size: 0.7rem; font-weight: 600;">Fecha Fin</label>
+                <input type="date" class="wizard-fecha-input"
+                  [ngModel]="grupo.fechaFin"
+                  (ngModelChange)="propagarFechaFin(grupo.modulo, $event)"
+                  style="width: 100%; border: 1px solid var(--surface-border); border-radius: 4px; padding: 0.25rem; font-size: 0.75rem;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="materiasPorModulo.length === 0" style="text-align: center; padding: 2rem; color: var(--text-color-secondary);">
+          <i class="pi pi-inbox" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+          <p>No hay módulos configurados. Regrese al paso anterior y seleccione materias.</p>
+        </div>
+      </div>
+
+      <!-- STEP 3: Requisitos -->
+      <div *ngIf="wizardStep === 3" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-check-square" style="color: var(--brand-yellow-dark);"></i> Requisitos</h3>
+        <p class="wizard-step-desc" style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-color-secondary);">Seleccione los requisitos que los postulantes deberán cumplir.</p>
+
+        <button type="button" class="wizard-btn-add" (click)="showRequisitoDialog = true" style="background: var(--brand-yellow-dark); color: #fff; border: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; margin-bottom: 1rem;">
+          <i class="pi pi-plus"></i> Nuevo Requisito
+        </button>
+
+        <div class="wizard-table-wrap">
+          <p-table [value]="todosRequisitos" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosRequisitosSel"
+                    (change)="toggleTodosRequisitos($event)"></th>
+                <th>Requisito</th>
+                <th style="width:120px">Tipo</th>
+                <th style="width:80px">Oblig.</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-r>
+              <tr [class.ccp-row-selected]="r._sel" (click)="toggleRequisito(r)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="r._sel" (click)="$event.stopPropagation()" (change)="toggleRequisito(r)"></td>
+                <td style="font-size: 0.8rem;">{{ r.detalle }}</td>
+                <td style="font-size: 0.8rem;">{{ r.tipoDato === 'ADJUNTO' ? 'Adjunto' : 'Sí/No' }}</td>
+                <td style="font-size: 0.8rem;">{{ r.esObligatorio ? 'Sí' : 'No' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="ccp-empty" style="text-align: center; padding: 2rem; color: var(--text-color-secondary);">No hay requisitos disponibles. Cree un nuevo requisito.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div *ngIf="totalRequisitosSeleccionados === 0" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Debe seleccionar al menos un requisito para continuar.
+        </div>
+      </div>
+
+      <!-- STEP 4: Paralelos -->
+      <div *ngIf="wizardStep === 4" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-users" style="color: var(--brand-yellow-dark);"></i> Paralelos</h3>
+        <p class="wizard-step-desc" style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-color-secondary);">Seleccione los paralelos y asigne el cupo máximo de estudiantes. El cupo no puede ser 0.</p>
+
+        <div class="wizard-table-wrap">
+          <p-table [value]="todosParalelos" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosParalelosSel"
+                    (change)="toggleTodosParalelos($event)"></th>
+                <th>Paralelo</th>
+                <th style="width:120px">Cupos</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr [class.ccp-row-selected]="p._sel" (click)="toggleParalelo(p)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="p._sel" (click)="$event.stopPropagation()"
+                    (change)="toggleParalelo(p)"></td>
+                <td style="font-size: 0.8rem;">{{ p.nombreParalelo || p.detalle }}</td>
+                <td>
+                  <input type="number" class="wizard-inline-input" [(ngModel)]="p._cupo" min="1" step="1"
+                    [class.invalid]="p._sel && (!p._cupo || p._cupo <= 0)"
+                    (click)="$event.stopPropagation()" (ngModelChange)="markDirty()" placeholder="Ej: 30"
+                    style="width: 80px; text-align: center; border-radius: 4px; border: 1px solid var(--surface-border); padding: 0.25rem; font-size: 0.8rem;">
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="3" class="ccp-empty" style="text-align: center; padding: 2rem; color: var(--text-color-secondary);">No hay paralelos disponibles.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+        
+        <div *ngIf="totalParalelosSeleccionados === 0" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Debe seleccionar al menos un paralelo para continuar.
+        </div>
+        <div *ngIf="totalParalelosSeleccionados > 0 && !validarCuposParalelos()" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Todos los paralelos seleccionados deben tener un cupo mayor que 0.
+        </div>
+      </div>
+
+      <!-- STEP 5: Costos -->
+      <div *ngIf="wizardStep === 5" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-dollar" style="color: var(--brand-yellow-dark);"></i> Costos</h3>
+
+
+        <div class="wizard-table-wrap">
+          <p-table [value]="todosEspecies" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosEspeciesSel"
+                    (change)="toggleTodosEspecies($event)"></th>
+                <th>Especie</th>
+                <th style="width:120px">Valor</th>
+                <th style="width:100px">Tipo</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-e>
+              <tr [class.ccp-row-selected]="e._sel" (click)="toggleEspecie(e)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="e._sel" (click)="$event.stopPropagation()"
+                    (change)="toggleEspecie(e)"></td>
+                <td style="font-size: 0.8rem;">{{ e.detalle }}</td>
+                <td>
+                  <input type="number" class="wizard-inline-input" [(ngModel)]="e._valor" min="0.01" step="0.01"
+                    [class.invalid]="e._sel && (!e._valor || e._valor <= 0)"
+                    (click)="$event.stopPropagation()" (ngModelChange)="markDirty()" placeholder="1.00"
+                    style="width: 80px; text-align: center; border-radius: 4px; border: 1px solid var(--surface-border); padding: 0.25rem; font-size: 0.8rem;">
+                </td>
+                <td style="font-size: 0.8rem;">{{ e.esMatricula ? 'Matrícula' : e.esPension ? 'Pensión' : '—' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="ccp-empty" style="text-align: center; padding: 2rem; color: var(--text-color-secondary);">No hay especies disponibles. Cree un nuevo costo.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+        
+        <div *ngIf="totalEspeciesSeleccionadas === 0" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Debe seleccionar al menos un costo/matrícula para continuar.
+        </div>
+        <div *ngIf="totalEspeciesSeleccionadas > 0 && !validarValoresEspecies()" style="margin-top: 0.75rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+          <i class="pi pi-exclamation-circle"></i> Todos los costos seleccionados deben tener un valor mayor que 0.
+        </div>
+      </div>
+
+      <!-- STEP 6: Resumen -->
+      <div *ngIf="wizardStep === 6" class="wizard-step-body">
+        <h3 class="wizard-step-title" style="margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 700;"><i class="pi pi-check-circle" style="color: var(--brand-yellow-dark);"></i> Resumen de Configuración</h3>
+        <p class="wizard-step-desc" style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-color-secondary);">Revise la configuración antes de guardar. Las alertas indican si hay validaciones pendientes.</p>
+
+        <!-- Validaciones generales en Resumen -->
+        <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <div *ngIf="totalMateriasSeleccionadas === 0" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Debe seleccionar al menos una materia.
+          </div>
+          <div *ngIf="totalMateriasSeleccionadas > 0 && !validarHorasMaterias()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Hay materias seleccionadas con 0 horas.
+          </div>
+          <div *ngIf="totalRequisitosSeleccionados === 0" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Debe seleccionar al menos un requisito.
+          </div>
+          <div *ngIf="totalParalelosSeleccionados === 0" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Debe seleccionar al menos un paralelo.
+          </div>
+          <div *ngIf="totalParalelosSeleccionados > 0 && !validarCuposParalelos()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Hay paralelos seleccionados con cupo 0.
+          </div>
+          <div *ngIf="totalEspeciesSeleccionadas === 0" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Debe seleccionar al menos un costo/matrícula.
+          </div>
+          <div *ngIf="totalEspeciesSeleccionadas > 0 && !validarValoresEspecies()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-exclamation-triangle"></i> Hay costos seleccionados con valor 0.
+          </div>
+        </div>
+
+        <div class="wizard-resumen-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <div class="wizard-resumen-card" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-resumen-header" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span><i class="pi pi-book"></i> Materias</span>
+              <span class="wizard-resumen-badge" style="background: var(--surface-ground); border-radius: 4px; padding: 0 0.35rem;">{{ totalMateriasSeleccionadas }}</span>
+            </div>
+            <div class="wizard-resumen-body" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; max-height: 150px; overflow-y: auto;">
+              <div class="wizard-resumen-item" *ngFor="let m of materiasSeleccionadasResumen" style="display: flex; justify-content: space-between;">
+                <span>{{ m.detalle }}</span>
+                <span style="color: var(--text-color-secondary);">Mód. {{ m._modulo }} · {{ m._horas }}h</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-resumen-card" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-resumen-header" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span><i class="pi pi-calendar"></i> Fechas Módulo</span>
+              <span class="wizard-resumen-badge" style="background: var(--surface-ground); border-radius: 4px; padding: 0 0.35rem;">{{ modulosUnicos.length }}</span>
+            </div>
+            <div class="wizard-resumen-body" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div class="wizard-resumen-item" *ngFor="let mod of modulosUnicos" style="display: flex; justify-content: space-between;">
+                <span>Módulo {{ mod }}</span>
+                <span style="color: var(--text-color-secondary);">{{ getFechaInicioModulo(mod) }} → {{ getFechaFinModulo(mod) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-resumen-card" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-resumen-header" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span><i class="pi pi-check-square"></i> Requisitos</span>
+              <span class="wizard-resumen-badge" style="background: var(--surface-ground); border-radius: 4px; padding: 0 0.35rem;">{{ totalRequisitosSeleccionados }}</span>
+            </div>
+            <div class="wizard-resumen-body" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; max-height: 150px; overflow-y: auto;">
+              <div class="wizard-resumen-item" *ngFor="let r of requisitosSeleccionadosResumen" style="display: flex; justify-content: space-between;">
+                <span>{{ r.detalle }}</span>
+                <span style="color: var(--text-color-secondary);">{{ r.tipoDato === 'ADJUNTO' ? 'Adjunto' : 'Sí/No' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-resumen-card" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-resumen-header" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span><i class="pi pi-users"></i> Paralelos</span>
+              <span class="wizard-resumen-badge" style="background: var(--surface-ground); border-radius: 4px; padding: 0 0.35rem;">{{ totalParalelosSeleccionados }}</span>
+            </div>
+            <div class="wizard-resumen-body" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; max-height: 150px; overflow-y: auto;">
+              <div class="wizard-resumen-item" *ngFor="let p of paralelosSeleccionadosResumen" style="display: flex; justify-content: space-between;">
+                <span>{{ p.nombreParalelo || p.detalle }}</span>
+                <span style="color: var(--text-color-secondary);">Cupo: {{ p._cupo || 30 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-resumen-card" style="border: 1px solid var(--surface-border); border-radius: 8px; padding: 1rem; background: var(--surface-card);">
+            <div class="wizard-resumen-header" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span><i class="pi pi-dollar"></i> Costos</span>
+              <span class="wizard-resumen-badge" style="background: var(--surface-ground); border-radius: 4px; padding: 0 0.35rem;">{{ totalEspeciesSeleccionadas }}</span>
+            </div>
+            <div class="wizard-resumen-body" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; max-height: 150px; overflow-y: auto;">
+              <div class="wizard-resumen-item" *ngFor="let e of especiesSeleccionadasResumen" style="display: flex; justify-content: space-between;">
+                <span>{{ e.detalle }}</span>
+                <span style="color: var(--text-color-secondary); font-weight: 600;">\${{ e._valor }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="wizard-nav" style="display: flex; justify-content: space-between; border-top: 1px solid var(--surface-border); padding-top: 1rem; margin-top: 2rem;">
+      <button type="button" class="wizard-btn wizard-btn-secondary" (click)="onCancel()" style="border: 1px solid var(--surface-border); background: var(--surface-ground); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+        <i class="pi pi-times"></i> Cancelar
+      </button>
+      <div class="wizard-nav-right" style="display: flex; gap: 0.5rem;">
+        <button type="button" class="wizard-btn wizard-btn-outline" *ngIf="wizardStep > 1" (click)="prevStep()" style="border: 1px solid var(--surface-border); background: transparent; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          <i class="pi pi-chevron-left"></i> Anterior
+        </button>
+        <button type="button" class="wizard-btn wizard-btn-primary" *ngIf="wizardStep < totalSteps"
+          [style.opacity]="canGoNext ? 1 : 0.65" (click)="nextStep()" style="background: var(--brand-yellow-dark); color: #fff; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          Siguiente <i class="pi pi-chevron-right"></i>
+        </button>
+        <button type="button" class="wizard-btn wizard-btn-success" *ngIf="wizardStep === totalSteps"
+          [disabled]="guardando" [style.opacity]="esFormularioValido() ? 1 : 0.65" (click)="guardarConfiguracionCurso()" style="background: #22c55e; color: #fff; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+          <i class="pi pi-check"></i> {{ guardando ? 'Guardando...' : 'Guardar configuración' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</app-shared-drawer>
+
+<!-- Componente Modal para Nueva Materia -->
+<app-materia-dialog [(visible)]="showMateriaDialog" (saved)="onNuevaMateriaCreada($event)"></app-materia-dialog>
+
+<app-shared-modal [(visible)]="showRequisitoDialog" title="Nuevo Requisito" customWidth="450px" [showFooter]="true"
+  cancelText="Cancelar" confirmText="Guardar" [confirmDisabled]="!nuevoRequisitoDetalle.trim()"
+  (confirm)="guardarNuevoRequisito()" (cancel)="showRequisitoDialog = false">
+  <div class="ccp-dialog-body">
+    <div class="ccp-dialog-field" style="display:flex; flex-direction:column; gap:0.25rem; margin-bottom: 1rem;">
+      <label style="font-size:0.75rem; font-weight:600;">Detalle *</label>
+      <input type="text" class="form-control ccp-input" [ngModel]="nuevoRequisitoDetalle"
+        (ngModelChange)="nuevoRequisitoDetalle = $event ? $event.toUpperCase() : ''"
+        placeholder="Ej: TITULO DE BACHILLER" style="text-transform: uppercase;">
+    </div>
+    <div class="ccp-dialog-field" style="display:flex; flex-direction:column; gap:0.25rem; margin-bottom: 1rem;">
+      <label style="font-size:0.75rem; font-weight:600;">Tipo de dato *</label>
+      <app-custom-select [items]="tipoDatoOptions" labelField="label" valueField="value"
+        [selectedValue]="nuevoRequisitoTipoDato" (selectedValueChange)="nuevoRequisitoTipoDato = $event"
+        placeholder="Seleccione tipo">
+      </app-custom-select>
+    </div>
+    <div class="ccp-dialog-check-row" style="margin-bottom: 0.5rem;">
+      <label><input type="checkbox" [(ngModel)]="nuevoRequisitoObligatorio"> ¿Es obligatorio?</label>
+    </div>
+    <div class="ccp-dialog-check-row">
+      <label><input type="checkbox" [(ngModel)]="nuevoRequisitoBloquea"> ¿Bloquea inscripción?</label>
+    </div>
+  </div>
+</app-shared-modal>
+
+<!-- Dialog Nueva Especie -->
+<app-shared-modal [(visible)]="showEspecieDialog" title="Nueva Especie Valorada" customWidth="450px"
+  [showFooter]="true" cancelText="Cancelar" confirmText="Guardar" [confirmDisabled]="!nuevaEspecieDetalle.trim()"
+  (confirm)="guardarNuevaEspecie()" (cancel)="showEspecieDialog = false">
+  <div class="ccp-dialog-body">
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Nombre de la Especie *</label>
+      <input type="text" class="form-control ccp-input" [ngModel]="nuevaEspecieDetalle"
+        (ngModelChange)="nuevaEspecieDetalle = $event ? $event.toUpperCase() : ''"
+        placeholder="Ej: MATRICULA" style="text-transform: uppercase;">
+    </div>
+    <div class="ccp-dialog-field" style="display:flex; flex-direction:column; gap:0.25rem; margin-bottom: 1rem;">
+      <label style="font-size:0.75rem; font-weight:600;">Valor *</label>
+      <input type="number" class="form-control ccp-input" [(ngModel)]="nuevaEspecieValor" placeholder="Ej: 1" min="0.01" step="0.01">
+    </div>
+    <div class="ccp-dialog-check-row" style="margin-bottom: 0.5rem;">
+      <label><input type="checkbox" [(ngModel)]="nuevaEspecieEsMatricula"> Es matrícula</label>
+    </div>
+    <div class="ccp-dialog-check-row">
+      <label><input type="checkbox" [(ngModel)]="nuevaEspecieEsPension"> Es pensión</label>
+    </div>
+  </div>
+</app-shared-modal>
+
+<app-shared-modal [(visible)]="showUnsavedChangesDialog" title="Cambios sin guardar"
+  customWidth="420px" [showFooter]="true" cancelText="Cancelar" confirmText="Descartar cambios"
+  confirmClass="btn-danger" (confirm)="confirmUnsavedChanges()" (cancel)="cancelUnsavedChanges()">
+  <p style="font-size:0.85rem; color:var(--text-color); margin:0; display:flex; align-items:center; gap:0.5rem;">
+    <i class="pi pi-exclamation-triangle" style="color:var(--brand-orange); font-size:1.2rem;"></i>
+    Tiene cambios sin guardar. Si continúa se perderán los cambios.
+  </p>
+</app-shared-modal>

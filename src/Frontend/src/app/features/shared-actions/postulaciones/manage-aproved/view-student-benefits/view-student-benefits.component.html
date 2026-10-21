@@ -1,0 +1,247 @@
+<div class="view-benefits-card">
+  <header class="card-header">
+    <div class="header-left">
+      <i class="pi pi-tag header-icon" aria-hidden="true"></i>
+      <h2>Beneficios Estudiantiles</h2>
+    </div>
+    <div class="header-actions">
+      <div class="header-stats" *ngIf="!loading && !error">
+        <span class="badge badge-active">{{ activeBenefits.length }} Activos</span>
+        <span class="badge badge-inactive" *ngIf="inactiveBenefits.length > 0">{{ inactiveBenefits.length }} Inactivos</span>
+      </div>
+      <button type="button" class="btn-colocar-beneficio" (click)="abrirModalAsignar()">
+        <i class="pi pi-plus"></i> Colocar Beneficio
+      </button>
+    </div>
+  </header>
+
+  <!-- Inline form: Colocar Beneficio -->
+  <div class="asignar-form-panel" *ngIf="showAsignarDialog">
+    <div class="asignar-form-header">
+      <span><i class="pi pi-tag"></i> Nuevo Beneficio</span>
+    </div>
+    <div class="benefit-modal-body">
+      <div class="benefit-modal-grid">
+        <!-- Columna izquierda: campos -->
+        <div class="benefit-modal-fields">
+          <label class="benefit-label">SELECCIONA UN BENEFICIO</label>
+          <div *ngIf="loadingBeneficios" class="loading-state"><i class="pi pi-spin pi-spinner"></i> Cargando...</div>
+          <p-autocomplete
+            *ngIf="!loadingBeneficios"
+            [(ngModel)]="beneficioSeleccionado"
+            [suggestions]="suggestions"
+            (completeMethod)="filterBeneficios($event)"
+            [optionLabel]="'detalle'"
+            [dropdown]="true"
+            placeholder="Selecciona un beneficio"
+            [style]="{'width': '100%'}">
+          </p-autocomplete>
+
+          <div class="benefit-field-row">
+            <div class="benefit-field-col">
+              <label>Fecha Inicio <span class="required">*</span></label>
+              <input type="date" [(ngModel)]="fechaInicio" class="field-input" />
+            </div>
+            <div class="benefit-field-col">
+              <label>Fecha Fin</label>
+              <input type="date" [(ngModel)]="fechaFin" class="field-input" />
+            </div>
+          </div>
+          <div class="modal-error" *ngIf="asignarError"><i class="pi pi-times-circle"></i> {{ asignarError }}</div>
+        </div>
+
+        <!-- Columna derecha: preview -->
+        <div class="benefit-modal-preview">
+          <div class="benefit-preview-box">
+            <div class="benefit-preview-title"><i class="pi pi-info-circle"></i> Información del Beneficio</div>
+            <div *ngIf="beneficioSeleccionado; else noSelected" class="benefit-details-box">
+              <div class="benefit-detail-row">
+                <span class="benefit-detail-label">Nombre:</span>
+                <span class="benefit-detail-value">{{ beneficioSeleccionado.detalle }}</span>
+              </div>
+              <div class="benefit-detail-row">
+                <span class="benefit-detail-label">Tipo:</span>
+                <span class="benefit-detail-value">
+                  <span class="badge-benefit-type" [ngClass]="{'porcentaje': beneficioSeleccionado.tipoValor === 'PORCENTAJE', 'monto': beneficioSeleccionado.tipoValor !== 'PORCENTAJE'}">
+                    {{ beneficioSeleccionado.tipoValor === 'PORCENTAJE' ? 'PORCENTAJE' : 'MONTO' }}
+                  </span>
+                </span>
+              </div>
+              <div class="benefit-detail-row">
+                <span class="benefit-detail-label">Valor:</span>
+                <span class="benefit-detail-value">
+                  <span class="badge-benefit-value">
+                    {{ formatBeneficioValue(beneficioSeleccionado) }}
+                  </span>
+                </span>
+              </div>
+              <div class="benefit-detail-row">
+                <span class="benefit-detail-label">Aplica a:</span>
+                <span class="benefit-detail-value">{{ getEspecieLabel(beneficioSeleccionado.aplicaA) }}</span>
+              </div>
+            </div>
+            <ng-template #noSelected>
+              <div class="benefit-details-box no-benefit-selected">
+                <span class="placeholder-text">Selecciona un beneficio para ver su información.</span>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="asignar-form-footer">
+      <button type="button" class="btn-cancel" (click)="cancelarAsignar()" [disabled]="asignando">Cancelar</button>
+      <button type="button" class="btn-confirm" (click)="confirmarAsignar()" [disabled]="asignando || !beneficioSeleccionado">
+        <i class="pi" [class.pi-check]="!asignando" [class.pi-spin]="asignando" [class.pi-spinner]="asignando"></i>
+        {{ asignando ? 'Asignando...' : 'Confirmar' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Desactivar Beneficio -->
+  <app-shared-drawer
+    [(visible)]="showDesactivarDialog"
+    mode="modal"
+    size="md"
+    [showCloseButton]="true"
+    [closeOnOverlayClick]="false"
+    [showFooter]="false"
+    (close)="cancelarDesactivar()"
+    (cancel)="cancelarDesactivar()">
+
+    <div drawer-title>
+      <div class="desactivar-header-title-block">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Desactivar Beneficio</span>
+      </div>
+    </div>
+
+    <div class="benefit-modal-body desactivar-modal-body" *ngIf="beneficioADesactivar">
+      <!-- Tarjeta del beneficio -->
+      <div class="desactivar-benefit-card">
+        <span class="benefit-icon-circle active" style="width:30px;height:30px;font-size:0.85rem;flex-shrink:0">
+          <i class="pi pi-tag"></i>
+        </span>
+        <div style="flex:1;min-width:0">
+          <div class="benefit-name" style="font-size:0.875rem">{{ beneficioADesactivar.detalleBeneficio }}</div>
+          <div class="benefit-meta" style="margin-top:0.2rem">
+            <span class="badge-type">{{ beneficioADesactivar.tipoValor === 'PORCENTAJE' ? 'Porcentaje' : 'Monto Fijo' }}</span>
+            <span *ngIf="beneficioADesactivar.detalleCiclo" class="benefit-cycle">
+              <i class="pi pi-calendar"></i> {{ beneficioADesactivar.detalleCiclo }}
+            </span>
+          </div>
+        </div>
+        <span class="benefit-value active" style="font-size:0.9rem">{{ formatValue(beneficioADesactivar) }}</span>
+      </div>
+
+      <!-- Campo observaciones -->
+      <div class="benefit-field-row" style="margin-top:1rem">
+        <div class="benefit-field-col full">
+          <label class="benefit-label" style="font-size:0.8rem">MOTIVO DE DESACTIVACIÓN</label>
+          <textarea [(ngModel)]="desactivarObservaciones" rows="3" class="field-input"
+            placeholder="Describe el motivo de la desactivación..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-error" *ngIf="desactivarError">
+        <i class="pi pi-times-circle"></i> {{ desactivarError }}
+      </div>
+
+      <div class="asignar-form-footer" style="margin-top:1.5rem">
+        <button type="button" class="btn-cancel" (click)="cancelarDesactivar()" [disabled]="desactivando">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="confirmarDesactivar()" [disabled]="desactivando">
+          <i class="pi" [class.pi-ban]="!desactivando" [class.pi-spin]="desactivando" [class.pi-spinner]="desactivando"></i>
+          {{ desactivando ? 'Desactivando...' : 'Desactivar' }}
+        </button>
+      </div>
+    </div>
+
+  </app-shared-drawer>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <i class="pi pi-spin pi-spinner"></i>
+    <p>Cargando Beneficios ...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error-state">
+    <i class="pi pi-exclamation-triangle"></i>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- No benefits -->
+  <div *ngIf="!loading && !error && benefits.length === 0" class="empty-state">
+    <i class="pi pi-tag"></i>
+    <p>No existen beneficios asignados a este estudiante.</p>
+  </div>
+
+  <!-- Benefits list -->
+  <div *ngIf="!loading && !error && benefits.length > 0" class="benefits-list-wrap">
+
+    <!-- Active benefits -->
+    <div *ngIf="activeBenefits.length > 0">
+      <div class="section-label">Activos</div>
+      <ul class="benefits-list">
+        <li *ngFor="let benefit of activeBenefits" class="benefit-item benefit-active">
+          <div class="benefit-left">
+            <span class="benefit-icon-circle active">
+              <i class="pi pi-check-circle"></i>
+            </span>
+            <div class="benefit-info">
+              <span class="benefit-name">{{ benefit.detalleBeneficio }}</span>
+              <span class="benefit-meta">
+                <span class="badge-type">{{ benefit.tipoValor === 'PORCENTAJE' ? 'Porcentaje' : 'Monto Fijo' }}</span>
+                <span *ngIf="benefit.detalleCiclo" class="benefit-cycle">
+                  <i class="pi pi-calendar"></i> {{ benefit.detalleCiclo }}
+                </span>
+                <span *ngIf="!benefit.idCiclo" class="benefit-cycle permanent">
+                  <i class="pi pi-infinity"></i> Permanente
+                </span>
+              </span>
+              <span *ngIf="benefit.observaciones" class="benefit-obs">
+                <i class="pi pi-info-circle"></i> {{ benefit.observaciones }}
+              </span>
+            </div>
+          </div>
+          <div class="benefit-right">
+            <span class="benefit-value active">{{ formatValue(benefit) }}</span>
+            <button type="button" class="btn-desactivar" (click)="abrirModalDesactivar(benefit)" title="Desactivar beneficio">
+              <i class="pi pi-ban"></i> Desactivar
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Inactive benefits (history) -->
+    <div *ngIf="inactiveBenefits.length > 0">
+      <div class="section-label muted">Historial (Inactivos)</div>
+      <ul class="benefits-list">
+        <li *ngFor="let benefit of inactiveBenefits" class="benefit-item benefit-inactive">
+          <div class="benefit-left">
+            <span class="benefit-icon-circle inactive">
+              <i class="pi pi-times-circle"></i>
+            </span>
+            <div class="benefit-info">
+              <span class="benefit-name muted">{{ benefit.detalleBeneficio }}</span>
+              <span class="benefit-meta">
+                <span class="badge-type muted">{{ benefit.tipoValor === 'PORCENTAJE' ? 'Porcentaje' : 'Monto Fijo' }}</span>
+                <span *ngIf="benefit.detalleCiclo" class="benefit-cycle muted">
+                  <i class="pi pi-calendar"></i> {{ benefit.detalleCiclo }}
+                </span>
+              </span>
+              <span *ngIf="benefit.observaciones" class="benefit-obs muted">
+                <i class="pi pi-info-circle"></i> {{ benefit.observaciones }}
+              </span>
+            </div>
+          </div>
+          <div class="benefit-right">
+            <span class="benefit-value inactive">{{ formatValue(benefit) }}</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</div>

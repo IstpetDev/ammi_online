@@ -15,6 +15,8 @@ public partial class Ciclo
 
     public int IdRegimen { get; set; }
 
+    public int IdTipoOferta { get; set; }
+
     public string Detalle { get; set; }
 
     public DateOnly? FechaInicioEstimada { get; set; }
@@ -23,8 +25,6 @@ public partial class Ciclo
 
     public bool EsActivo { get; set; }
 
-    public virtual ICollection<EspecieCiclo> EspecieCiclo { get; set; } = new List<EspecieCiclo>();
-
     public virtual ICollection<EstudianteBeneficio> EstudianteBeneficio { get; set; } = new List<EstudianteBeneficio>();
 
     public virtual Ciclo IdPadreNavigation { get; set; }
@@ -32,6 +32,8 @@ public partial class Ciclo
     public virtual PeriodoLectivo IdPeriodoNavigation { get; set; }
 
     public virtual Regimen IdRegimenNavigation { get; set; }
+
+    public virtual TipoOferta IdTipoOfertaNavigation { get; set; }
 
     public virtual ICollection<Ciclo> InverseIdPadreNavigation { get; set; } = new List<Ciclo>();
 

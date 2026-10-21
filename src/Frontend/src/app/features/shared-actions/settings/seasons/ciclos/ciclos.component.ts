@@ -6,19 +6,24 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
-import { CicloDTO, PeriodoLectivoDTO, RegimenDTO } from '../../../../../data/models/Entities';
+import { CicloDTO, PeriodoLectivoDTO, RegimenDTO, TipoOfertaDTO } from '../../../../../data/models/Entities';
 import { CicloService } from '../../../../../core/services/postulaciones';
 import { PeriodoLectivoService } from '../../../../../core/services/settings/periodo-lectivo.service';
 import { RegimenService } from '../../../../../core/services/settings/regimen.service';
+import { TipoOfertaService } from '../../../../../core/services/infrastructure/tipo-oferta.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-ciclos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, InputNumberModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule,
+    InputTextModule, InputNumberModule, SelectModule, DatePickerModule,
+    TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './ciclos.component.html',
   styleUrls: ['./ciclos.component.css'],
   providers: [MessageService]
@@ -28,6 +33,7 @@ export class CiclosComponent implements OnInit {
   filteredCiclos: CicloDTO[] = [];
   periodos: PeriodoLectivoDTO[] = [];
   regimenes: RegimenDTO[] = [];
+  tiposOferta: TipoOfertaDTO[] = [];
   cicloForm: FormGroup;
   displayDialog: boolean = false;
   isEditing: boolean = false;
@@ -40,31 +46,117 @@ export class CiclosComponent implements OnInit {
     private cicloService: CicloService,
     private periodoService: PeriodoLectivoService,
     private regimenService: RegimenService,
+    private tipoOfertaService: TipoOfertaService,
     private messageService: MessageService
   ) {
     this.cicloForm = this.fb.group({
       idCiclo: [null],
       idPadre: [null],
+      idTipoOferta: [null, Validators.required],
       idPeriodo: [null, Validators.required],
       idRegimen: [null, Validators.required],
       detalle: ['', Validators.required],
-      fechaInicio: [null],
-      fechaFin: [null]
+      fechaInicioEstimada: [null],
+      fechaFinEstimada: [null]
     });
+    // autogeneracion flags
+    this.detalleAuto = true;
+    this.lastGeneratedDetalle = '';
   }
+
+  // autogeneration state
+  private detalleAuto: boolean = true;
+  private lastGeneratedDetalle: string = '';
 
   ngOnInit(): void {
     this.loadPeriodos();
     this.loadRegimenes();
     this.loadCiclos();
+    this.loadTiposOferta();
+    this.setupAutoDetalleSubscription();
+  }
+
+  loadTiposOferta(): void {
+    this.tipoOfertaService.getAll().subscribe({
+      next: (data) => { this.tiposOferta = data || []; },
+      error: () => { this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar tipos de oferta' }); }
+    });
+  }
+
+  private setupAutoDetalleSubscription(): void {
+    this.cicloForm.get('idRegimen')?.valueChanges.subscribe(() => this.updateGeneratedDetalleIfAllowed());
+    this.cicloForm.get('idPadre')?.valueChanges.subscribe(() => this.updateGeneratedDetalleIfAllowed());
+    this.cicloForm.get('idTipoOferta')?.valueChanges.subscribe(() => this.updateGeneratedDetalleIfAllowed());
+  }
+
+  private updateGeneratedDetalleIfAllowed(): void {
+    const generated = this.generateDetalleForCiclo();
+    const current = this.cicloForm.get('detalle')?.value || '';
+    if (this.detalleAuto || current === this.lastGeneratedDetalle || !current) {
+      this.lastGeneratedDetalle = generated;
+      this.cicloForm.patchValue({ detalle: generated }, { emitEvent: false });
+    }
+  }
+
+  private generateDetalleForCiclo(): string {
+    const ofertaId = this.cicloForm.get('idTipoOferta')?.value;
+    const idRegimen = this.cicloForm.get('idRegimen')?.value;
+    const idPadre = this.cicloForm.get('idPadre')?.value;
+    const regimenName = idRegimen ? this.getRegimenDetalle(idRegimen) : '';
+
+    if (!ofertaId) return '';
+    const ofertaObj = this.tiposOferta.find(t => t.idtipoOferta === Number(ofertaId));
+    const ofertaDetalle = ofertaObj?.detalle?.toUpperCase() || '';
+
+    const isFormal = ofertaDetalle.includes('FORMAL');
+    const isAcelerado = ofertaDetalle.includes('ACELERADO');
+
+    if (isFormal) {
+      // CICLO (literal) + Regimen + FORMALIDAD
+      return ['CICLO', regimenName, 'FORMAL VIRTUAL'].filter(s => s).join(' ');
+    }
+
+    if (isAcelerado) {
+      const prefix = idPadre ? 'CICLO II' : 'CICLO I';
+      return [prefix, regimenName, 'ACELERADO'].filter(s => s).join(' ');
+    }
+
+    // Fallback: si no detecta, devolver vacío o el detalle de la oferta
+    return ofertaObj?.detalle || '';
+  }
+
+  onDetalleInput(): void {
+    this.detalleAuto = false;
+  }
+
+  desactivarCiclo(ciclo: CicloDTO): void {
+    this.cicloService.deactivate(ciclo.idCiclo!).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Ciclo desactivado correctamente' });
+        this.loadCiclos();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al desactivar ciclo' });
+      }
+    });
+  }
+
+  reactivarCiclo(ciclo: CicloDTO): void {
+    this.cicloService.reactivate(ciclo).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Ciclo reactivado correctamente' });
+        this.loadCiclos();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al reactivar ciclo' });
+      }
+    });
   }
 
   loadCiclos(): void {
     this.cicloService.getAll().subscribe({
-      next: (data: CicloDTO[]) => {
-        this.ciclos = data;
-      },
-      error: (error: any) => {
+      next: (data: CicloDTO[] | null) => { this.ciclos = data || []; },
+      error: () => {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar ciclos' });
       }
     });
@@ -72,10 +164,8 @@ export class CiclosComponent implements OnInit {
 
   loadPeriodos(): void {
     this.periodoService.getAll().subscribe({
-      next: (data: PeriodoLectivoDTO[]) => {
-        this.periodos = data;
-      },
-      error: (error: any) => {
+      next: (data: PeriodoLectivoDTO[]) => { this.periodos = data; },
+      error: () => {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar periodos lectivos' });
       }
     });
@@ -83,10 +173,8 @@ export class CiclosComponent implements OnInit {
 
   loadRegimenes(): void {
     this.regimenService.getAll().subscribe({
-      next: (data: RegimenDTO[]) => {
-        this.regimenes = data;
-      },
-      error: (error: any) => {
+      next: (data: RegimenDTO[]) => { this.regimenes = data; },
+      error: () => {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar regimenes' });
       }
     });
@@ -95,21 +183,36 @@ export class CiclosComponent implements OnInit {
   openCreateDialog(): void {
     this.isEditing = false;
     this.cicloForm.reset();
-    this.filteredCiclos = [...this.ciclos];
+    // defensiva: si la API devolvió null, aseguramos un array
+    this.filteredCiclos = [...(this.ciclos || [])];
     this.displayDialog = true;
   }
 
   openEditDialog(ciclo: CicloDTO): void {
     this.isEditing = true;
     this.selectedCiclo = ciclo;
-    this.cicloForm.patchValue(ciclo);
-    this.filteredCiclos = this.ciclos.filter(c => c.idCiclo !== ciclo.idCiclo);
+    // defensiva: proteger contra ciclos null/undefined
+    this.filteredCiclos = Array.isArray(this.ciclos) ? this.ciclos.filter(c => c.idCiclo !== ciclo.idCiclo) : [];
+    this.cicloForm.patchValue({
+      ...ciclo,
+      fechaInicioEstimada: ciclo.fechaInicioEstimada ? new Date(ciclo.fechaInicioEstimada) : null,
+      fechaFinEstimada: ciclo.fechaFinEstimada ? new Date(ciclo.fechaFinEstimada) : null,
+    });
     this.displayDialog = true;
   }
 
   saveCiclo(): void {
     if (this.cicloForm.valid) {
-      const ciclo: CicloDTO = this.cicloForm.value;
+      const fv = this.cicloForm.value;
+      const ciclo: CicloDTO = {
+        ...fv,
+        fechaInicioEstimada: fv.fechaInicioEstimada instanceof Date
+          ? fv.fechaInicioEstimada.toISOString().split('T')[0]
+          : fv.fechaInicioEstimada,
+        fechaFinEstimada: fv.fechaFinEstimada instanceof Date
+          ? fv.fechaFinEstimada.toISOString().split('T')[0]
+          : fv.fechaFinEstimada,
+      };
       if (this.isEditing) {
         this.cicloService.update(ciclo).subscribe({
           next: () => {
@@ -166,7 +269,6 @@ export class CiclosComponent implements OnInit {
     this.showConfirmDelete = false;
     this.cicloToDelete = null;
   }
-
 
   getPeriodoDetalle(id: number | undefined): string {
     const periodo = this.periodos.find(p => p.idPeriodoLectivo === id);

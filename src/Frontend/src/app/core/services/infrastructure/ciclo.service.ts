@@ -18,26 +18,18 @@ export class CicloService {
    * Obtener todos los ciclos
    */
   getAll(): Observable<CicloDTO[]> {
-    console.log('🌐 CicloService.getAll llamado');
     return this.http.get<any>(`${this.apiUrl}${API_ENDPOINTS.ciclo.getAll}`)
       .pipe(map(response => {
-        console.log('🌐 Respuesta RAW del backend:', response);
-        console.log('🌐 Tipo de respuesta:', typeof response);
-        console.log('🌐 ¿Tiene propiedad data?', 'data' in response);
-        console.log('🌐 ¿Es array directamente?', Array.isArray(response));
 
         // Si la respuesta tiene una propiedad 'data', es un IResponse
         if (response && response.data) {
-          console.log('🌐 Respuesta tipo IResponse, retornando response.data');
           return response.data;
         }
         // Si la respuesta es directamente un array
         else if (Array.isArray(response)) {
-          console.log('🌐 Respuesta directa array, retornando response');
           return response as CicloDTO[];
         }
 
-        console.log('🌐 Respuesta no reconocida, retornando array vacío');
         return [];
       }));
   }

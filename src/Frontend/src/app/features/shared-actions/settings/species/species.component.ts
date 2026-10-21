@@ -8,7 +8,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TableModule } from 'primeng/table';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -18,22 +17,20 @@ import { EspecieService } from '../../../../core/services/infrastructure/especie
 
 // Models
 import { EspecieDTO } from '../../../../data/models/Entities';
+import { SharedToastComponent } from '../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-species',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     FormsModule,
     CardModule,
     ButtonModule,
     InputTextModule,
     CheckboxModule,
     TableModule,
-    ToastModule,
     ConfirmDialogModule,
-    DialogModule
-  ],
+    DialogModule, SharedToastComponent],
   providers: [MessageService, ConfirmationService],
   templateUrl: './species.component.html',
   styleUrls: ['./species.component.css']
@@ -57,7 +54,8 @@ export class SpeciesComponent implements OnInit {
   // Form
   especieForm: EspecieDTO = {
     detalle: '',
-    esDiferible: false
+    esMatricula: false,
+    esPension: false
   };
 
   ngOnInit(): void {
@@ -99,7 +97,8 @@ export class SpeciesComponent implements OnInit {
     this.isEditing = false;
     this.especieForm = {
       detalle: '',
-      esDiferible: false
+      esMatricula: false,
+    esPension: false
     };
     this.showDialog = true;
   }
@@ -232,7 +231,8 @@ export class SpeciesComponent implements OnInit {
     this.especieSeleccionada = null;
     this.especieForm = {
       detalle: '',
-      esDiferible: false
+      esMatricula: false,
+    esPension: false
     };
   }
 }

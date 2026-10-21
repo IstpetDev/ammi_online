@@ -5,24 +5,21 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { PersonaService } from '../../../../../core/services/seguridad';
 import { TipoDocumentoService, GeneroService } from '../../../../../core/services/postulaciones';
 import { PersonaDTO, TipoDocumentoDTO, GeneroDTO } from '../../../../../data/models/Entities';
 import { AsignacionRolComponent } from '../asignacion-rol/asignacion-rol.component';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 @Component({
   selector: 'app-personas',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     FormsModule,
     TableModule,
     ButtonModule,
     DialogModule,
-    InputTextModule,
-    ToastModule
-  ],
+    InputTextModule, SharedToastComponent],
   templateUrl: './personas.component.html',
   styleUrls: ['./personas.component.css']
 })
@@ -109,7 +106,7 @@ export class PersonasComponent implements OnInit {
           this.hidePersonaDialog();
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Persona actualizada' });
         },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al actualizar persona' })
+        error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al actualizar persona: ' + (err.error?.message || err.message) })
       });
     } else {
       this.personaService.createPersona(this.persona).subscribe({
@@ -118,7 +115,7 @@ export class PersonasComponent implements OnInit {
           this.hidePersonaDialog();
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Persona creada' });
         },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al crear persona' })
+        error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al crear persona: ' + (err.error?.message || err.message) })
       });
     }
   }
@@ -130,7 +127,7 @@ export class PersonasComponent implements OnInit {
           this.loadPersonas();
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Persona eliminada' });
         },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar persona' })
+        error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar persona: ' + (err.error?.message || err.message) })
       });
     }
   }

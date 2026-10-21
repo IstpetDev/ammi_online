@@ -12,7 +12,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Variables CSS Globales - Colores de Marca AMMI Online */
 
 /* Colores base de marca */
 :root {
@@ -41,7 +40,7 @@ html {
 
   /* Texto - Modo Claro */
   --text-color: var(--brand-black);
-  --text-color-secondary: var(--brand-gray);
+  --text-color-secondary: #6c757d;
   --text-color-tertiary: #6c757d;
 
   /* Estados */
@@ -95,6 +94,10 @@ body {
   background-color: var(--surface-ground);
   color: var(--text-color);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.drwr-open {
+  overflow: hidden !important;
 }
 
 /* Transiciones suaves para cambios de tema */
@@ -168,14 +171,56 @@ body {
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* Sin efecto hover para evitar contracción visual */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Layout utilities */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+/* Mostrar las cards de beneficios en una fila de 4 columnas */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  justify-items: center;
+}
+
+/* Requisitos de modalidades con diseño similar a features */
+.modalidad-requisitos {
+  margin-top: 1.5rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+}
+
+.modalidad-requisitos h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.modalidad-requisitos ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modalidad-requisitos li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #334155;
+}
+
+.modalidad-requisitos li:last-child {
+  margin-bottom: 0;
+}
+
+.modalidad-requisitos li::before {
+  content: '\2713';
+  color: #10b981;
+  font-weight: bold;
+  margin-right: 0.5rem;
 }
 
 .flex {
@@ -194,13 +239,29 @@ body {
   justify-content: space-between;
 }
 
-.gap-2 { gap: 0.5rem; }
-.gap-4 { gap: 1rem; }
-.gap-6 { gap: 1.5rem; }
+.gap-2 {
+  gap: 0.5rem;
+}
 
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
 
 /* Responsive utilities */
 @media (max-width: 768px) {
@@ -213,157 +274,6 @@ body {
     font-size: 0.875rem;
   }
 }
-/* PrimeNG Modal Customization */
-::ng-deep .p-dialog .p-dialog-header,
-.p-dialog .p-dialog-header,
-.p-dialog-custom .p-dialog-header {
-  background: linear-gradient(135deg, #FCEA1E 0%, #E9B902 100%) !important;
-  color: #1D1E1C !important;
-  padding: 1.5rem 2rem !important;
-  border-bottom: 3px solid #E9B902 !important;
-  min-height: 80px !important;
-}
-
-::ng-deep .p-dialog .p-dialog-title,
-.p-dialog .p-dialog-title,
-.p-dialog-custom .p-dialog-title {
-  font-weight: 700 !important;
-  font-size: 1.5rem !important;
-  color: #1D1E1C !important;
-  flex: 1 !important;
-}
-
-::ng-deep .p-dialog .p-dialog-header-icons,
-.p-dialog .p-dialog-header-icons,
-.p-dialog-custom .p-dialog-header-icons {
-  display: flex !important;
-  gap: 0.75rem !important;
-  align-items: center !important;
-}
-
-::ng-deep .p-dialog .p-dialog-header-icon,
-.p-dialog .p-dialog-header-icon,
-.p-dialog-custom .p-dialog-header-icon {
-  width: 3rem !important;
-  height: 3rem !important;
-  min-width: 3rem !important;
-  min-height: 3rem !important;
-  background-color: rgba(29, 30, 28, 0.15) !important;
-  color: #1D1E1C !important;
-  border-radius: 8px !important;
-  border: 2px solid rgba(29, 30, 28, 0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.2s ease !important;
-  cursor: pointer !important;
-}
-
-::ng-deep .p-dialog .p-dialog-header-icon:hover,
-.p-dialog .p-dialog-header-icon:hover,
-.p-dialog-custom .p-dialog-header-icon:hover {
-  background-color: #1D1E1C !important;
-  color: #FCEA1E !important;
-  border-color: #1D1E1C !important;
-  transform: scale(1.1) !important;
-}
-
-::ng-deep .p-dialog .p-dialog-header-icon svg,
-::ng-deep .p-dialog .p-dialog-header-icon i,
-.p-dialog .p-dialog-header-icon svg,
-.p-dialog .p-dialog-header-icon i,
-.p-dialog-custom .p-dialog-header-icon svg,
-.p-dialog-custom .p-dialog-header-icon i {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  font-size: 1.5rem !important;
-}
-
-::ng-deep .p-dialog .p-dialog-content,
-.p-dialog .p-dialog-content,
-.p-dialog-custom .p-dialog-content {
-  padding: 0 !important;
-  overflow: hidden !important;
-  background-color: #f8f9fa !important;
-}
-
-::ng-deep .p-dialog,
-.p-dialog,
-.p-dialog-custom {
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
-  background-color: white !important;
-}
-
-.p-dialog-mask {
-  backdrop-filter: blur(4px) !important;
-  background-color: rgba(0, 0, 0, 0.6) !important;
-}
-
-
-.p-dialog-header {
-  border-bottom: none !important;
-  background-color: var(--brand-yellow-dark) !important;
-  border-radius: 0.5rem 0.5rem 0 0 !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  padding: 1.25rem 1.5rem !important;
-}
-
-.p-dialog-header-actions{
-  gap: 0.75rem !important;
-}
-
-/* Mobile adjustments for postulation modal */
-@media (max-width: 768px) {
-  ::ng-deep .p-dialog,
-  .p-dialog,
-  .p-dialog-custom {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-  }
-
-  ::ng-deep .p-dialog .p-dialog-header,
-  .p-dialog .p-dialog-header,
-  .p-dialog-custom .p-dialog-header {
-    padding: 0.75rem !important;
-    min-height: 50px !important;
-  }
-
-  ::ng-deep .p-dialog .p-dialog-title,
-  .p-dialog .p-dialog-title,
-  .p-dialog-custom .p-dialog-title {
-    font-size: 1rem !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  ::ng-deep .p-dialog .p-dialog-header-icon,
-  .p-dialog .p-dialog-header-icon,
-  .p-dialog-custom .p-dialog-header-icon {
-    width: 2rem !important;
-    height: 2rem !important;
-    min-width: 2rem !important;
-    min-height: 2rem !important;
-  }
-
-  ::ng-deep .p-dialog .p-dialog-header-icon svg,
-  ::ng-deep .p-dialog .p-dialog-header-icon i,
-  .p-dialog .p-dialog-header-icon svg,
-  .p-dialog .p-dialog-header-icon i,
-  .p-dialog-custom .p-dialog-header-icon svg,
-  .p-dialog-custom .p-dialog-header-icon i {
-    width: 1.2rem !important;
-    height: 1.2rem !important;
-    font-size: 1.2rem !important;
-  }
-}
 
 /* =============================================
    MENU ITEMS COMPONENTS - Common Styles
@@ -371,7 +281,7 @@ body {
 
 .menu-container {
   width: 100%;
-  padding: 1.5rem;
+  padding: 0.5rem 1.5rem 1.5rem 1.5rem;
 }
 
 /* =============================================
@@ -379,10 +289,13 @@ body {
    ============================================= */
 
 .page-header {
-  background: linear-gradient(135deg, var(--brand-black) 0%, var(--brand-gray) 100%);
-  border-radius: 12px;
-  padding: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
+  background: transparent;
+  border-radius: 8px;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1rem;
+  position: relative;
+  border-left: 3px solid var(--brand-yellow-dark);
+  /* Accent indicator */
 }
 
 .header-content {
@@ -394,35 +307,37 @@ body {
 .title-section {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .title-icon {
-  width: 50px;
-  height: 50px;
+  width: 36px;
+  height: 36px;
   background-color: var(--brand-yellow-dark);
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .title-icon i {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   color: var(--brand-black);
 }
 
 .page-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: white;
+  color: var(--text-color);
+  /* Use text color instead of white */
   margin: 0;
 }
 
 .page-subtitle {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin: 0.15rem 0 0 0;
 }
 
 /* =============================================
@@ -432,19 +347,30 @@ body {
 .card-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
+  /* Increased gap for better spacing */
 }
 
 .card-item {
-  flex: 1 1 300px;
+  flex: 1 1 320px;
+  /* Slightly larger minimum width */
   background-color: var(--surface-card);
   border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  /* More modern border-radius */
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Softer default shadow */
+  overflow: hidden;
 }
 
 .card-item:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  /* Enhanced shadow on hover */
+  transform: translateY(-2px);
+  /* Reduced movement for subtlety */
+  border-color: var(--brand-yellow-dark);
+  /* Subtle border color change */
 }
 
 .card-title {
@@ -669,3 +595,63 @@ body {
   color: #fca5a5 !important;
 }
 
+
+.p-dialog-mask {
+  backdrop-filter: blur(4px) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+
+
+
+
+.p-dialog-header-actions {
+  gap: 0.75rem !important;
+}
+
+/* Custom styles for postulation modal (applied globally to handle appendTo="body" dialogs) */
+.p-dialog.postulation-modal {
+  border-radius: 1.25rem !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.p-dialog.postulation-modal .p-dialog-header {
+  background: var(--brand-black, #1D1E1C) !important;
+  color: var(--brand-white, #FFFFFF) !important;
+  padding: 1.5rem 2.5rem !important;
+}
+
+.p-dialog.postulation-modal .p-dialog-header .p-dialog-title,
+.p-dialog.postulation-modal .p-dialog-header span {
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  color: var(--brand-white, #FFFFFF) !important;
+  letter-spacing: 0.5px !important;
+}
+
+.p-dialog.postulation-modal .p-dialog-header-icons .p-dialog-header-close,
+.p-dialog.postulation-modal .p-dialog-header-icons .p-dialog-header-icon,
+.p-dialog.postulation-modal .p-dialog-header .p-dialog-header-icon {
+  color: #a0aec0 !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.p-dialog.postulation-modal .p-dialog-header-icons .p-dialog-header-close:hover,
+.p-dialog.postulation-modal .p-dialog-header-icons .p-dialog-header-icon:hover,
+.p-dialog.postulation-modal .p-dialog-header .p-dialog-header-icon:hover {
+  color: var(--brand-white, #FFFFFF) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.p-dialog.postulation-modal .p-dialog-content {
+  background-color: var(--surface-ground) !important;
+  padding: 0 !important;
+}

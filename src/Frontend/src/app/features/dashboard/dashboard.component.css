@@ -2,7 +2,23 @@
 .dashboard-layout {
   display: flex;
   height: 100vh;
-  background-color: var(--surface-ground);
+}
+
+/* Zona de detección de proximidad al borde */
+.edge-hover-zone {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 100vh;
+  z-index: 998;
+  /* Below sidebar, above content */
+  background: transparent;
+}
+
+.edge-hover-zone.at-right {
+  left: auto;
+  right: 0;
 }
 
 /* Sidebar */
@@ -12,31 +28,50 @@
   border-right: 1px solid var(--surface-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: fixed;
   left: 0;
   top: 0;
   height: 100vh;
   z-index: 1000;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  /* Sombra para superponer */
 }
 
 .sidebar.collapsed {
-  width: 70px;
+  transform: translateX(-100%);
+}
+
+.sidebar.at-right {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid var(--surface-border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar.at-right.collapsed {
+  transform: translateX(100%);
 }
 
 .sidebar-header {
   padding: 1.5rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
   border-bottom: 1px solid var(--surface-border);
   min-height: 70px;
 }
 
-.sidebar-logo-icon {
-  font-size: 2rem;
-  color: var(--brand-yellow-dark);
+.sidebar-logo {
+  height: 3rem;
+  width: auto;
   flex-shrink: 0;
+}
+
+.app-dark .sidebar-logo {
+  height: 10rem;
 }
 
 .sidebar-logo-text {
@@ -108,48 +143,107 @@
   overflow: hidden;
 }
 
-.sidebar.collapsed .menu-item {
+/* Botón flotante tipo etiqueta / guardapáginas */
+.sidebar-toggle-fab {
+  position: fixed;
+  width: 32px;
+  height: 96px;
+  background-color: var(--brand-yellow-dark, #f59e0b);
+  border: 1px solid var(--brand-yellow-dark, #e08e0b);
+  color: var(--brand-black, #1e1b4b);
+  cursor: grab;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.875rem;
+  box-shadow: 4px 2px 12px rgba(0, 0, 0, 0.16);
+  z-index: 1010;
+  /* Por encima de todo */
+  touch-action: none;
 }
 
-/* Botón de colapsar */
-.sidebar-toggle {
-  padding: 1rem;
-  border: none;
-  background: transparent;
-  color: var(--text-color);
-  cursor: pointer;
-  border-top: 1px solid var(--surface-border);
-  transition: background-color 0.2s ease;
+.sidebar-toggle-fab.at-left {
+  border-left: none;
+  border-radius: 0 6px 6px 0;
 }
 
-.sidebar-toggle:hover {
-  background-color: var(--surface-hover);
+.sidebar-toggle-fab.at-right {
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  box-shadow: -4px 2px 12px rgba(0, 0, 0, 0.16);
+}
+
+/* Transición para el snap suave */
+.sidebar-toggle-fab:not(.dragging) {
+  transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+    right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+    top 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+    transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.sidebar-toggle-fab:active {
+  cursor: grabbing;
+}
+
+.sidebar-toggle-fab:hover {
+  transform: scaleY(1.02) scaleX(1.05);
+  /* Estiramiento físico muy sutil en hover */
+  background-color: var(--brand-yellow, #fbbf24);
+  color: var(--brand-black, #1e1b4b);
+  box-shadow: 6px 2px 16px rgba(0, 0, 0, 0.22);
+}
+
+.sidebar-toggle-fab.at-right:hover {
+  box-shadow: -6px 2px 16px rgba(0, 0, 0, 0.22);
+}
+
+.sidebar-toggle-fab i {
+  font-size: 1.15rem;
 }
 
 /* Contenido Principal */
 .main-content {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 0;
+  margin-right: 0;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar.collapsed ~ .main-content {
-  margin-left: 70px;
+@media (min-width: 769px) {
+
+  /* Cuando el menú a la izquierda se expande, empuja el contenido */
+  .sidebar:not(.collapsed):not(.at-right)~.main-content {
+    margin-left: 290px;
+  }
+
+  /* Cuando el menú a la izquierda está colapsado, mantiene un margen de 30px para la pestaña del menú */
+  .sidebar.collapsed:not(.at-right)~.main-content {
+    margin-left: 30px;
+  }
+
+  /* Cuando el menú a la derecha se expande, empuja el contenido */
+  .sidebar:not(.collapsed).at-right~.main-content {
+    margin-right: 290px;
+  }
+
+  /* Cuando el menú a la derecha está colapsado, mantiene un margen de 30px para la pestaña del menú */
+  .sidebar.collapsed.at-right~.main-content {
+    margin-right: 30px;
+  }
 }
 
 /* Header Superior */
 .top-header {
-  background-color: var(--surface-card);
-  border-bottom: 1px solid var(--surface-border);
-  padding: 1rem 2rem;
+  background-color: transparent;
+  border-bottom: none;
+  padding: 0.5rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 70px;
+  min-height: 55px;
   position: sticky;
   top: 0;
   z-index: 999;
@@ -157,6 +251,18 @@
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Botón y menú móvil (ocultos por defecto en PC) */
+.mobile-menu-btn {
+  display: none;
+}
+
+.mobile-menu-dropdown {
+  display: none;
 }
 
 .page-title {
@@ -178,18 +284,21 @@
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: var(--surface-ground);
+  background-color: var(--surface-section);
   color: var(--text-color);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px var(--surface-overlay);
 }
 
 .icon-btn:hover {
   background-color: var(--surface-hover);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .icon-btn i {
@@ -284,22 +393,171 @@
 /* Área de contenido */
 .content-area {
   flex: 1;
-  padding: 2rem;
+  padding: 0 2rem 2rem 2rem;
   overflow-y: auto;
+}
+
+/* --- Estilos para Foto de Perfil Hover/Click --- */
+.profile-avatar {
+  position: relative;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.profile-preview-card {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  width: 250px;
+  height: 250px;
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+  z-index: 9999;
+}
+
+.profile-preview-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-pdf-icon {
+  color: var(--red-500);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+
+  /* Ocultar barra lateral y botón flotante en celular */
   .sidebar {
-    width: 70px;
+    display: none !important;
+  }
+
+  .sidebar-toggle-fab {
+    display: none !important;
+  }
+
+  .edge-hover-zone {
+    display: none !important;
   }
 
   .main-content {
-    margin-left: 70px;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Mostrar y dar formato al menú móvil */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--surface-border);
+    color: var(--text-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.15rem;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-btn:hover {
+    background-color: var(--surface-hover);
+  }
+
+  .mobile-menu-dropdown {
+    display: block;
+    position: fixed;
+    top: 55px;
+    /* Justo debajo del header */
+    left: 0;
+    width: 100vw;
+    height: 0;
+    max-height: calc(100vh - 55px);
+    background-color: var(--surface-card);
+    border-bottom: 1px solid var(--surface-border);
+    z-index: 998;
+    overflow-y: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobile-menu-dropdown.open {
+    height: calc(100vh - 55px);
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .mobile-menu-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-item:hover,
+  .mobile-menu-item.active {
+    background-color: var(--brand-yellow-dark, #f59e0b);
+    color: var(--brand-black, #1e1b4b);
+  }
+
+  .mobile-menu-item i {
+    font-size: 1.25rem;
   }
 
   .top-header {
-    padding: 1rem;
+    padding: 0.75rem;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    min-height: auto;
+  }
+
+  .header-left {
+    flex: 0 1 auto;
+    min-width: 0;
+    gap: 0.5rem;
+  }
+
+  .header-right {
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
 
   .page-title {
@@ -310,8 +568,36 @@
     display: none;
   }
 
+  .user-info-header {
+    gap: 0.35rem;
+  }
+
+  .user-menu {
+    padding-left: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .icon-btn i {
+    font-size: 1rem;
+  }
+
+  .btn-logout {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-avatar-small {
+    width: 32px;
+    height: 32px;
+  }
+
   .content-area {
-    padding: 1rem;
+    padding: 0.5rem 0.75rem 1rem 0.75rem;
   }
 
   /* Submenu en móviles - aparece como dropdown */
@@ -344,5 +630,28 @@
   .submenu-item.active {
     background-color: var(--primary-color);
     color: white;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.5rem;
+  }
+
+  .header-left {
+    width: auto;
+  }
+
+  .header-right {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .content-area {
+    padding: 0.5rem;
   }
 }

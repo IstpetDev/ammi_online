@@ -1,0 +1,85 @@
+<div class="menu-container">
+  <app-shared-header materialIcon="account_balance_wallet" title="Historial por Alumno"
+    subtitle="Consulta el detalle de saldos de los alumnos por ciclo">
+  </app-shared-header>
+
+  <!-- Filtros -->
+  <div class="mp-filters">
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Período Lectivo:</label>
+      <app-custom-select [items]="periodos" labelField="detalle" valueField="idPeriodoLectivo"
+        [(selectedValue)]="filtroPeriodoId" (selectedValueChange)="onPeriodoChange()"
+        placeholder="Seleccione un período" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Ciclo:</label>
+      <app-custom-select [items]="ciclos" labelField="detalle" valueField="idCiclo" [(selectedValue)]="filtroCicloId"
+        (selectedValueChange)="onCicloChange()" placeholder="Seleccione un ciclo" [disabled]="!filtroPeriodoId"
+        [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Curso:</label>
+      <app-custom-select [items]="cursos" labelField="label" valueField="value" [(selectedValue)]="filtroCursoId"
+        (selectedValueChange)="onCursoChange()" placeholder="Todos los cursos" [disabled]="!filtroCicloId"
+        [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Buscar:</label>
+      <input type="text" class="mp-search-input" [(ngModel)]="searchValue" (input)="onPageChange({page:1, rows:filasPorPagina})"
+        placeholder="Cédula, nombre, curso..." />
+    </div>
+    <div class="mp-filter-actions">
+      <button class="mp-btn-clear" type="button" (click)="clearFilters()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-btn-icon">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado de carga -->
+  @if (loading) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando datos...</span>
+  </div>
+  }
+
+  <!-- Estado vacío -->
+  @if (!loading && data.length === 0) {
+  <app-shared-empty-state materialIcon="inbox" title="Sin resultados"
+    description="No se encontraron alumnos para los filtros seleccionados." minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
+  }
+
+  <!-- Tabla -->
+  @if (data.length > 0 && !loading) {
+  <app-shared-table [columns]="tablaColumnas" [data]="filteredData()" [loading]="loading"
+    [totalRecords]="filteredData().length" [page]="currentPage" [rowsPerPage]="filasPorPagina"
+    (pageChange)="onPageChange($event)">
+    <ng-template stColTemplate="documento" let-item>
+      <span class="font-semibold">{{ item.documento }}</span>
+    </ng-template>
+    <ng-template stColTemplate="saldoPendiente" let-item>
+      <span class="saldo-valor danger">${{ item.saldoPendiente | number:'1.2-2' }}</span>
+    </ng-template>
+    <ng-template stColTemplate="saldoAprobado" let-item>
+      <span class="saldo-valor success">${{ item.saldoAprobado | number:'1.2-2' }}</span>
+    </ng-template>
+    <ng-template stColTemplate="saldoPendienteAprobacion" let-item>
+      <span class="saldo-valor warn">${{ item.saldoPendienteAprobacion | number:'1.2-2' }}</span>
+    </ng-template>
+  </app-shared-table>
+  }
+</div>
+
+<app-shared-toast />

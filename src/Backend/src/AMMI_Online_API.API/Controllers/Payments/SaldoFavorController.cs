@@ -9,15 +9,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace AMMI_Online_API.API.Controllers.Payments;
 
 [Route("api/[controller]")]
+[Authorize]
 public class SaldoFavorController : ApiController
 {
     [HttpGet("{idPersona}")]
-    [AllowAnonymous]
+    
     public async Task<Response<SaldoFavorDTO>> GetSaldoFavor(int idPersona, CancellationToken cancellationToken)
         => await Mediator.Send(new GetSaldoFavorQuery(idPersona), cancellationToken);
 
     [HttpPost("Aplicar")]
-    [AllowAnonymous]
+    
     public async Task<Response<SaldoFavorDTO>> AplicarSaldoFavor([FromBody] AplicarSaldoFavorRequestDTO dto, CancellationToken cancellationToken)
         => await Mediator.Send(new AplicarSaldoFavorCommand(dto.IdPersona, dto.IdDetalleCredito, dto.Monto), cancellationToken);
 }

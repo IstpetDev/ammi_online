@@ -1,0 +1,1064 @@
+<!-- VISTA: Detalle del Estudiante -->
+<div class="page-header detalle-header">
+    <div class="header-content">
+        <div class="title-section">
+            <button class="btn-icon-back" title="Volver a la lista" (click)="volverALista()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="back-icon"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+            </button>
+            <div class="student-header-info">
+                <div class="student-avatar-large">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="avatar-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                </div>
+                <div>
+                    <h1 class="page-title">{{ estudianteSeleccionado.nombreEstudiante }}</h1>
+                    <p class="page-subtitle">
+                        <span class="cedula-text">CI: {{ estudianteSeleccionado.cedula }}</span>
+                        <span class="separator">•</span>
+                        <span class="modalidad-text">{{ estudianteSeleccionado.modalidad }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de pagos -->
+<div class="resumen-cards">
+    <div class="resumen-card total-deuda">
+        <div class="resumen-icon"><i class="pi pi-wallet"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Total Deuda</span>
+            <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+    </div>
+    <div class="resumen-card total-pagado">
+        <div class="resumen-icon"><i class="pi pi-check-circle"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Total Pagado</span>
+            <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2'
+                }}</span>
+        </div>
+    </div>
+    <div class="resumen-card total-beneficio">
+        <div class="resumen-icon"><i class="pi pi-tag"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Total Beneficio</span>
+            <span class="resumen-value text-success">{{ totalBeneficio | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+    </div>
+    <div class="resumen-card pendiente">
+        <div class="resumen-icon"><i class="pi pi-clock"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Saldo Pendiente</span>
+            <span class="resumen-value">{{ saldoPendienteTotal | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+    </div>
+    @if (montoEnRevision > 0 || hayPagosEnRevision) {
+    <div class="resumen-card en-revision" style="border-left: 4px solid #f59e0b;">
+        <div class="resumen-icon"><i class="pi pi-hourglass"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Por Validar</span>
+            <span class="resumen-value text-warn">{{ montoEnRevision | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+    </div>
+    }
+    @if (saldoFavor > 0) {
+    <div class="resumen-card total-beneficio" style="border-left: 4px solid #22c55e;">
+        <div class="resumen-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;"><i class="pi pi-money-bill"></i></div>
+        <div class="resumen-info">
+            <span class="resumen-label">Saldo a Favor</span>
+            <span class="resumen-value" style="color: #22c55e;">{{ saldoFavor | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Aviso si algunos pagos aún no han sido validados por contabilidad -->
+@if (hayPagosEnRevision) {
+<div class="resumen-warn-aprobacion">
+    <i class="pi pi-info-circle"></i>
+    <span>Hay <strong>{{ montoEnRevision | currency:'USD':'symbol':'1.2-2' }}</strong> en pagos <strong>pendientes de validación por contabilidad</strong>. El saldo puede variar
+        si algún pago es rechazado.<br>
+        <small>Una vez validados por contabilidad, los pagos se reflejarán oficialmente en los totales pagados.</small></span>
+</div>
+}
+
+<!-- Toggle de Vistas -->
+<div class="view-controls">
+    <div class="toggle-view">
+        <label class="toggle-label">Visualizar:</label>
+        <div class="toggle-buttons">
+            <button class="toggle-btn" [class.active]="vistaDetalle === 'especies'"
+                (click)="cambiarVistaDetalle('especies')">
+                <i class="pi pi-file-edit"></i> Detalle de Pagos por Especie
+            </button>
+            <button class="toggle-btn" [class.active]="vistaDetalle === 'historial'"
+                (click)="cambiarVistaDetalle('historial')">
+                <i class="pi pi-history"></i> Historial de Pagos
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Vista: Cards de Especies -->
+@if (vistaDetalle === 'especies') {
+<div class="especies-list">
+    @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
+    <div class="especie-card" [class.especie-pagada]="especie.pagado" [class.especie-pendiente]="!especie.pagado"
+        [class.card-matricula]="especie.tipo === 'matricula'" [class.card-pension]="especie.tipo === 'pension'" [class.card-extra]="especie.tipo === 'extra'">
+
+        <!-- Card Header -->
+        <div class="especie-card-header">
+            <div class="especie-identity">
+                <div class="especie-icon-wrap">
+                    <i [class]="especie.tipo === 'matricula' ? 'pi pi-id-card' : (especie.tipo === 'extra' ? 'pi pi-wallet' : 'pi pi-calendar')"></i>
+                </div>
+                <div class="especie-name-block">
+                    <span class="especie-nombre">{{ especie.nombre }}</span>
+                    <span class="especie-ciclo"><i class="pi pi-bookmark"></i> {{ especie.ciclo }}</span>
+                </div>
+            </div>
+            <span class="custom-badge" [class.badge-success]="getEspecieEstado(especie) === 'Pagado'"
+                [class.badge-warn]="getEspecieEstado(especie) === 'Pago en Revisión'"
+                [class.badge-secondary]="getEspecieEstado(especie) === 'Pendiente Diferir'"
+                [class.badge-danger]="getEspecieEstado(especie) === 'Pendiente'">
+                {{ getEspecieEstado(especie) }}
+            </span>
+        </div>
+
+        <!-- Financial Data -->
+        <div class="especie-financials">
+            @if (especie.montoBeneficio > 0) {
+            <div class="fin-item">
+                <span class="fin-label">Original</span>
+                <span class="fin-value line-through">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="fin-item">
+                <span class="fin-label">A Pagar</span>
+                <span class="fin-value">{{ especie.montoFinal | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            } @else {
+            <div class="fin-item">
+                <span class="fin-label">Valor</span>
+                <span class="fin-value">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            <div class="fin-item">
+                <span class="fin-label">Pagado</span>
+                <span class="fin-value text-success">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if (getMontoEnRevisionEspecie(especie) > 0) {
+            <div class="fin-item">
+                <span class="fin-label">En Revisión</span>
+                <span class="fin-value text-warn">{{ getMontoEnRevisionEspecie(especie) | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            <div class="fin-item">
+                <span class="fin-label">Pendiente</span>
+                <span class="fin-value text-danger">{{ ((especie.montoFinal || especie.valor) - especie.valorPagado) |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if ((especie.montoFinal || especie.valor) > 0) {
+            <div class="fin-item fin-progress">
+                <div class="custom-progress-thin">
+                    <div class="custom-progress-thin-fill" [style.width.%]="(especie.valorPagado / (especie.montoFinal || especie.valor)) * 100"></div>
+                </div>
+                <span class="progress-label">{{ ((especie.valorPagado / (especie.montoFinal || especie.valor)) * 100) |
+                    number:'1.0-0' }}%</span>
+            </div>
+            }
+        </div>
+
+        <!-- Card Footer -->
+        <div class="especie-card-footer">
+            <div class="especie-meta">
+                @if (especie.montoBeneficio > 0) {
+                <span class="beneficio-badge"><i class="pi pi-tag"></i> -{{ especie.montoBeneficio |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+                }
+                <span class="fecha-badge"><i class="pi pi-calendar-clock"></i> {{ especie.fechaLimite }}</span>
+            </div>
+            <div class="especie-actions">
+                @if (especie.detallesCredito && especie.detallesCredito.length > 0) {
+                <button class="btn-outline-sm" title="Ver cuotas"
+                    (click)="toggleCuotas(especie); $event.stopPropagation()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" /></svg>
+                    {{ cuotasExpandidas?.idCredito === especie.idCredito ? 'Ocultar' : 'Cuotas (' + especie.detallesCredito.length + ')' }}
+                </button>
+                }
+
+                @if (!especie.pagado) {
+                @if (especiePendienteAprobacion(especie)) {
+                <span class="estado-inline warn"><i class="pi pi-clock"></i> En revisión@if (getMontoEnRevisionEspecie(especie) > 0) { ({{ getMontoEnRevisionEspecie(especie) | currency:'USD':'symbol':'1.2-2' }})}</span>
+                }
+                @if (especie.esPensionNoDiferida || especie.estado === 'PENDIENTE_DIFERIR') {
+                <button class="btn-outline-sm" title="Configurar cuotas"
+                    [disabled]="!matriculaPagada" (click)="mostrarModalDiferirPension(especie)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                    Diferir
+                </button>
+                } @else {
+                <button class="btn-pagar-sm" title="Pagar" (click)="pagarEspecie(especie)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                    Pagar
+                </button>
+                }
+                @if (especie.tipo === 'extra' && especie.valorPagado === 0 && !especiePendienteAprobacion(especie)) {
+                <button class="btn-outline-sm btn-anular-extra" title="Anular Arancel / Cobro Extra"
+                    (click)="abrirModalAnularEspecie(especie, $event)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                    Anular
+                </button>
+                }
+                } @else {
+                <span class="estado-inline success"><i class="pi pi-check-circle"></i> Completado</span>
+                }
+            </div>
+        </div>
+
+        <!-- Inline Cuotas Table (below the card, not side panel) -->
+        @if (cuotasExpandidas?.idCredito === especie.idCredito && especie.detallesCredito.length) {
+        <div class="cuotas-inline">
+            <app-shared-table [columns]="cuotaColumnas" [data]="especie.detallesCredito" [paginator]="false"
+                [loading]="false" emptyMessage="No hay cuotas registradas">
+                <ng-template stColTemplate="numeroCuota" let-cuota>
+                    <span class="cuota-num-cell">
+                        <svg *ngIf="cuota.pagado" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cuota-check-icon"><polyline points="20 6 9 17 4 12" /></svg>
+                        <svg *ngIf="!cuota.pagado" viewBox="0 0 24 24" fill="none" stroke="var(--surface-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cuota-check-icon"><circle cx="12" cy="12" r="10" /></svg>
+                        {{ cuota.numeroCuota }}
+                    </span>
+                </ng-template>
+                <ng-template stColTemplate="valor" let-cuota>
+                    {{ cuota.valor | currency:'USD':'symbol':'1.2-2' }}
+                </ng-template>
+                <ng-template stColTemplate="valorCancelado" let-cuota>
+                    <span style="color:#22c55e; font-weight:600">{{ cuota.valorCancelado | currency:'USD':'symbol':'1.2-2' }}</span>
+                </ng-template>
+                <ng-template stColTemplate="saldoCuota" let-cuota>
+                    <span [style.color]="cuota.saldoCuota === 0 ? '#22c55e' : 'inherit'">{{ cuota.saldoCuota | currency:'USD':'symbol':'1.2-2' }}</span>
+                </ng-template>
+                <ng-template stColTemplate="fechaLimite" let-cuota>
+                    @if (cuotaEnEdicion === cuota.idDetalleCredito) {
+                    <div class="cuota-fecha-edit">
+                        <input type="date" class="input-date-sm" [(ngModel)]="fechaEdicion" [max]="maxFechaEdicion ? formatDateForInput(maxFechaEdicion) : ''" />
+                        <button class="btn-icon-xs btn-success-xs" title="Guardar" [disabled]="guardandoFecha" (click)="guardarFechaLimite(cuota)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><polyline points="20 6 9 17 4 12" /></svg>
+                        </button>
+                        <button class="btn-icon-xs" title="Cancelar" (click)="cancelarEdicionFecha()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                    </div>
+                    } @else {
+                    <span class="fecha-text">{{ cuota.fechaLimite ? (cuota.fechaLimite | date:'dd MMM yy') : '—' }}</span>
+                    @if (puedeEditarFechas && !cuota.pagado) {
+                    <button class="btn-icon-xs btn-ghost" title="Editar fecha" (click)="iniciarEdicionFecha(cuota)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                    }
+                    }
+                </ng-template>
+                <ng-template stColTemplate="estado" let-cuota>
+                    <div class="text-center">
+                        <span class="custom-badge" [class.badge-success]="cuota.estado?.toUpperCase() === 'PAGADO' || cuota.estado?.toUpperCase() === 'PAGADA'"
+                            [class.badge-warn]="cuota.estado?.toUpperCase() === 'PENDIENTE_APROBACION' || cuota.estado?.toUpperCase() === 'PARCIAL'"
+                            [class.badge-danger]="cuota.estado?.toUpperCase() === 'PENDIENTE'">
+                            {{ cuota.estado }}
+                        </span>
+                    </div>
+                </ng-template>
+            </app-shared-table>
+        </div>
+        }
+    </div>
+    }
+</div>
+}
+
+<!-- Vista: Historial de Pagos -->
+@if (vistaDetalle === 'historial') {
+<div class="historial-section">
+    @if (loadingHistorial) {
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 3rem; height: 3rem; animation: mp-spin 0.8s linear infinite;"><circle cx="12" cy="12" r="10" /></svg>
+        <h3>Cargando historial...</h3>
+        <p>Obteniendo los pagos realizados.</p>
+    </div>
+    }
+    @if (!loadingHistorial && historialPagos.length === 0) {
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--surface-400)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 3rem; height: 3rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
+        <h3>Sin historial de pagos</h3>
+        <p>No se han registrado pagos para esta matrícula.</p>
+    </div>
+    }
+    @if (!loadingHistorial && historialPagos.length > 0) {
+    <div class="historial-grid">
+        @for (pago of historialPagos; track pago.idPago) {
+        <div class="historial-card">
+            <!-- Header del card -->
+            <div class="historial-card-header">
+                <div class="historial-id-fecha">
+                    <span class="historial-id">#{{ pago.idPago }}</span>
+                    <span class="historial-fecha">
+                        <i class="pi pi-calendar"></i>
+                        {{ pago.fechaPago | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                </div>
+                <div class="historial-badges">
+                    <span class="custom-badge" [class.badge-success]="getTipoPagoSeverity(pago.tipoPago) === 'success'"
+                        [class.badge-info]="getTipoPagoSeverity(pago.tipoPago) === 'info'">
+                        {{ pago.tipoPago }}
+                    </span>
+                    <span class="custom-badge" [class.badge-success]="getEstadoPagoSeverity(pago.estadoPago) === 'success'"
+                        [class.badge-danger]="getEstadoPagoSeverity(pago.estadoPago) === 'danger'"
+                        [class.badge-warn]="getEstadoPagoSeverity(pago.estadoPago) === 'warn'">
+                        {{ pago.estadoPago }}
+                    </span>
+                    <button class="btn-icon-xs" [class.btn-warning-xs]="pago.observaciones" [class.btn-ghost]="!pago.observaciones" [title]="pago.observaciones ? 'Editar Observación' : 'Agregar Observación'" (click)="abrirModalObservacionPago(pago)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                    @if (pago.pathComprobante) {
+                    <button class="btn-icon-xs btn-ghost" title="Ver Comprobante" (click)="abrirComprobante(pago.pathComprobante)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                    </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Observaciones del pago (Motivo de cancelación, nota de división o comprobante compartido) -->
+            @if (pago.observaciones) {
+            <div class="historial-observaciones" [class.warn]="pago.estadoPago.toUpperCase() === 'CANCELADO' || pago.estadoPago.toUpperCase() === 'RECHAZADO'" [class.info]="pago.estadoPago.toUpperCase() !== 'CANCELADO' && pago.estadoPago.toUpperCase() !== 'RECHAZADO'">
+                <div class="observaciones-header">
+                    <i class="pi" [class.pi-exclamation-circle]="pago.estadoPago.toUpperCase() === 'CANCELADO' || pago.estadoPago.toUpperCase() === 'RECHAZADO'" [class.pi-info-circle]="pago.estadoPago.toUpperCase() !== 'CANCELADO' && pago.estadoPago.toUpperCase() !== 'RECHAZADO'"></i>
+                    <span class="observaciones-titulo">
+                        @if (pago.estadoPago.toUpperCase() === 'CANCELADO') {
+                            Motivo de Cancelación
+                        } @else if (pago.estadoPago.toUpperCase() === 'RECHAZADO') {
+                            Motivo de Rechazo
+                        } @else {
+                            Observación del Pago
+                        }
+                    </span>
+                </div>
+                <p class="observaciones-texto">{{ pago.observaciones }}</p>
+            </div>
+            }
+
+            <!-- Valores y datos del pago -->
+            <div class="historial-valores">
+                <div class="historial-valor-row">
+                    <span class="historial-val-label">Valor Pagado</span>
+                    <span class="historial-val-monto destacado">{{ pago.valorPago | currency:'USD':'symbol':'1.2-2'
+                        }}</span>
+                </div>
+                @if (pago.bancoDeposito) {
+                <div class="historial-valor-row">
+                    <span class="historial-val-label"><i class="pi pi-building-columns"></i> Banco</span>
+                    <span class="historial-val-monto">{{ pago.bancoDeposito }}</span>
+                </div>
+                }
+                @if (pago.numeroDeposito) {
+                <div class="historial-valor-row">
+                    <span class="historial-val-label"><i class="pi pi-hashtag"></i> N° Depósito</span>
+                    <span class="historial-val-monto">{{ pago.numeroDeposito }}</span>
+                </div>
+                }
+
+                @if (pago.clienteNombre) {
+                <div class="historial-valor-row">
+                    <span class="historial-val-label"><i class="pi pi-user-plus"></i> Cliente</span>
+                    <span class="historial-val-monto">{{ pago.clienteNombre }}</span>
+                </div>
+                }
+                @if (pago.clienteDocumento) {
+                <div class="historial-valor-row">
+                    <span class="historial-val-label"><i class="pi pi-id-card"></i> Doc. Cliente</span>
+                    <span class="historial-val-monto">{{ pago.clienteDocumento }}</span>
+                </div>
+                }
+                @if (getTotalBeneficioHistorial(pago) > 0) {
+                <div class="historial-valor-row">
+                    <span class="historial-val-label">
+                        <i class="pi pi-tag" style="color: #28a745;"></i> Descuento Aplicado
+                    </span>
+                    <span class="historial-val-monto descuento">- {{ getTotalBeneficioHistorial(pago) |
+                        currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                }
+            </div>
+
+            <!-- Cuotas pagadas — cards horizontales -->
+            @if (pago.cuotasPagadas && pago.cuotasPagadas.length > 0) {
+            <div class="historial-cuotas">
+                <div class="historial-cuotas-titulo">
+                    <i class="pi pi-list-check"></i>
+                    <span>Cuotas aplicadas ({{ pago.cuotasPagadas.length }})</span>
+                </div>
+                <div class="historial-cuotas-cards">
+                    @for (cuota of pago.cuotasPagadas; track cuota.idPagoCuota) {
+                    <div class="historial-cuota-card"
+                        [class.cuota-card-warn]="cuota.estadoCuota.toUpperCase() === 'PENDIENTE_APROBACION'">
+                        <div class="cuota-card-especie">{{ cuota.detalleEspecie }}</div>
+                        <div class="cuota-card-num">Cuota {{ cuota.numeroCuota }}</div>
+                        <div class="cuota-card-montos">
+                            <div class="cuota-card-row">
+                                <span class="cuota-card-label">Valor Cuota:</span>
+                                <span class="cuota-card-val">{{ cuota.valorOriginalCuota |
+                                    currency:'USD':'symbol':'1.2-2' }}</span>
+                            </div>
+                            <div class="cuota-card-row">
+                                <span class="cuota-card-label">Pagado:</span>
+                                <span class="cuota-card-val aplicado">{{ cuota.valorAplicado |
+                                    currency:'USD':'symbol':'1.2-2' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    }
+</div>
+}
+
+<app-shared-toast />
+<app-confirmation-modal [(visible)]="mostrarConfirmacion" [title]="confirmacionTitulo" [message]="confirmacionMensaje"
+    (accept)="onConfirmacionAccept()" (reject)="onConfirmacionReject()" (hide)="onConfirmacionHide()">
+</app-confirmation-modal>
+
+<!-- MODAL: Realizar Pago -->
+<app-shared-drawer [(visible)]="mostrarModalPago" title="Realizar Pago" mode="drawer" position="right" size="md" [showFooter]="true" [closeOnOverlayClick]="false">
+
+    <div class="modal-pago-content">
+
+        <!-- PASO 1: DATOS DEL CLIENTE / FACTURACIÓN (CUANDO SE DESEA CAMBIAR TITULAR) -->
+        @if (pasoPago === 1) {
+        <div class="paso-container">
+            <div class="paso-header">
+                <div class="paso-icon"><i class="pi pi-user-edit"></i></div>
+                <div class="flex flex-col">
+                    <span class="paso-titulo">Facturar a Otro Nombre</span>
+                    <span class="paso-subtitulo">Busque o registre los datos de la persona a quien se emitirá la factura</span>
+                </div>
+            </div>
+
+            <div class="campo-pago mt-4">
+                <label class="campo-label">Documento de Identidad (Cédula/RUC) <span class="requerido">*</span></label>
+                <div class="input-group-row">
+                    <input type="text" [(ngModel)]="documentoBusqueda" placeholder="Ej: 1712345678" maxlength="13"
+                        (keypress)="soloNumeros($event)" (keydown.enter)="buscarCliente()" [disabled]="buscandoCliente"
+                        class="input-full" [class.input-invalid]="documentoInvalido" />
+
+                    <button class="btn-search-client" title="Buscar Cliente" (click)="buscarCliente()"
+                        [disabled]="buscandoCliente">
+                        @if (buscandoCliente) {
+                        <svg class="spinner-sm" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+                        </svg>
+                        } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                        }
+                    </button>
+                </div>
+                <small *ngIf="documentoInvalido" class="p-error">El número de documento no es válido.</small>
+            </div>
+
+            <!-- Resultado si el cliente no existe y toca crearlo -->
+            @if (mostrarFormularioCliente) {
+            <div class="nuevo-cliente-form mt-4 p-4 border-round surface-50">
+                <div class="flex items-center gap-2 mb-3">
+                    <i class="pi pi-user-plus text-primary"></i>
+                    <span class="font-bold">Registrar Nuevo Cliente</span>
+                </div>
+
+                <div class="grid formgrid p-fluid">
+                    <div class="col-12 md:col-6 mb-3">
+                        <label class="text-sm font-semibold mb-1 block">Nombres <span class="text-red-500">*</span></label>
+                        <input type="text" [(ngModel)]="nuevoCliente.nombres" placeholder="Nombres" class="input-full" />
+                    </div>
+                    <div class="col-12 md:col-6 mb-3">
+                        <label class="text-sm font-semibold mb-1 block">Apellidos <span class="text-red-500">*</span></label>
+                        <input type="text" [(ngModel)]="nuevoCliente.apellidos" placeholder="Apellidos" class="input-full" />
+                    </div>
+                    <div class="col-12 md:col-6 mb-3">
+                        <label class="text-sm font-semibold mb-1 block">Correo <span class="text-red-500">*</span></label>
+                        <input type="email" [(ngModel)]="nuevoCliente.correo" placeholder="correo@ejemplo.com" class="input-full" />
+                    </div>
+                    <div class="col-12 md:col-6 mb-3">
+                        <label class="text-sm font-semibold mb-1 block">Celular <span class="text-red-500">*</span></label>
+                        <input type="text" [(ngModel)]="nuevoCliente.celular" placeholder="0999999999" class="input-full" />
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="text-sm font-semibold mb-1 block">Dirección <span class="text-red-500">*</span></label>
+                        <input type="text" [(ngModel)]="nuevoCliente.direccion" placeholder="Dirección completa" class="input-full" />
+                    </div>
+                </div>
+
+                <div class="flex justify-content-end mt-2">
+                    <button class="btn-primary-sm" (click)="crearCliente()" [disabled]="guardandoCliente">
+                        @if (guardandoCliente) {
+                        <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                        } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+                        }
+                        Guardar Cliente
+                    </button>
+                </div>
+            </div>
+            }
+
+            <!-- Tarjeta de cliente seleccionado -->
+            @if (clienteSeleccionado && !mostrarFormularioCliente) {
+            <div class="cliente-encontrado mt-4 p-3 border-round border-1 border-primary surface-ground">
+                <div class="flex justify-content-between align-items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-xs font-bold text-primary uppercase">Cliente Seleccionado</span>
+                        <span class="font-bold text-lg">{{ clienteSeleccionado.nombres }} {{
+                            clienteSeleccionado.apellidos }}</span>
+                        <span class="text-sm text-color-secondary"><i class="pi pi-id-card text-xs mr-1"></i> {{
+                            clienteSeleccionado.documento }}</span>
+                        <span class="text-sm text-color-secondary"><i class="pi pi-envelope text-xs mr-1"></i> {{
+                            clienteSeleccionado.correo }}</span>
+                    </div>
+                    <button class="btn-icon-xs btn-danger-xs" title="Limpiar selección" (click)="limpiarCliente()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                </div>
+            </div>
+            }
+
+            <div class="flex items-center justify-between mt-4 pt-3 border-top-1 surface-border">
+                <button type="button" class="btn-outline-sm" (click)="restaurarClienteAlumno()">
+                    <i class="pi pi-user mr-1"></i> Usar datos del alumno
+                </button>
+                @if (clienteSeleccionado) {
+                <button type="button" class="btn-primary-sm" (click)="volverAPasoPago()">
+                    Continuar al pago <i class="pi pi-arrow-right ml-1"></i>
+                </button>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- PASO 2: DETALLES DEL PAGO -->
+        @if (pasoPago === 2) {
+        <div class="paso-container slide-in">
+            <!-- Tarjeta Informativa del Cliente / Facturación -->
+            <div class="cliente-titular-card mb-3 p-3 border-round surface-ground border-1 border-primary-100">
+                <div class="flex justify-between items-start gap-2">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-primary uppercase">Facturar a nombre de:</span>
+                            <span class="custom-badge" [class.badge-info]="clienteTitularTipo === 'alumno'" [class.badge-success]="clienteTitularTipo === 'anterior'" [class.badge-warn]="clienteTitularTipo === 'otro'">
+                                {{ clienteTitularTipo === 'alumno' ? 'Alumno' : (clienteTitularTipo === 'anterior' ? 'Cliente Anterior' : 'Tercero') }}
+                            </span>
+                        </div>
+                        @if (clienteSeleccionado) {
+                        <span class="font-bold text-base text-900">{{ clienteSeleccionado.nombres }} {{ clienteSeleccionado.apellidos }}</span>
+                        <div class="text-xs text-color-secondary flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                            <span><i class="pi pi-id-card text-xs mr-1"></i><strong>CI/RUC:</strong> {{ clienteSeleccionado.documento }}</span>
+                            @if (clienteSeleccionado.correo) {
+                            <span><i class="pi pi-envelope text-xs mr-1"></i>{{ clienteSeleccionado.correo }}</span>
+                            }
+                            @if (clienteSeleccionado.celular) {
+                            <span><i class="pi pi-phone text-xs mr-1"></i>{{ clienteSeleccionado.celular }}</span>
+                            }
+                            @if (clienteSeleccionado.direccion) {
+                            <span><i class="pi pi-map-marker text-xs mr-1"></i>{{ clienteSeleccionado.direccion }}</span>
+                            }
+                        </div>
+                        } @else {
+                        <div class="flex items-center gap-2 mt-1">
+                            <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                            <span class="text-xs text-color-secondary">Cargando datos de facturación...</span>
+                        </div>
+                        }
+                    </div>
+                    <button type="button" class="btn-outline-sm btn-cambiar-titular" title="Cambiar datos de facturación" (click)="facturarAOtroNombre()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        Facturar a otro nombre
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info de la especie seleccionada -->
+            @if (especieSeleccionada) {
+            <div class="especie-info-modal">
+                <div class="especie-modal-header">
+                    <i [class]="especieSeleccionada.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
+                    <span>{{ especieSeleccionada.nombre }}</span>
+                </div>
+                <div class="especie-modal-ciclo">{{ especieSeleccionada.ciclo }}</div>
+            </div>
+            <!-- Resumen de montos -->
+            <div class="valores-resumen">
+                <div class="valor-row">
+                    <span class="valor-label">Valor Original:</span>
+                    <span class="valor-monto">{{ especieSeleccionada.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                @if (especieSeleccionada.montoBeneficio > 0) {
+                <div class="valor-row">
+                    <span class="valor-label">Descuento:</span>
+                    <span class="valor-monto pagado">- {{ especieSeleccionada.montoBeneficio |
+                        currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                }
+                <div class="valor-row">
+                    <span class="valor-label">Ya Pagado:</span>
+                    <span class="valor-monto pagado">{{ especieSeleccionada.valorPagado |
+                        currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="valor-row destacado">
+                    <span class="valor-label">Pendiente:</span>
+                    <span class="valor-monto pendiente">{{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2'
+                        }}</span>
+                </div>
+            </div>
+            }
+
+            <!-- Tipo de Pago -->
+            <div class="campo-pago">
+                <label class="campo-label">Tipo de Pago <span class="requerido">*</span></label>
+                @if (loadingTiposPago) {
+                <div class="loading-tipos">
+                    <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                    <span>Cargando tipos de pago...</span>
+                </div>
+                } @else {
+                <div class="tipos-pago-grid">
+                    @for (tipo of tiposPago; track tipo.idTipoPago) {
+                    <div class="tipo-pago-card" [class.seleccionado]="tipoPagoSeleccionado === tipo.idTipoPago"
+                        (click)="tipoPagoSeleccionado = tipo.idTipoPago ?? null">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tipo-icon">
+                            @if (('' + tipo.detalle).toUpperCase().includes('EFECTIVO')) {
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+                            } @else {
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><path d="M9 9h6v6H9z" /><circle cx="12" cy="12" r="2" />
+                            }
+                        </svg>
+                        <span>{{ tipo.detalle }}</span>
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Cuenta Bancaria -->
+            <div class="campo-pago">
+                <label class="campo-label">
+                    <i class="pi pi-building-columns"></i>
+                    Cuenta Bancaria Destino <span class="requerido">*</span>
+                    <button type="button" class="btn-eye-gestion" title="Gestionar cuentas bancarias" (click)="abrirGestionCuentas()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </label>
+                @if (loadingCuentas) {
+                <div class="loading-tipos">
+                    <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                    <span>Cargando cuentas...</span>
+                </div>
+                } @else {
+                <app-custom-select [items]="cuentasBancarias" labelField="banco" valueField="idCuentaBancaria"
+                    [(selectedValue)]="cuentaSeleccionada" placeholder="Seleccione cuenta bancaria destino"
+                    [searchable]="true">
+                </app-custom-select>
+                }
+            </div>
+
+            <!-- Fecha de Depósito -->
+            <div class="campo-pago">
+                <label class="campo-label">
+                    <i class="pi pi-calendar"></i>
+                    Fecha de Depósito <span class="requerido">*</span>
+                </label>
+                <input type="datetime-local" class="input-full" [(ngModel)]="fechaDepositoDate"
+                    [max]="hoyISO" placeholder="Seleccione fecha y hora del depósito" />
+            </div>
+
+            <!-- Monto -->
+            <div class="campo-pago">
+                <label class="campo-label">Monto a Pagar <span class="requerido">*</span></label>
+                <input type="number" class="input-full input-monto" [(ngModel)]="montoPago" min="0.01" step="0.01"
+                    placeholder="Ingrese el monto" />
+                @if (especieSeleccionada && montoPago > getMontoPendienteEspecie()) {
+                <div class="excedente-warning-msg mt-2 p-2 border-round flex items-center gap-2" style="background-color: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #d97706; font-size: 0.85rem; border-radius: 8px;">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <span><strong>Aviso:</strong> El monto ingresado supera el saldo pendiente de esta especie (${{ getMontoPendienteEspecie() | number:'1.2-2' }}). El excedente (${{ (montoPago - getMontoPendienteEspecie()) | number:'1.2-2' }}) se registrará automáticamente como <strong>saldo a favor</strong> del alumno.</span>
+                </div>
+                }
+                <div class="monto-sugerencias">
+                    <small class="sugerencia-label">Sugerencias:</small>
+                    <div class="sugerencias-btns">
+                        @if (especieSeleccionada) {
+                        <button type="button" class="sugerencia-btn" (click)="montoPago = getMontoPendienteEspecie()">
+                            Cuota/especie ({{ getMontoPendienteEspecie() | currency:'USD':'symbol':'1.2-2' }})
+                        </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Número de Depósito -->
+            <div class="campo-pago">
+                <label class="campo-label">
+                    <i class="pi pi-hashtag"></i>
+                    Número de Depósito
+                </label>
+                <input type="text" class="input-full" [(ngModel)]="numeroDeposito" placeholder="Ej: 0012345678" />
+            </div>
+
+            <!-- Comprobante -->
+            <div class="campo-pago">
+                <label class="campo-label">
+                    <i class="pi pi-file"></i>
+                    Comprobante de Pago <span class="requerido">*</span>
+                </label>
+
+                <div class="file-uploader">
+                    <label class="file-drop" for="comprobanteFile">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="file-drop-icon"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                        <div class="file-drop-text">
+                            <strong>Seleccione un archivo o arrastre aquí</strong>
+                            <span>PNG, JPG, PDF — máximo 5MB</span>
+                        </div>
+                        <input id="comprobanteFile" type="file" (change)="onFileSelected($event)" accept="image/*,.pdf" />
+                    </label>
+
+                    <div class="file-selected" *ngIf="comprobanteFile">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="file-icon"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        <span class="file-name">{{ comprobanteFile.name }}</span>
+                        <button class="btn-icon-xs btn-danger-xs" title="Quitar comprobante" (click)="clearComprobante()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Switch de Observación -->
+            <div class="campo-observacion-toggle mt-3 p-3 rounded-lg border border-amber-200 bg-amber-50/50">
+                <div class="flex items-center justify-between cursor-pointer" (click)="tieneObservacionEspecial = !tieneObservacionEspecial">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-exclamation-circle text-amber-600 text-lg"></i>
+                        <div>
+                            <div class="text-sm font-semibold text-amber-900">¿El pago requiere una observación?</div>
+                            <div class="text-xs text-amber-700">Activa si este pago requiere una observación o nota aclaratoria.</div>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+                        <input type="checkbox" [checked]="tieneObservacionEspecial" class="sr-only peer" />
+                        <div class="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
+
+                @if (tieneObservacionEspecial) {
+                <div class="mt-3 pt-2 border-t border-amber-200/70">
+                    <label class="block text-xs font-semibold text-amber-950 mb-1">
+                        Detalle de la Observación:
+                    </label>
+                    <textarea 
+                        rows="3" 
+                        class="w-full text-sm p-2 rounded border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        [(ngModel)]="observacionesPago" 
+                        placeholder="Ingresa la observación correspondiente al pago..."></textarea>
+                </div>
+                }
+            </div>
+
+            <!-- Nota validación -->
+            <div class="nota-validacion mt-3">
+                <i class="pi pi-info-circle"></i>
+                <span>El pago quedará <strong>pendiente de validación</strong> por contabilidad, independientemente del
+                    tipo de pago.</span>
+            </div>
+        </div>
+        }
+    </div>
+
+    <div drawer-footer>
+        <div class="modal-footer">
+            <button class="btn-secondary-sm" (click)="cerrarModalPago()">Cancelar</button>
+            <button *ngIf="pasoPago === 1" class="btn-primary-sm" [disabled]="!clienteSeleccionado" (click)="avanzarPasoPago()">
+                Siguiente
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm" style="margin-left:0.25rem"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+            </button>
+            <button *ngIf="pasoPago === 2" class="btn-primary-sm" [disabled]="!isPagoValido()" (click)="confirmarPago()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm" style="margin-right:0.25rem"><polyline points="20 6 9 17 4 12" /></svg>
+                Confirmar Pago
+            </button>
+        </div>
+    </div>
+</app-shared-drawer>
+
+<!-- MODAL: Diferir Pensión -->
+<app-shared-modal [(visible)]="mostrarModalDiferir" title="Diferir Pensión en Cuotas" size="sm" [showFooter]="true" [closeOnOverlayClick]="false">
+
+    @if (creditoPensionPorDiferir) {
+    <div class="modal-diferir-content">
+        <div class="info-pension">
+            <div class="info-row">
+                <span class="info-label">Especie:</span>
+                <span class="info-value">{{ creditoPensionPorDiferir.detalleEspecie }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Valor Original:</span>
+                <span class="info-value">{{ parseMonto(creditoPensionPorDiferir.montoOriginal ??
+                    creditoPensionPorDiferir.montoFinal ?? creditoPensionPorDiferir.valorEspecie) |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if (parseMonto(creditoPensionPorDiferir.montoBeneficio) > 0) {
+            <div class="info-row">
+                <span class="info-label">Descuento:</span>
+                <span class="info-value" style="color: #28a745;">- {{
+                    parseMonto(creditoPensionPorDiferir.montoBeneficio) |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            @if (getValorPagadoCredito(creditoPensionPorDiferir) > 0) {
+            <div class="info-row">
+                <span class="info-label">Ya Pagado:</span>
+                <span class="info-value" style="color: #28a745;">{{ getValorPagadoCredito(creditoPensionPorDiferir) |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            <div class="info-row destacado">
+                <span class="info-label">Total a Diferir:</span>
+                <span class="info-value" style="font-weight: 700; font-size: 1.1rem;">{{ saldoADiferir |
+                    currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+        </div>
+
+        <div class="campo-cuotas">
+            <label class="campo-label">Número de Cuotas <span class="requerido">*</span></label>
+            <div class="cuota-number-input">
+                <button class="num-btn" (click)="numeroCuotasDiferir = Math.max(1, numeroCuotasDiferir - 1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="num-btn-icon"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                </button>
+                <input type="number" class="input-full input-number-center" [(ngModel)]="numeroCuotasDiferir" min="1" />
+                <button class="num-btn" (click)="numeroCuotasDiferir = numeroCuotasDiferir + 1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="num-btn-icon"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                </button>
+            </div>
+            <small class="campo-ayuda">Valor referencial por cuota:
+                {{ (saldoADiferir / numeroCuotasDiferir) | currency:'USD':'symbol':'1.2-2' }}
+            </small>
+        </div>
+
+        <div class="nota-referencial">
+            <i class="pi pi-info-circle"></i>
+            <span>Este es un valor referencial. Puede pagar más o menos en cada cuota según su disponibilidad.</span>
+        </div>
+    </div>
+    }
+
+    <div modal-footer class="modal-footer">
+        <button class="btn-secondary-sm" (click)="omitirDiferimiento()">Cancelar</button>
+        <button class="btn-primary-sm" (click)="confirmarDiferimiento()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm" style="margin-right:0.25rem"><polyline points="20 6 9 17 4 12" /></svg>
+            Confirmar Diferimiento
+        </button>
+    </div>
+</app-shared-modal>
+
+<!-- DRAWER: Gestión de Cuentas Bancarias -->
+<app-shared-drawer [(visible)]="mostrarGestionCuentas" title="Gestionar Cuentas Bancarias" mode="drawer" position="right" size="lg" [showFooter]="false" [showCloseButton]="true" (close)="cerrarGestionCuentas()">
+
+    <div class="gestion-cuentas-content">
+
+        <!-- Header con título y botón Agregar -->
+        <div class="cuenta-lista-header">
+            <span class="cuenta-lista-titulo">Cuentas Registradas ({{ cuentasBancariasTemp.length }})</span>
+            @if (!editandoCuenta) {
+            <button class="btn-outline-sm" (click)="nuevaCuentaGestion()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-i"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+            </button>
+            }
+        </div>
+
+        <!-- Formulario inline solo cuando se está creando/editando -->
+        @if (editandoCuenta) {
+        <div class="cuenta-form-inline">
+            <div class="cuenta-form-inline-header">
+                <span>{{ cuentaEnEdicion ? 'Editar Cuenta' : 'Nueva Cuenta' }}</span>
+                <button type="button" class="btn-icon-xs" title="Cancelar" (click)="cancelarEdicionCuenta()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+            </div>
+            <div class="cuenta-form-field">
+                <label class="campo-label">Banco <span class="requerido">*</span></label>
+                <input type="text" class="input-full" [(ngModel)]="cuentaFormData.banco" placeholder="Ej: Banco Pichincha" />
+            </div>
+            <div class="cuenta-form-field">
+                <label class="campo-label">N° Cuenta <span class="requerido">*</span></label>
+                <input type="text" class="input-full" [(ngModel)]="cuentaFormData.numeroCuenta" placeholder="Ej: 1234567890" />
+            </div>
+            <div class="cuenta-form-field">
+                <label class="campo-label">Tipo Cuenta <span class="requerido">*</span></label>
+                <app-custom-select [items]="tiposCuenta" labelField="detalle" valueField="idTipoCuenta" [(selectedValue)]="cuentaFormData.idTipoCuenta" placeholder="Seleccione tipo" [searchable]="false">
+                </app-custom-select>
+            </div>
+            <div class="cuenta-form-actions">
+                <button class="btn-primary-sm" [disabled]="guardandoCuenta || !cuentaFormData.banco?.trim() || !cuentaFormData.numeroCuenta?.trim() || !cuentaFormData.idTipoCuenta" (click)="guardarCuentaGestion()">
+                    @if (guardandoCuenta) {
+                    <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                    }
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm"><polyline points="20 6 9 17 4 12" /></svg>
+                    {{ cuentaEnEdicion ? 'Actualizar' : 'Guardar' }}
+                </button>
+            </div>
+        </div>
+        }
+
+        <!-- Listado de cuentas -->
+        @if (cuentasBancariasTemp.length === 0) {
+        <div class="empty-state-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--surface-400)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:2rem;height:2rem;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
+            <p>No hay cuentas bancarias registradas</p>
+        </div>
+        } @else {
+        <div class="cuenta-lista">
+            @for (cuenta of cuentasBancariasTemp; track cuenta.idCuentaBancaria) {
+            <div class="cuenta-item" [class.cuenta-item-seleccionada]="cuentaSeleccionada === cuenta.idCuentaBancaria" (click)="seleccionarCuentaGestion(cuenta)">
+                <div class="cuenta-item-info">
+                    <span class="cuenta-item-banco">{{ cuenta.banco }}</span>
+                    <span class="cuenta-item-numero">{{ cuenta.numeroCuenta }}</span>
+                    @if (cuenta.detalleTipoCuenta) {
+                    <span class="cuenta-item-tipo">{{ cuenta.detalleTipoCuenta }}</span>
+                    }
+                </div>
+                <div class="cuenta-item-actions">
+                    <button type="button" class="btn-icon-xs" title="Editar" (click)="$event.stopPropagation(); editarCuentaGestion(cuenta)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                    <button type="button" class="btn-icon-xs btn-danger-xs" title="Eliminar" (click)="$event.stopPropagation(); eliminarCuentaGestion(cuenta)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                    </button>
+                    @if (cuentaSeleccionada !== cuenta.idCuentaBancaria) {
+                    <button type="button" class="btn-select-xs" title="Seleccionar esta cuenta">Seleccionar</button>
+                    } @else {
+                    <span class="cuenta-seleccionada-badge">Seleccionada</span>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</app-shared-drawer>
+
+<!-- REVERT TOAST: Cuentas Bancarias -->
+<app-shared-revert-toast [(visible)]="mostrarRevertCuenta" title="CUENTA {{ revertCuentaAccion === 'create' ? 'CREADA' : revertCuentaAccion === 'update' ? 'ACTUALIZADA' : 'DESACTIVADA' }}"
+    message="¿Desea revertir la operación?" revertLabel="REVERTIR" [timeoutSeconds]="10" (revert)="revertirOperacionCuenta()" (timeout)="mostrarRevertCuenta = false">
+</app-shared-revert-toast>
+
+<!-- MODAL: OBSERVACIÓN DE PAGO INDIVIDUAL -->
+<app-shared-modal
+  [(visible)]="mostrarModalObservacion"
+  [title]="pagoObservacionSeleccionado?.observaciones ? 'Editar Observación (Pago #' + pagoObservacionSeleccionado?.idPago + ')' : 'Agregar Observación (Pago #' + pagoObservacionSeleccionado?.idPago + ')'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'500px'"
+  (cancel)="cerrarModalObservacionPago()">
+
+  @if (pagoObservacionSeleccionado) {
+  <div class="modal-body-content" style="display: flex; flex-direction: column; gap: 0.85rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid var(--surface-border);">
+      <div>
+        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-color);">
+          {{ estudianteSeleccionado.nombreEstudiante }}
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-color-secondary);">
+          Doc: {{ estudianteSeleccionado.cedula }} &bull; Pago #{{ pagoObservacionSeleccionado.idPago }}
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--brand-yellow-dark);">
+          {{ pagoObservacionSeleccionado.valorPago | currency:'USD':'symbol':'1.2-2' }}
+        </div>
+        <span class="custom-badge" [class.badge-success]="getEstadoPagoSeverity(pagoObservacionSeleccionado.estadoPago) === 'success'"
+          [class.badge-danger]="getEstadoPagoSeverity(pagoObservacionSeleccionado.estadoPago) === 'danger'"
+          [class.badge-warn]="getEstadoPagoSeverity(pagoObservacionSeleccionado.estadoPago) === 'warn'">
+          {{ pagoObservacionSeleccionado.estadoPago }}
+        </span>
+      </div>
+    </div>
+
+    <div class="campo-grupo" style="display: flex; flex-direction: column; gap: 0.35rem;">
+      <label class="campo-label" style="font-weight: 600; font-size: 0.8rem; color: var(--text-color);">
+        Observación / Nota del Pago
+      </label>
+      <textarea
+        [(ngModel)]="textoObservacion"
+        rows="4"
+        class="input-full"
+        style="resize: vertical; min-height: 90px; padding: 0.6rem; font-family: inherit; font-size: 0.85rem;"
+        placeholder="Ingrese o actualice la observación de este pago..."></textarea>
+      <span style="font-size: 0.72rem; color: var(--text-color-secondary);">
+        Esta observación quedará registrada en el comprobante y visible en el historial del alumno.
+      </span>
+    </div>
+  </div>
+  }
+
+  <div modal-footer style="display: flex; justify-content: flex-end; gap: 0.5rem; width: 100%;">
+    <button type="button" class="btn-secondary-sm" (click)="cerrarModalObservacionPago()" [disabled]="guardandoObservacion">
+      Cancelar
+    </button>
+    <button type="button" class="btn-primary-sm" (click)="guardarObservacionPago()" [disabled]="guardandoObservacion">
+      @if (guardandoObservacion) {
+      <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+      } @else {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm"><polyline points="20 6 9 17 4 12" /></svg>
+      }
+      <span>{{ guardandoObservacion ? 'Guardando...' : 'Guardar' }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL CONFIRMACIÓN ANULAR ARANCEL / COSTO EXTRA -->
+<app-shared-modal
+  [(visible)]="mostrarModalAnularEspecie"
+  title="Anular Arancel / Costo Extra"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'480px'"
+  (cancel)="cerrarModalAnularEspecie()">
+
+  @if (especieAAnular) {
+  <div class="modal-body-content" style="display: flex; flex-direction: column; gap: 1rem;">
+    <div class="anular-warning-box">
+      <i class="pi pi-exclamation-triangle warning-icon"></i>
+      <div class="warning-text">
+        <p class="warning-title">¿Está seguro de anular este cobro extra?</p>
+        <p class="warning-desc">
+          Se eliminará el crédito de <strong>{{ especieAAnular.nombre }}</strong> por un valor de
+          <strong>{{ (especieAAnular.montoFinal || especieAAnular.valor) | currency:'USD':'symbol':'1.2-2' }}</strong>
+          para el estudiante <strong>{{ estudianteSeleccionado.nombreEstudiante }}</strong>.
+        </p>
+      </div>
+    </div>
+    <p class="anular-note">
+      <i class="pi pi-info-circle"></i> Esta acción solo es posible porque el arancel no registra pagos ni abonos aplicados.
+    </p>
+  </div>
+  }
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn-secondary-sm" (click)="cerrarModalAnularEspecie()" [disabled]="anulandoEspecie">
+      Cancelar
+    </button>
+    <button type="button" class="btn-danger-sm" (click)="confirmarAnularEspecie()" [disabled]="anulandoEspecie">
+      @if (anulandoEspecie) {
+      <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+      } @else {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-sm"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+      }
+      <span>{{ anulandoEspecie ? 'Anulando...' : 'Sí, Anular Arancel' }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+

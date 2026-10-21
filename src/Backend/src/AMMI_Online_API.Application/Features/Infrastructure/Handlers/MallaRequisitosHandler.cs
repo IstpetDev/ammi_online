@@ -1,6 +1,7 @@
 using AMMI_Online_API.Application.DTOs.Infrastructure;
 using AMMI_Online_API.Application.Features.Infrastructure.Commands;
 using AMMI_Online_API.Application.Features.Infrastructure.Queries;
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Infrastructure;
 using MediatR;
@@ -19,10 +20,12 @@ public class MallaRequisitosHandler :
     IRequestHandler<DeleteRequisitosDemallaCommand, bool>
 {
     private readonly IMallaRequisitosRepository _repository;
+    private readonly IInfraestructuraValidationService _validationService;
 
-    public MallaRequisitosHandler(IMallaRequisitosRepository repository)
+    public MallaRequisitosHandler(IMallaRequisitosRepository repository, IInfraestructuraValidationService validationService)
     {
         _repository = repository;
+        _validationService = validationService;
     }
 
     #region Queries
@@ -57,6 +60,11 @@ public class MallaRequisitosHandler :
 
     public async Task<MallaRequisitosDTO> Handle(CreateMallaRequisitosCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.CreateDto.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         // Verificar que no exista la relacion
         if (await _repository.ExistsAsync(request.CreateDto.IdMalla, request.CreateDto.IdRequisitos, cancellationToken))
         {
@@ -78,6 +86,11 @@ public class MallaRequisitosHandler :
 
     public async Task<IEnumerable<MallaRequisitosDTO>> Handle(AsignarRequisitosAMallaCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.AsignarDto.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         var entitesToAdd = new List<MallaRequisitos>();
 
         foreach (var idRequisito in request.AsignarDto.IdsRequisitos)
@@ -104,6 +117,11 @@ public class MallaRequisitosHandler :
 
     public async Task<IEnumerable<MallaRequisitosDTO>> Handle(ReemplazarRequisitosCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.ReemplazarDto.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         // Eliminar todos los requisitos actuales de la malla
         await _repository.DeleteByMallaIdAsync(request.ReemplazarDto.IdMalla, cancellationToken);
 
@@ -128,11 +146,25 @@ public class MallaRequisitosHandler :
 
     public async Task<bool> Handle(DeleteMallaRequisitosCommand request, CancellationToken cancellationToken)
     {
+        // Obtener la entidad para conocer el IdMalla
+        var entity = await _repository.GetByIdAsync(request.Id, cancellationToken);
+        if (entity == null) throw new KeyNotFoundException("MallaRequisitos no encontrado.");
+
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(entity.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         return await _repository.DeleteAsync(request.Id, cancellationToken);
     }
 
     public async Task<bool> Handle(DeleteRequisitosDemallaCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         return await _repository.DeleteByMallaIdAsync(request.IdMalla, cancellationToken);
     }
 

@@ -11,6 +11,7 @@ namespace AMMI_Online_API.API.Controllers.Infrastructure;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MallaController : ApiController
 {
     private readonly IMediator _mediator;
@@ -54,7 +55,7 @@ public class MallaController : ApiController
     }
 
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<MallaDTO>> Create([FromBody] MallaCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateMallaCommand(dto), cancellationToken);
@@ -62,7 +63,7 @@ public class MallaController : ApiController
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<MallaDTO>> Update([FromBody] MallaUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdateMallaCommand(dto), cancellationToken);
@@ -70,7 +71,7 @@ public class MallaController : ApiController
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteMallaCommand(id), cancellationToken);

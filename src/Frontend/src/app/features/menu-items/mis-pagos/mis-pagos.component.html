@@ -1,356 +1,577 @@
 <div class="mis-pagos-container">
   <!-- VISTA: Lista de Matrículas del Alumno -->
   @if (!mostrarDetalle) {
-    <!-- Header Section -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <div class="title-icon">
-            <i class="pi pi-credit-card"></i>
-          </div>
-          <div>
-            <h1 class="page-title">Mis Pagos</h1>
-            <p class="page-subtitle">Consulta el estado de tus pagos y cuotas</p>
-          </div>
-        </div>
-        @if (nombreAlumno) {
-          <div class="user-info-badge">
-            <i class="pi pi-user"></i>
-            <span>{{ nombreAlumno }}</span>
-          </div>
+  
+  <app-shared-header materialIcon="credit_card" title="Mis Pagos" subtitle="Consulta el estado de tus pagos y cuotas">
+    @if (nombreAlumno) {
+    <div header-actions class="user-info-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      <span>{{ nombreAlumno }}</span>
+    </div>
+    }
+  </app-shared-header>
+
+  <!-- Filtro de Búsqueda simple -->
+  <div class="mp-filters">
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Buscar:</label>
+      <input type="text" class="mp-search-input" [(ngModel)]="searchValue" placeholder="Buscar por modalidad o ciclo..." />
+    </div>
+    @if (searchValue) {
+    <div class="mp-filter-actions">
+      <button class="mp-btn-clear" type="button" (click)="clearFilters()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-btn-icon">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
+    }
+  </div>
+
+  <!-- Estado de carga -->
+  @if (loading) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando tus pagos...</span>
+  </div>
+  }
+
+  <!-- Estado vacío -->
+  @if (!loading && pagos.length === 0) {
+  <app-shared-empty-state materialIcon="inbox" title="No tienes matrículas registradas"
+    description="No se registran matrículas o planes de pago activos para tu cuenta." minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
+  }
+
+  <!-- Tabla de pagos -->
+  @if (pagos.length > 0 && !loading) {
+  <app-shared-table [columns]="tablaColumnas" [data]="filteredPagos()" [loading]="loading"
+    [totalRecords]="filteredPagos().length" [page]="currentPage" [rowsPerPage]="filasPorPagina"
+    (pageChange)="onPageChange($event)">
+    
+    <ng-template stColTemplate="modalidad" let-pago>
+      <span class="custom-tag" [class.tag-info]="pago.modalidad === 'Formal virtual'"
+        [class.tag-warn]="pago.modalidad !== 'Formal virtual'">
+        @if (pago.modalidad === 'Formal virtual') {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="tag-icon"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
+        } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="tag-icon"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
         }
+        {{ pago.modalidad }}
+      </span>
+    </ng-template>
+
+    <ng-template stColTemplate="detalleCiclo" let-pago>
+      <div class="flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--brand-yellow-dark);"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+        <span>{{ pago.detalleCiclo }}</span>
       </div>
-    </div>
+    </ng-template>
 
-    <!-- Mensaje informativo -->
-    <div class="info-banner">
-      <i class="pi pi-info-circle"></i>
-      <span>Aquí puedes visualizar el estado de tus pagos. Para realizar pagos, acércate a secretaría o utiliza los canales oficiales de pago.</span>
-    </div>
+    <ng-template stColTemplate="progreso" let-pago>
+      @if (pago.totalDeuda > 0) {
+      <div class="custom-progress-wrap">
+        <div class="custom-progress-bar">
+          <div class="custom-progress-fill" [style.width.%]="getProgreso(pago.totalDeuda, pago.totalPagado)"></div>
+        </div>
+        <div class="progreso-info">
+          <span class="text-sm text-color-secondary">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
+          @if (pago.tienePagosEnRevision) {
+          <span class="pago-revision-badge" [title]="'Tienes ' + ((pago.montoEnRevision ?? 0) > 0 ? (pago.montoEnRevision | currency:'USD':'symbol':'1.2-2') : 'pagos') + ' pendientes de validación por contabilidad'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" class="r-icon"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            En revisión@if ((pago.montoEnRevision ?? 0) > 0) { ({{ pago.montoEnRevision | currency:'USD':'symbol':'1.2-2' }})}
+          </span>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="flex items-center gap-2">
+        <svg class="spinner-small" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="31.4 31.4" />
+        </svg>
+        <span class="text-sm text-color-secondary">Cargando...</span>
+      </div>
+      }
+    </ng-template>
 
-    <!-- Main Card -->
-    <div class="card">
-      <p-table 
-        #dt
-        [value]="pagos" 
-        dataKey="idMatricula"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [paginator]="true"
-        [globalFilterFields]="['modalidad', 'detalleCiclo']"
-        [showGridlines]="true"
-        (onPage)="onPageChange($event)">
-        
-        <ng-template #caption>
-          <div class="table-header">
-            <p-button label="Limpiar" [outlined]="true" icon="pi pi-filter-slash" (click)="clearFilters()" />
-            <div class="search-container">
-              <i class="pi pi-search search-icon"></i>
-              <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Buscar..." class="search-input" />
-            </div>
-          </div>
-        </ng-template>
-        
-        <ng-template #header>
-          <tr>
-            <th style="min-width: 12rem">
-              <div class="flex items-center justify-between">
-                Modalidad
-                <p-columnFilter field="modalidad" matchMode="equals" display="menu">
-                  <ng-template #filter let-filter="filterCallback">
-                    <p-select [options]="modalidades" (onChange)="filter($event.value)" placeholder="Seleccionar" class="w-full">
-                      <ng-template let-option #item>
-                        <p-tag [value]="option.label" [severity]="option.value === 'Formal virtual' ? 'info' : 'warn'" />
-                      </ng-template>
-                    </p-select>
-                  </ng-template>
-                </p-columnFilter>
-              </div>
-            </th>
-            <th style="min-width: 14rem">
-              <div class="flex items-center justify-between">
-                Ciclo
-                <p-columnFilter type="text" field="detalleCiclo" display="menu" />
-              </div>
-            </th>
-            <th style="min-width: 10rem">
-              <div class="flex items-center">
-                Progreso de Pagos
-              </div>
-            </th>
-            <th style="min-width: 8rem">
-              <div class="flex items-center">
-                Estado
-              </div>
-            </th>
-            <th style="width: 5rem">
-              <div class="flex items-center justify-center">
-                Detalle
-              </div>
-            </th>
-          </tr>
-        </ng-template>
-        
-        <ng-template #body let-pago>
-          <tr>
-            <td>
-              <p-tag 
-                [value]="pago.modalidad" 
-                [severity]="pago.modalidad?.includes('FORMAL') ? 'info' : 'warn'"
-                [icon]="pago.modalidad?.includes('FORMAL') ? 'pi pi-desktop' : 'pi pi-bolt'" />
-            </td>
-            <td>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-bookmark text-primary"></i>
-                <span>{{ pago.detalleCiclo }}</span>
-              </div>
-            </td>
-            <td>
-              @if (pago.totalDeuda > 0) {
-                <div class="progress-cell">
-                  <p-progressBar [value]="getProgreso(pago.totalDeuda, pago.totalPagado)" [showValue]="false" />
-                  <span class="progress-text">{{ getProgreso(pago.totalDeuda, pago.totalPagado) }}%</span>
-                </div>
-              } @else {
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-spin pi-spinner text-color-secondary"></i>
-                  <span class="text-sm text-color-secondary">Cargando...</span>
-                </div>
-              }
-            </td>
-            <td>
-              @if (pago.totalDeuda > 0) {
-                <p-tag 
-                  [value]="getEstadoLabel(pago.totalDeuda, pago.totalPagado)" 
-                  [severity]="getSeverity(pago.totalDeuda, pago.totalPagado)" />
-              }
-            </td>
-            <td class="text-center">
-              <p-button 
-                icon="pi pi-eye" 
-                [rounded]="true"
-                [text]="true"
-                severity="info"
-                pTooltip="Ver detalles"
-                tooltipPosition="top"
-                (onClick)="verDetalle(pago)" />
-            </td>
-          </tr>
-        </ng-template>
-        
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="5">
-              <div class="flex flex-col items-center justify-center py-6">
-                <i class="pi pi-inbox text-4xl text-color-secondary mb-4"></i>
-                <span class="text-xl text-color-secondary">No tienes matrículas registradas</span>
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
+    <ng-template stColTemplate="estado" let-pago>
+      @if (pago.totalDeuda > 0) {
+      <span class="custom-tag"
+        [class.tag-success]="getEstadoLabel(pago.totalDeuda, pago.totalPagado) === 'Pagado'"
+        [class.tag-warn]="getEstadoLabel(pago.totalDeuda, pago.totalPagado) === 'Parcial'"
+        [class.tag-danger]="getEstadoLabel(pago.totalDeuda, pago.totalPagado) === 'Pendiente'">
+        {{ getEstadoLabel(pago.totalDeuda, pago.totalPagado) }}
+      </span>
+      }
+    </ng-template>
+
+    <ng-template stColTemplate="acciones" let-pago>
+      <div class="text-center">
+        <button class="btn-icon-action" title="Ver detalles" (click)="verDetalle(pago)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="action-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+        </button>
+      </div>
+    </ng-template>
+  </app-shared-table>
+  }
   }
 
   <!-- VISTA: Detalle de Pagos de la Matrícula -->
   @if (mostrarDetalle && estudianteSeleccionado) {
-    <!-- Header con info de la matrícula -->
-    <div class="page-header detalle-header">
-      <div class="header-content">
-        <div class="title-section">
-          <p-button 
-            icon="pi pi-arrow-left" 
-            [rounded]="true"
-            [outlined]="true"
-            severity="secondary"
-            styleClass="back-btn"
-            pTooltip="Volver a mis matrículas"
-            (onClick)="volverALista()">
-          </p-button>
-          <div class="student-header-info">
-            <div class="student-avatar-large">
-              <i class="pi pi-graduation-cap"></i>
+  <!-- Header con info de la matrícula -->
+  <div class="detalle-header-section">
+    <button class="btn-icon-action back-btn" title="Volver a la lista" (click)="volverALista()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="action-icon"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+    </button>
+    <div class="student-header-info">
+      <div class="student-avatar-large">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--brand-black);"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>
+      </div>
+      <div>
+        <h1 class="page-title">{{ estudianteSeleccionado.modalidad }}</h1>
+        <p class="page-subtitle">
+          <span class="ciclo-badge">{{ estudianteSeleccionado.detalleCiclo }}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen de pagos -->
+  <div class="resumen-cards">
+    <div class="resumen-card total-deuda">
+      <div class="resumen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><rect x="2" y="4" width="20" height="16" rx="2" ry="2" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
+      </div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total a Pagar</span>
+        <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+    <div class="resumen-card total-pagado">
+      <div class="resumen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+      </div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total Pagado</span>
+        <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+    <div class="resumen-card pendiente">
+      <div class="resumen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+      </div>
+      <div class="resumen-info">
+        <span class="resumen-label">Saldo Pendiente</span>
+        <span class="resumen-value">{{ (estudianteSeleccionado.totalDeuda - estudianteSeleccionado.totalPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+    @if (montoEnRevision > 0 || hayPagosEnRevision) {
+    <div class="resumen-card en-revision">
+      <div class="resumen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+      </div>
+      <div class="resumen-info">
+        <span class="resumen-label">Por Validar</span>
+        <span class="resumen-value text-warn">{{ montoEnRevision | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+    }
+    <div class="resumen-card progreso-general">
+      <div class="resumen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>
+      </div>
+      <div class="resumen-info">
+        <span class="resumen-label">Progreso</span>
+        <span class="resumen-value">{{ getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado) }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje informativo sobre validación de pagos -->
+  <div class="alert-info-container">
+    <div class="alert-info">
+      <div class="alert-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+      </div>
+      <div class="alert-content">
+        <strong>Importante sobre la validación de pagos:</strong>
+        <p class="alert-message">
+          Todos los pagos registrados están sujetos a revisión por el departamento de Contabilidad. Si se detectan
+          inconsistencias (como transferencias duplicadas o comprobantes no válidos), <strong>el pago será anulado
+            automáticamente</strong> y el sistema reflejará nuevamente su saldo pendiente.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aviso si algunos pagos aún no han sido validados por contabilidad -->
+  @if (hayPagosEnRevision) {
+  <div class="resumen-warn-aprobacion">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--brand-yellow-dark); margin-right: 8px; flex-shrink: 0;"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+    <span>Tienes <strong>{{ montoEnRevision | currency:'USD':'symbol':'1.2-2' }}</strong> en pagos <strong>pendientes de validación por contabilidad</strong>. El saldo puede variar
+      si algún pago es rechazado.<br>
+      <small>Una vez validados por contabilidad, los pagos se reflejarán en los cálculos totales.</small></span>
+  </div>
+  }
+
+  <!-- Toggle de Vistas -->
+  <div class="view-controls">
+    <div class="toggle-view">
+      <label class="toggle-label">Visualizar:</label>
+      <div class="toggle-buttons">
+        <button class="toggle-btn" [class.active]="vistaDetalle === 'especies'"
+          (click)="cambiarVistaDetalle('especies')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+          Detalle de Pagos
+        </button>
+        <button class="toggle-btn" [class.active]="vistaDetalle === 'historial'"
+          (click)="cambiarVistaDetalle('historial')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          Historial de Pagos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista: Cards de Especies -->
+  @if (vistaDetalle === 'especies') {
+  <div class="especies-section">
+    <h2 class="section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--text-color-secondary);"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+      Detalle de Pagos por Concepto
+    </h2>
+
+    <div class="especies-grid">
+      @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
+      <div class="especie-wrapper">
+        <div class="especie-card readonly-card" [class.especie-pagada]="especie.pagado"
+          [class.especie-pendiente]="!especie.pagado" [class.card-matricula]="especie.tipo === 'matricula'"
+          [class.card-pension]="especie.tipo === 'pension'">
+
+          <!-- Header de la card -->
+          <div class="especie-header">
+            <div class="especie-tipo">
+              @if (especie.tipo === 'matricula') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: var(--brand-yellow-dark);"><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="7" y1="8" x2="17" y2="8" /><line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="16" x2="13" y2="16" /></svg>
+              } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: var(--brand-yellow-dark);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              }
+              <span class="especie-nombre">{{ especie.nombre }}</span>
             </div>
-            <div>
-              <h1 class="page-title">{{ estudianteSeleccionado.modalidad }}</h1>
-              <p class="page-subtitle">
-                <span class="ciclo-badge">{{ estudianteSeleccionado.detalleCiclo }}</span>
-              </p>
+            <span class="custom-tag"
+              [class.tag-success]="getEspecieEstado(especie) === 'Pagado'"
+              [class.tag-warn]="getEspecieEstado(especie) === 'Pago en Revisión' || getEspecieEstado(especie) === 'Parcial'"
+              [class.tag-danger]="getEspecieEstado(especie) === 'Pendiente'">
+              {{ getEspecieEstado(especie) }}
+            </span>
+          </div>
+
+          <!-- Ciclo -->
+          <div class="especie-ciclo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--text-color-secondary);"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+            <span>{{ especie.ciclo }}</span>
+          </div>
+
+          <!-- Monto beneficio (descuento) -->
+          @if (especie.montoBeneficio > 0) {
+          <div class="beneficio-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: #28a745; margin-right: 4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+            <span>Descuento aplicado: {{ especie.montoBeneficio | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          }
+
+          <!-- Valores -->
+          <div class="especie-valores">
+            <div class="valor-item">
+              <span class="valor-label">Valor Original</span>
+              <span class="valor-amount">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if (especie.montoBeneficio > 0) {
+            <div class="valor-item">
+              <span class="valor-label">A Pagar</span>
+              <span class="valor-amount">{{ especie.montoFinal | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            <div class="valor-item">
+              <span class="valor-label">Pagado</span>
+              <span class="valor-amount pagado">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if (getMontoEnRevisionEspecie(especie) > 0) {
+            <div class="valor-item">
+              <span class="valor-label">Por Validar</span>
+              <span class="valor-amount en-revision">{{ getMontoEnRevisionEspecie(especie) | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            }
+            <div class="valor-item">
+              <span class="valor-label">Pendiente</span>
+              <span class="valor-amount pendiente">{{ ((especie.montoFinal || especie.valor) - especie.valorPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Mensaje informativo para alumno -->
-    <div class="info-banner alumno-info">
-      <i class="pi pi-eye"></i>
-      <span>Vista de solo lectura. Para realizar pagos, comunícate con secretaría académica.</span>
-    </div>
-
-    <!-- Resumen de pagos -->
-    <div class="resumen-cards">
-      <div class="resumen-card total-deuda">
-        <div class="resumen-icon">
-          <i class="pi pi-wallet"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Total a Pagar</span>
-          <span class="resumen-value">{{ estudianteSeleccionado.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</span>
-        </div>
-      </div>
-      <div class="resumen-card total-pagado">
-        <div class="resumen-icon">
-          <i class="pi pi-check-circle"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Total Pagado</span>
-          <span class="resumen-value">{{ estudianteSeleccionado.totalPagado | currency:'USD':'symbol':'1.2-2' }}</span>
-        </div>
-      </div>
-      <div class="resumen-card pendiente">
-        <div class="resumen-icon">
-          <i class="pi pi-clock"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Saldo Pendiente</span>
-          <span class="resumen-value">{{ (estudianteSeleccionado.totalDeuda - estudianteSeleccionado.totalPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
-        </div>
-      </div>
-      <div class="resumen-card progreso-general">
-        <div class="resumen-icon">
-          <i class="pi pi-chart-line"></i>
-        </div>
-        <div class="resumen-info">
-          <span class="resumen-label">Progreso</span>
-          <span class="resumen-value">{{ getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado) }}%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Barra de progreso general -->
-    <div class="progreso-general-bar">
-      <div class="progreso-header">
-        <span>Progreso General de Pagos</span>
-        <span class="progreso-porcentaje-general">{{ getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado) }}%</span>
-      </div>
-      <p-progressBar 
-        [value]="getProgreso(estudianteSeleccionado.totalDeuda, estudianteSeleccionado.totalPagado)" 
-        [showValue]="false"
-        styleClass="progreso-bar-grande">
-      </p-progressBar>
-    </div>
-
-    <!-- Cards de Especies -->
-    <div class="especies-section">
-      <h2 class="section-title">
-        <i class="pi pi-list"></i>
-        Detalle de Pagos por Concepto
-      </h2>
-      
-      <div class="especies-grid">
-        @for (especie of estudianteSeleccionado.especies; track especie.idEspecie) {
-          <div class="especie-card readonly-card" 
-               [class.especie-pagada]="especie.pagado" 
-               [class.especie-pendiente]="!especie.pagado"
-               [class.card-matricula]="especie.tipo === 'matricula'"
-               [class.card-pension]="especie.tipo === 'pension'">
-            <!-- Header de la card -->
-            <div class="especie-header">
-              <div class="especie-tipo">
-                <i [class]="especie.tipo === 'matricula' ? 'pi pi-id-card' : 'pi pi-calendar'"></i>
-                <span class="especie-nombre">{{ especie.nombre }}</span>
-              </div>
-              <p-tag 
-                [value]="getEspecieEstado(especie)" 
-                [severity]="getEspecieSeverity(especie)"
-                styleClass="estado-tag">
-              </p-tag>
+          <!-- Barra de progreso -->
+          @if ((especie.montoFinal || especie.valor) > 0) {
+          <div class="especie-progreso">
+            <div class="custom-progress-bar">
+              <div class="custom-progress-fill" [style.width.%]="(especie.valorPagado / (especie.montoFinal || especie.valor)) * 100"></div>
             </div>
+            <span class="progreso-porcentaje">{{ ((especie.valorPagado / (especie.montoFinal || especie.valor)) * 100) | number:'1.0-0' }}%</span>
+          </div>
+          }
 
-            <!-- Ciclo -->
-            <div class="especie-ciclo">
-              <i class="pi pi-bookmark"></i>
-              <span>{{ especie.ciclo }}</span>
+          <!-- Fecha límite -->
+          <div class="especie-fecha">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--text-color-secondary);"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <span>Fecha límite: {{ especie.fechaLimite }}</span>
+          </div>
+
+          <!-- Botón Ver Cuotas -->
+          @if (especie.detallesCredito && especie.detallesCredito.length > 0) {
+          <div class="cuotas-toggle-btn-wrap">
+            <button type="button" class="btn-ver-cuotas"
+              [class.activo]="cuotasExpandidas?.idCredito === especie.idCredito" (click)="toggleCuotas(especie)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;"><line x1="9" y1="6" x2="20" y2="6" /><line x1="9" y1="12" x2="20" y2="12" /><line x1="9" y1="18" x2="20" y2="18" /><line x1="5" y1="6" x2="5.01" y2="6" /><line x1="5" y1="12" x2="5.01" y2="12" /><line x1="5" y1="18" x2="5.01" y2="18" /></svg>
+              {{ cuotasExpandidas?.idCredito === especie.idCredito ? 'Ocultar' : 'Ver' }} Cuotas ({{ especie.detallesCredito.length }})
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-left: 4px;" [style.transform]="cuotasExpandidas?.idCredito === especie.idCredito ? 'rotate(180deg)' : 'none'"><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
+          </div>
+          }
+
+          <!-- Estado visual para el alumno -->
+          @if (especie.pagado) {
+          <div class="especie-pagado-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 4px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            <span>Pago completado</span>
+          </div>
+          } @else if (especiePendienteAprobacion(especie)) {
+          <div class="especie-pendiente-aprobacion">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 4px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <span>Pago registrado @if (getMontoEnRevisionEspecie(especie) > 0) { (<strong>{{ getMontoEnRevisionEspecie(especie) | currency:'USD':'symbol':'1.2-2' }}</strong>) }— <strong>pendiente de validación por contabilidad</strong></span>
+          </div>
+          } @else if (especie.esPensionNoDiferida) {
+          <div class="especie-pendiente-info">
+            <div class="pendiente-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: var(--brand-black);"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
             </div>
-
-            <!-- Valores -->
-            <div class="especie-valores">
-              <div class="valor-item">
-                <span class="valor-label">Valor Total</span>
-                <span class="valor-amount">{{ especie.valor | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="valor-item">
-                <span class="valor-label">Pagado</span>
-                <span class="valor-amount pagado">{{ especie.valorPagado | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="valor-item">
-                <span class="valor-label">Pendiente</span>
-                <span class="valor-amount pendiente">{{ (especie.valor - especie.valorPagado) | currency:'USD':'symbol':'1.2-2' }}</span>
-              </div>
+            <div class="pendiente-content">
+              <span class="pendiente-title">Acción Requerida</span>
+              <span class="pendiente-message">Acércate a secretaría para definir el plan de cuotas de tu pensión</span>
             </div>
+          </div>
+          } @else {
+          <div class="especie-pendiente-pago">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 4px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <span>Pendiente de pago</span>
+          </div>
+          }
+        </div>
 
-            <!-- Barra de progreso -->
-            <div class="especie-progreso">
-              <p-progressBar 
-                [value]="especie.valor > 0 ? (especie.valorPagado / especie.valor) * 100 : 0" 
-                [showValue]="false"
-                styleClass="especie-progress-bar">
-              </p-progressBar>
-              <span class="progreso-porcentaje">{{ especie.valor > 0 ? ((especie.valorPagado / especie.valor) * 100 | number:'1.0-0') : 0 }}%</span>
+        <!-- Cuotas inline: dentro del wrapper, bajo el card -->
+        @if (cuotasExpandidas?.idCredito === especie.idCredito && especie.detallesCredito.length > 0) {
+        <div class="cuotas-inline-section">
+          <div class="cuotas-inline-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;"><line x1="9" y1="6" x2="20" y2="6" /><line x1="9" y1="12" x2="20" y2="12" /><line x1="9" y1="18" x2="20" y2="18" /><line x1="5" y1="6" x2="5.01" y2="6" /><line x1="5" y1="12" x2="5.01" y2="12" /><line x1="5" y1="18" x2="5.01" y2="18" /></svg>
+            <span>Cuotas — {{ especie.nombre }}</span>
+          </div>
+          <div class="cuotas-inline-cards">
+            @for (cuota of especie.detallesCredito; track cuota.idDetalleCredito) {
+            <div class="cuota-inline-card" [class.cuota-inline-pagada]="cuota.pagado">
+              <div class="cuota-inline-num">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 4px; display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                <span>Cuota {{ cuota.numeroCuota }}</span>
+              </div>
+              <div class="cuota-inline-montos">
+                <div class="cuota-inline-row">
+                  <span class="cuota-inline-label">Valor:</span>
+                  <span class="cuota-inline-val">{{ cuota.valor | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="cuota-inline-row">
+                  <span class="cuota-inline-label">Pagado:</span>
+                  <span class="cuota-inline-val">{{ cuota.valorCancelado | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="cuota-inline-row">
+                  <span class="cuota-inline-label">Saldo:</span>
+                  <span class="cuota-inline-val" [class.saldo-cero]="cuota.saldoCuota === 0">
+                    {{ cuota.saldoCuota | currency:'USD':'symbol':'1.2-2' }}
+                  </span>
+                </div>
+              </div>
+              <div class="cuota-inline-fecha">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                <span>{{ cuota.fechaLimite ? (cuota.fechaLimite | date:'dd MMM yyyy') : 'Sin vencimiento' }}</span>
+              </div>
+              <span class="custom-tag"
+                [class.tag-success]="getEstadoCuotaSeverity(cuota.estado) === 'success'"
+                [class.tag-warn]="getEstadoCuotaSeverity(cuota.estado) === 'warn'"
+                [class.tag-danger]="getEstadoCuotaSeverity(cuota.estado) === 'danger'"
+                [class.tag-secondary]="getEstadoCuotaSeverity(cuota.estado) === 'secondary'">
+                {{ cuota.estado }}
+              </span>
             </div>
-
-            <!-- Fecha límite -->
-            <div class="especie-fecha">
-              <i class="pi pi-calendar-clock"></i>
-              <span>Fecha límite: {{ especie.fechaLimite }}</span>
-            </div>
-
-            <!-- Estado visual para el alumno (sin botones de acción) -->
-            @if (especie.pagado) {
-              <div class="especie-pagado-info">
-                <i class="pi pi-check-circle"></i>
-                <span>Pago completado</span>
-              </div>
-            } @else if (especie.esPensionNoDiferida) {
-              <div class="especie-pendiente-info">
-                <i class="pi pi-hourglass"></i>
-                <span>Pendiente de diferir por secretaría</span>
-              </div>
-            } @else {
-              <div class="especie-pendiente-pago">
-                <i class="pi pi-info-circle"></i>
-                <span>Pendiente de pago</span>
-              </div>
             }
           </div>
+        </div>
         }
       </div>
+      }
     </div>
+  </div>
+  }
 
-    <!-- Leyenda -->
-    <div class="leyenda-section">
-      <h3 class="leyenda-title">
-        <i class="pi pi-info-circle"></i>
-        Información
-      </h3>
-      <div class="leyenda-items">
-        <div class="leyenda-item">
-          <div class="leyenda-color pagado"></div>
-          <span>Pagado completamente</span>
-        </div>
-        <div class="leyenda-item">
-          <div class="leyenda-color parcial"></div>
-          <span>Pago parcial realizado</span>
-        </div>
-        <div class="leyenda-item">
-          <div class="leyenda-color pendiente"></div>
-          <span>Pendiente de pago</span>
-        </div>
-      </div>
+  <!-- Vista: Historial de Pagos -->
+  @if (vistaDetalle === 'historial') {
+  <div class="historial-section">
+    @if (loadingHistorial) {
+    <div class="mp-loading-initial">
+      <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+          stroke-dasharray="31.4 31.4" />
+      </svg>
+      <span>Cargando historial...</span>
     </div>
+    }
+    @if (!loadingHistorial && historialPagos.length === 0) {
+    <app-shared-empty-state materialIcon="history" title="Sin historial de pagos"
+      description="No se registran pagos realizados para este plan.">
+    </app-shared-empty-state>
+    }
+    @if (!loadingHistorial && historialPagos.length > 0) {
+    <div class="historial-grid">
+      @for (pago of historialPagos; track pago.idPago) {
+      <div class="historial-card">
+        <!-- Header del card -->
+        <div class="historial-card-header">
+          <div class="historial-id-fecha">
+            <span class="historial-id">#{{ pago.idPago }}</span>
+            <span class="historial-fecha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              {{ pago.fechaPago | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+          </div>
+          <div class="historial-badges">
+            <span class="custom-tag"
+              [class.tag-success]="getTipoPagoSeverity(pago.tipoPago) === 'success'"
+              [class.tag-info]="getTipoPagoSeverity(pago.tipoPago) === 'info'"
+              [class.tag-warn]="getTipoPagoSeverity(pago.tipoPago) === 'warn'"
+              [class.tag-secondary]="getTipoPagoSeverity(pago.tipoPago) === 'secondary'">
+              {{ pago.tipoPago }}
+            </span>
+            <span class="custom-tag"
+              [class.tag-success]="getEstadoPagoSeverity(pago.estadoPago) === 'success'"
+              [class.tag-danger]="getEstadoPagoSeverity(pago.estadoPago) === 'danger'"
+              [class.tag-warn]="getEstadoPagoSeverity(pago.estadoPago) === 'warn'"
+              [class.tag-secondary]="getEstadoPagoSeverity(pago.estadoPago) === 'secondary'">
+              {{ pago.estadoPago }}
+            </span>
+            @if (pago.pathComprobante) {
+            <button class="btn-icon-action" title="Ver Comprobante" (click)="abrirComprobante(pago.pathComprobante)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #dc3545;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+            </button>
+            }
+          </div>
+        </div>
+
+        <!-- Valores y datos del pago -->
+        <div class="historial-valores">
+          <div class="historial-valor-row">
+            <span class="historial-val-label">Valor Pagado</span>
+            <span class="historial-val-monto destacado">{{ pago.valorPago | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          @if (pago.bancoDeposito) {
+          <div class="historial-valor-row">
+            <span class="historial-val-label">Banco</span>
+            <span class="historial-val-monto">{{ pago.bancoDeposito }}</span>
+          </div>
+          }
+          @if (pago.numeroDeposito) {
+          <div class="historial-valor-row">
+            <span class="historial-val-label">N° Depósito</span>
+            <span class="historial-val-monto">{{ pago.numeroDeposito }}</span>
+          </div>
+          }
+          @if (pago.clienteNombre) {
+          <div class="historial-valor-row">
+            <span class="historial-val-label">Cliente</span>
+            <span class="historial-val-monto">{{ pago.clienteNombre }}</span>
+          </div>
+          }
+          @if (pago.clienteDocumento) {
+          <div class="historial-valor-row">
+            <span class="historial-val-label">Doc. Cliente</span>
+            <span class="historial-val-monto">{{ pago.clienteDocumento }}</span>
+          </div>
+          }
+          @if (getTotalBeneficioHistorial(pago) > 0) {
+          <div class="historial-valor-row">
+            <span class="historial-val-label">
+              Descuento Aplicado
+            </span>
+            <span class="historial-val-monto descuento">- {{ getTotalBeneficioHistorial(pago) | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+          }
+        </div>
+
+        <!-- Indicador de pago pendiente de validacion -->
+        @if (pago.estadoPago?.toUpperCase() === 'PENDIENTE') {
+        <div class="especie-pendiente-aprobacion" style="margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: #fff9e6; border: 1px solid #f0d060; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; flex-shrink: 0;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          <span>Pago registrado — <strong>pendiente de validación por contabilidad</strong>. Se reflejará en tu saldo una vez aprobado.</span>
+        </div>
+        }
+
+        <!-- Cuotas pagadas -->
+        @if (pago.cuotasPagadas && pago.cuotasPagadas.length > 0) {
+        <div class="historial-cuotas">
+          <div class="historial-cuotas-titulo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--text-color-secondary); margin-right: 4px;"><line x1="9" y1="6" x2="20" y2="6" /><line x1="9" y1="12" x2="20" y2="12" /><line x1="9" y1="18" x2="20" y2="18" /><line x1="5" y1="6" x2="5.01" y2="6" /><line x1="5" y1="12" x2="5.01" y2="12" /><line x1="5" y1="18" x2="5.01" y2="18" /></svg>
+            <span>Cuotas aplicadas ({{ pago.cuotasPagadas.length }})</span>
+          </div>
+          <div class="historial-cuotas-cards">
+            @for (cuota of pago.cuotasPagadas; track cuota.idPagoCuota) {
+            <div class="historial-cuota-card"
+              [class.cuota-card-warn]="cuota.estadoCuota.toUpperCase() === 'PENDIENTE_APROBACION'">
+              <div class="cuota-card-especie">{{ cuota.detalleEspecie }}</div>
+              <div class="cuota-card-num">Cuota {{ cuota.numeroCuota }}</div>
+              <div class="cuota-card-montos">
+                <div class="cuota-card-row">
+                  <span class="cuota-card-label">Valor Cuota:</span>
+                  <span class="cuota-card-val">{{ cuota.valorOriginalCuota | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="cuota-card-row">
+                  <span class="cuota-card-label">Pagado:</span>
+                  <span class="cuota-card-val aplicado">{{ cuota.valorAplicado | currency:'USD':'symbol':'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
   }
 
   <!-- TOAST para mensajes -->
-  <p-toast />
+  <app-shared-toast></app-shared-toast>
 </div>

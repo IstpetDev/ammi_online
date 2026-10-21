@@ -1,0 +1,214 @@
+<div class="postulante-dashboard">
+
+  <!-- ══════════ HERO BANNER ══════════ -->
+  <div class="hero-banner">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-greeting">
+        <div class="greeting-pill">
+          <i class="pi pi-star-fill"></i>
+          Portal del Postulante
+        </div>
+        <h1>¡Bienvenido, <span class="hero-name">{{ userName }}</span>!</h1>
+        <p>Gestiona tu proceso de admisión en un solo lugar. Sube documentos, revisa el estado y recibe notificaciones.
+        </p>
+      </div>
+      <div class="hero-illustration">
+        <div class="illustration-ring ring-outer"></div>
+        <div class="illustration-ring ring-mid"></div>
+        <div class="illustration-ring ring-inner"></div>
+        <div class="illustration-icon">
+          <i class="pi pi-graduation-cap"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ LOADING ══════════ -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="loading-card">
+      <div class="loading-pulse"></div>
+      <div class="loading-pulse loading-pulse--med"></div>
+      <div class="loading-pulse loading-pulse--sm"></div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- ══════════ SIN POSTULACIÓN ══════════ -->
+    <div class="empty-state-card" *ngIf="sinPostulacion">
+      <div class="empty-icon-wrapper">
+        <div class="empty-icon-bg"></div>
+        <i class="pi pi-file-plus"></i>
+      </div>
+      <div class="empty-text">
+        <h3>Aún no tienes una postulación</h3>
+        <p>Inicia tu proceso de admisión completando el formulario. Solo toma unos minutos.</p>
+        <a routerLink="/dashboard/create-postulation-externo" class="btn-start">
+          <i class="pi pi-plus-circle"></i>
+          Comenzar mi postulación
+          <i class="pi pi-arrow-right btn-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══════════ CON POSTULACIÓN ══════════ -->
+    <div *ngIf="postulacion" class="dashboard-grid">
+
+      <!-- ── Tarjeta de estado principal ── -->
+      <div class="status-card"
+        [ngClass]="'status-card--' + getEstadoInfo(postulacion.items[0]?.tipoestadoaprobacion?.detalle).severity">
+        <div class="status-card__header">
+          <div class="status-icon-wrap">
+            <i class="pi" [ngClass]="getEstadoInfo(postulacion.items[0]?.tipoestadoaprobacion?.detalle).icon"></i>
+          </div>
+          <div class="status-card__titles">
+            <span class="status-card__label">Estado de Postulación</span>
+            <h2 class="status-card__value">{{ getEstadoInfo(postulacion.items[0]?.tipoestadoaprobacion?.detalle).label
+              }}</h2>
+          </div>
+        </div>
+
+        <div class="status-card__details" *ngIf="nombrePrograma || cicloDetalle">
+          <div class="status-detail-chip" *ngIf="cicloDetalle">
+            <i class="pi pi-calendar"></i>
+            <span>{{ cicloDetalle }}</span>
+          </div>
+          <div class="status-detail-chip" *ngIf="postulacion.items[0]?.malla?.detalle">
+            <i class="pi pi-tag"></i>
+            <span>{{ postulacion.items[0]?.malla?.detalle }}</span>
+          </div>
+
+        </div>
+
+        <!-- Mensaje contextual según estado -->
+        <div class="status-message" *ngIf="postulacion.items[0]?.tipoestadoaprobacion?.detalle"
+          [ngClass]="'status-message--' + getEstadoInfo(postulacion.items[0]?.tipoestadoaprobacion?.detalle).severity">
+          <ng-container [ngSwitch]="postulacion.items[0]?.tipoestadoaprobacion?.detalle?.toUpperCase()?.trim()">
+            <ng-container *ngSwitchCase="'CONTACTO PERSONA'">
+            <i class="pi pi-phone"></i>
+            <span>Tu postulación está pendiente de contacto. El equipo académico se comunicará contigo próximamente.</span>
+          </ng-container>
+          <ng-container *ngSwitchCase="'ESPERA DOCUMENTOS'">
+              <i class="pi pi-upload"></i>
+              <span>Debes subir los documentos requeridos para que tu postulación sea revisada por el equipo
+                académico.</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'DOCUMENTOS REVISION'">
+              <i class="pi pi-search"></i>
+              <span>Tus documentos están siendo revisados por el equipo académico. Te notificaremos cuando haya
+                novedades.</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'ESPERA APROBACIÓN'">
+              <i class="pi pi-clock"></i>
+              <span>Tu postulación está siendo revisada. Te notificaremos cuando haya novedades. ¡Gracias por tu
+                paciencia!</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'APROBADO'">
+              <i class="pi pi-check-circle"></i>
+              <span>¡Felicitaciones! Tu postulación fue <strong>aprobada</strong>. Procede con el proceso de
+                matrícula.</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'RECHAZADO'">
+              <i class="pi pi-times-circle"></i>
+              <span>Tu postulación fue <strong>rechazada</strong>. Contáctate con el área académica para más
+                información.</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'FINALIZADO'">
+              <i class="pi pi-check-circle"></i>
+              <span>Tu proceso de postulación ha sido <strong>finalizado</strong> exitosamente. ¡Bienvenido a
+                AMMI!</span>
+            </ng-container>
+            <ng-container *ngSwitchDefault>
+              <i class="pi pi-info-circle"></i>
+              <span>Consulta el detalle de tu postulación para más información.</span>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- ── Timeline del proceso ── -->
+      <div class="timeline-card">
+        <h3 class="section-title"><i class="pi pi-list-check"></i> Proceso de Admisión</h3>
+        <div class="timeline">
+            <div class="timeline-step" [ngClass]="getTimelineClass('CONTACTO PERSONA')">
+            <div class="timeline-dot">
+              <i class="pi pi-phone"></i>
+            </div>
+            <div class="timeline-info">
+              <span class="timeline-label">Contacto</span>
+              <span class="timeline-sub">Comunicación con el postulante</span>
+            </div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step" [ngClass]="getTimelineClass('ESPERA DOCUMENTOS')">
+            <div class="timeline-dot">
+              <i class="pi pi-upload"></i>
+            </div>
+            <div class="timeline-info">
+              <span class="timeline-label">Documentos</span>
+              <span class="timeline-sub">Carga de requisitos</span>
+            </div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step" [ngClass]="getTimelineClass('DOCUMENTOS REVISION')">
+            <div class="timeline-dot">
+              <i class="pi pi-search"></i>
+            </div>
+            <div class="timeline-info">
+              <span class="timeline-label">Revisión Documentos</span>
+              <span class="timeline-sub">Verificación de requisitos</span>
+            </div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step" [ngClass]="getTimelineClass('ESPERA APROBACIÓN')">
+            <div class="timeline-dot">
+              <i class="pi pi-search"></i>
+            </div>
+            <div class="timeline-info">
+              <span class="timeline-label">Revisión</span>
+              <span class="timeline-sub">Evaluación académica</span>
+            </div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step" [ngClass]="getTimelineClass('APROBADO')">
+            <div class="timeline-dot">
+              <i class="pi pi-check-circle"></i>
+            </div>
+            <div class="timeline-info">
+              <span class="timeline-label">Aprobación</span>
+              <span class="timeline-sub">Matrícula</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard-grid -->
+
+    <!-- ══════════ ACCIONES RÁPIDAS ══════════ -->
+    <div class="actions-section">
+      <h3 class="section-title"><i class="pi pi-bolt"></i> Acciones Rápidas</h3>
+      <div class="actions-grid">
+        <a *ngFor="let action of quickActions" [routerLink]="action.route" class="action-card"
+          [ngClass]="'action-' + action.color">
+          <div class="action-glow"></div>
+          <div class="action-icon">
+            <i class="pi" [ngClass]="action.icon"></i>
+          </div>
+          <div class="action-content">
+            <h4>{{ action.title }}</h4>
+            <p>{{ action.description }}</p>
+          </div>
+          <div class="action-arrow">
+            <i class="pi pi-arrow-right"></i>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

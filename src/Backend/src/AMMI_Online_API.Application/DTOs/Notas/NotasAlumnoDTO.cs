@@ -15,6 +15,7 @@ public record NotasAlumnoDTO
     // Nuevos datos derivados
     public int? IdMatricula { get; init; }
     public string NombreMateria { get; init; } = string.Empty;
+    public decimal? ExamenRemedial { get; init; }
 }
 
 public record NotasAlumnoCreateDTO

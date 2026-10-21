@@ -28,6 +28,7 @@ public class GetPersonaDireccionHandler : IRequestHandler<GetByPersonaDireccionA
             return Response<IEnumerable<PersonaDireccionDTO>>.Failure("No se encontraron direcciones de la persona.");
         var result = personaDirecciones.Select(pd => new PersonaDireccionDTO
         {
+            IdPersonaDireccion = pd.IdPersonaDireccion,
             IdPersona = pd.IdPersona,
             IdParroquia = pd.IdParroquia,
             DireccionDomiciliaria = pd.DireccionDomiciliaria,

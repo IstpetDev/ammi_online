@@ -1,0 +1,606 @@
+<app-shared-toast />
+
+<!-- Modal: Cancelar Pago -->
+<app-shared-modal
+  [(visible)]="showCancelDialog"
+  [title]="'Confirmar Cancelación'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'480px'"
+  (cancel)="showCancelDialog = false">
+
+  <div *ngIf="pagoToCancel" class="modal-body-content">
+    <p class="modal-description">
+      ¿Está seguro de cancelar el pago <strong>#{{ pagoToCancel.idPago }}</strong> de <strong>{{ pagoToCancel.alumnoNombre }}</strong> por <strong>${{ pagoToCancel.valorPago | number:'1.2-2' }}</strong>?
+    </p>
+    <div class="m-field mt-3">
+      <label class="m-label">Observación (opcional - en MAYÚSCULAS)</label>
+      <textarea
+        [(ngModel)]="cancelObservation"
+        (input)="onCancelObservationInput($event)"
+        rows="3"
+        class="m-input m-textarea uppercase-input"
+        style="text-transform: uppercase;"
+        placeholder="INGRESE LA OBSERVACIÓN QUE SE REGISTRARÁ EN MAYÚSCULAS..."></textarea>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn btn-outline" (click)="showCancelDialog = false">Cancelar</button>
+    <button type="button" class="btn btn-danger" (click)="confirmCancelDialogAccept()">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Confirmar cancelación
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- Modal: Aprobar Pago -->
+<app-shared-modal
+  [(visible)]="showApproveDialog"
+  [title]="'Confirmar Aprobación'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'460px'"
+  (cancel)="showApproveDialog = false">
+
+  <div *ngIf="pagoToApprove" class="modal-body-content">
+    <p class="modal-description">
+      ¿Está seguro de aprobar el pago <strong>#{{ pagoToApprove.idPago }}</strong> de <strong>{{ pagoToApprove.alumnoNombre }}</strong> por <strong>${{ pagoToApprove.valorPago | number:'1.2-2' }}</strong>?
+    </p>
+    <p class="modal-hint mt-2">
+      Al aprobar, el pago se registrará como realizado y se aplicará la distribución a las cuotas correspondientes.
+    </p>
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn btn-outline" (click)="showApproveDialog = false">Cancelar</button>
+    <button type="button" class="btn btn-success" (click)="confirmApproveDialogAccept()">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Confirmar aprobación
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- Modal: Rechazar Pago -->
+<app-shared-modal
+  [(visible)]="showRejectDialog"
+  [title]="'Rechazar Pago'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'480px'"
+  (cancel)="showRejectDialog = false">
+
+  <div *ngIf="pagoToReject" class="modal-body-content">
+    <p class="modal-description">
+      ¿Está seguro de rechazar el pago <strong>#{{ pagoToReject.idPago }}</strong> de <strong>{{ pagoToReject.alumnoNombre }}</strong> por <strong>${{ pagoToReject.valorPago | number:'1.2-2' }}</strong>?
+    </p>
+    <div class="m-field mt-3">
+      <label class="m-label">Motivo del rechazo <span class="text-required">*</span></label>
+      <textarea
+        [(ngModel)]="rejectReason"
+        rows="3"
+        class="m-input m-textarea"
+        placeholder="Indique el motivo por el cual rechaza este pago..."></textarea>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn btn-outline" (click)="showRejectDialog = false">Cancelar</button>
+    <button type="button" class="btn btn-danger" [disabled]="!rejectReason.trim()" (click)="confirmRejectDialogAccept()">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Confirmar rechazo
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- Modal: Ver / Agregar / Editar Observación -->
+<app-shared-modal
+  [(visible)]="showObservationDialog"
+  [title]="pagoToViewObservation?.observaciones ? 'Observación del Pago #' + pagoToViewObservation?.idPago : 'Agregar Observación al Pago #' + pagoToViewObservation?.idPago"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'520px'"
+  (cancel)="cerrarModalObservacion()">
+
+  <div *ngIf="pagoToViewObservation" class="modal-body-content">
+    <div class="obs-header mb-3 flex items-center justify-between pb-3 border-b border-gray-100">
+      <div>
+        <div class="font-bold text-gray-800 text-sm">{{ pagoToViewObservation.alumnoNombre }}</div>
+        <div class="text-xs text-muted">Doc: {{ pagoToViewObservation.documento }} &bull; Pago #{{ pagoToViewObservation.idPago }}</div>
+      </div>
+      <div class="text-right">
+        <div class="font-bold text-amber-700 text-sm">${{ pagoToViewObservation.valorPago | number:'1.2-2' }}</div>
+        <span class="status-badge status-{{ getEstadoPagoSeverity(pagoToViewObservation.estadoPago) }}">
+          {{ pagoToViewObservation.estadoPago }}
+        </span>
+      </div>
+    </div>
+
+    <div class="m-field mt-3">
+      <label class="m-label font-semibold text-xs text-gray-700">Observación / Nota del Pago</label>
+      <textarea
+        [(ngModel)]="observacionTexto"
+        rows="4"
+        class="m-input m-textarea w-full"
+        placeholder="Ingrese o actualice la observación de este pago..."></textarea>
+      <span class="text-xs text-muted mt-1 block">Esta observación quedará registrada en el comprobante y visible en los reportes financieros.</span>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-actions flex justify-end gap-2">
+    <button type="button" class="btn btn-outline" (click)="cerrarModalObservacion()" [disabled]="guardandoObservacion">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-primary" (click)="guardarObservacion()" [disabled]="guardandoObservacion">
+      <svg *ngIf="!guardandoObservacion" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg *ngIf="guardandoObservacion" class="btn-spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4 31.4"/></svg>
+      <span>{{ guardandoObservacion ? 'Guardando...' : 'Guardar' }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- Modal: Generación de Reportes -->
+<app-shared-modal
+  [(visible)]="showReportModal"
+  [title]="'Generar Reporte de Pagos'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'520px'"
+  (cancel)="cerrarModalReporte()">
+
+  <div class="reporte-modal-body">
+    <!-- Toggle / Checkbox Reporte Diario -->
+    <div class="diario-toggle-card mb-4">
+      <label class="diario-checkbox-label">
+        <input
+          type="checkbox"
+          id="chkReporteDiario"
+          [(ngModel)]="esReporteDiario"
+          (change)="toggleReporteDiario()"
+          class="m-checkbox" />
+        <span class="font-bold text-gray-800">Reporte Diario (Día Actual)</span>
+      </label>
+      <span class="diario-date-badge">
+        {{ (fechaReporteInicio | date:'dd/MM/yyyy') || 'Hoy' }}
+      </span>
+    </div>
+
+    <!-- Filtro por Estado de Pago en Reporte -->
+    <div class="m-field mb-4">
+      <label class="m-label">Estado de Pagos a incluir</label>
+      <app-custom-select
+        [items]="opcionesEstadoReporte"
+        labelField="label"
+        valueField="value"
+        [(selectedValue)]="estadoReporte"
+        placeholder="Todos los estados">
+      </app-custom-select>
+    </div>
+
+    <!-- Rango de fechas dinámico si no es diario -->
+    <div *ngIf="!esReporteDiario" class="date-range-grid">
+      <div class="m-field">
+        <label class="m-label">Fecha Desde</label>
+        <input type="date" [(ngModel)]="fechaReporteInicioStr" class="m-input" />
+      </div>
+      <div class="m-field">
+        <label class="m-label">Fecha Hasta</label>
+        <input type="date" [(ngModel)]="fechaReporteFinStr" class="m-input" />
+      </div>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-between w-full">
+    <button type="button" class="btn btn-outline" (click)="cerrarModalReporte()">Cancelar</button>
+    <div class="flex gap-2">
+      <button type="button" class="btn btn-excel" (click)="exportarReporteExcel()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar Excel
+      </button>
+      <button type="button" class="btn btn-pdf" (click)="exportarReportePDF()" [disabled]="generandoReporte">
+        <svg *ngIf="!generandoReporte" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg *ngIf="generandoReporte" class="btn-spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4 31.4"/></svg>
+        <span>Exportar PDF</span>
+      </button>
+    </div>
+  </div>
+</app-shared-modal>
+
+<!-- MAIN CONTAINER -->
+<div class="historial-container">
+  <!-- PAGE HEADER USANDO SHARED HEADER -->
+  <app-shared-header
+    materialIcon="history"
+    title="Historial de Pagos"
+    subtitle="Gestión, validación y reporte de pagos registrados">
+    <div header-actions class="header-actions">
+      <button type="button" class="btn btn-outline" (click)="aplicarFiltros()" [disabled]="loading">
+        <svg class="btn-icon" [class.spin]="loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Recargar
+      </button>
+    </div>
+  </app-shared-header>
+
+  <!-- FILTERS & ACTIONS BAR (Misma fila) -->
+  <section class="filters-card">
+    <div class="filters-row">
+      <div class="m-field field-doc">
+        <label class="m-label">Documento</label>
+        <div class="m-input-icon-wrap">
+          <svg class="m-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/></svg>
+          <input type="text" [(ngModel)]="filtros.documento" placeholder="Ej: 1802989226" class="m-input m-input-with-icon" />
+        </div>
+      </div>
+
+      <div class="m-field field-date">
+        <label class="m-label">Fecha desde</label>
+        <input type="date" [(ngModel)]="fechaDesdeStr" class="m-input" />
+      </div>
+
+      <div class="m-field field-date">
+        <label class="m-label">Fecha hasta</label>
+        <input type="date" [(ngModel)]="fechaHastaStr" class="m-input" />
+      </div>
+
+      <div class="m-field field-select">
+        <label class="m-label">Estado Pago</label>
+        <app-custom-select
+          [items]="opcionesEstadoPago"
+          labelField="label"
+          valueField="value"
+          [(selectedValue)]="filtros.estadoPago"
+          placeholder="Todos los estados">
+        </app-custom-select>
+      </div>
+
+      <div class="m-field field-actions">
+        <label class="m-label">&nbsp;</label>
+        <div class="btn-group-row">
+          <button type="button" class="btn btn-primary" (click)="aplicarFiltros()" [disabled]="loading">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Aplicar
+          </button>
+          <button type="button" class="btn btn-outline" (click)="limpiarFiltros()" [disabled]="loading">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Limpiar
+          </button>
+          <button type="button" class="btn btn-accent" (click)="abrirModalReporte()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Reporte
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABLE CONTAINER CARD -->
+  <section class="table-card">
+    <!-- TOOLBAR ABOVE TABLE -->
+    <div class="table-toolbar">
+      <div class="search-input-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input
+          type="text"
+          [(ngModel)]="searchValue"
+          (ngModelChange)="currentPage = 1"
+          placeholder="Buscar alumno, documento o banco..."
+          class="m-input search-input" />
+      </div>
+      <div class="records-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>{{ pagosFiltrados.length }} registros</span>
+      </div>
+    </div>
+
+    <!-- 1. ESTADO INICIAL (AÚN NO SE HA BUSCADO / APLICADO FILTROS) -->
+    <app-shared-empty-state
+      *ngIf="!hasBuscado"
+      materialIcon="filter_alt"
+      title="Consulta de Historial"
+      description="Aplica al menos un filtro en la sección superior para consultar el historial de pagos.">
+    </app-shared-empty-state>
+
+    <!-- 2. SIN RESULTADOS ENCONTRADOS DESPUÉS DE BUSCAR -->
+    <app-shared-empty-state
+      *ngIf="hasBuscado && pagosFiltrados.length === 0 && !loading"
+      materialIcon="inbox"
+      title="No se encontraron pagos"
+      description="No existen pagos registrados que coincidan con la búsqueda o criterios seleccionados.">
+    </app-shared-empty-state>
+
+    <!-- 3. TABLA DE RESULTADOS CUANDO HAY DATOS O ESTÁ CARGANDO -->
+    <ng-container *ngIf="hasBuscado && (pagosFiltrados.length > 0 || loading)">
+      <app-shared-table
+        [columns]="tableColumns"
+        [data]="pagosPaginados"
+        [loading]="loading"
+        [totalRecords]="pagosFiltrados.length"
+        [rowsPerPage]="rowsPerPage"
+        [page]="currentPage"
+        [paginator]="true"
+        emptyMessage="No se encontraron pagos con los criterios seleccionados"
+        (pageChange)="onPageChange($event)"
+        (sortChange)="onSortChange($event)">
+
+        <!-- Column # (idPago) -->
+        <ng-template stColTemplate="idPago" let-row>
+          <span class="id-tag">#{{ row.idPago }}</span>
+        </ng-template>
+
+        <!-- Column Fecha -->
+        <ng-template stColTemplate="fechaPago" let-row>
+          <span class="fecha-cell">{{ row.fechaPago | date:'dd/MM/yyyy HH:mm' }}</span>
+        </ng-template>
+
+        <!-- Column Alumno -->
+        <ng-template stColTemplate="alumnoNombre" let-row>
+          <div class="alumno-cell">
+            <div class="avatar-circle">{{ row.alumnoNombre?.charAt(0) || 'A' }}</div>
+            <span class="alumno-name">{{ row.alumnoNombre }}</span>
+          </div>
+        </ng-template>
+
+        <!-- Column Cliente Facturado -->
+        <ng-template stColTemplate="clienteNombre" let-row>
+          <div class="cliente-cell">
+            @if (row.clienteNombre) {
+              <div class="flex flex-col gap-0.5">
+                <span class="cliente-name font-semibold">{{ row.clienteNombre }}</span>
+                <span class="cliente-doc text-xs text-muted">
+                  <code class="doc-code-sm">CI: {{ row.clienteDocumento }}</code>
+                </span>
+              </div>
+            } @else {
+              <span class="text-xs text-muted italic">Mismo alumno</span>
+            }
+          </div>
+        </ng-template>
+
+        <!-- Column Documento -->
+        <ng-template stColTemplate="documento" let-row>
+          <code class="doc-code">{{ row.documento }}</code>
+        </ng-template>
+
+        <!-- Column Valor -->
+        <ng-template stColTemplate="valorPago" let-row>
+          <span class="amount-val">${{ row.valorPago | number:'1.2-2' }}</span>
+        </ng-template>
+
+        <!-- Column Tipo Pago -->
+        <ng-template stColTemplate="tipoPago" let-row>
+          <span class="type-badge">{{ row.tipoPago }}</span>
+        </ng-template>
+
+        <!-- Column Banco -->
+        <ng-template stColTemplate="bancoDeposito" let-row>
+          <div class="bank-cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="21" x2="21" y2="21"/><rect x="5" y="10" width="3" height="11"/><rect x="10.5" y="10" width="3" height="11"/><rect x="16" y="10" width="3" height="11"/><path d="M12 3L2 9h20L12 3z"/></svg>
+            <span>{{ row.bancoDeposito }}</span>
+          </div>
+        </ng-template>
+
+        <!-- Column Estado Pago -->
+        <ng-template stColTemplate="estadoPago" let-row>
+          <div class="flex flex-col items-start gap-1">
+            <span class="status-badge status-{{ getEstadoPagoSeverity(row.estadoPago) }}">
+              <span class="status-dot"></span>
+              {{ row.estadoPago }}
+            </span>
+            @if (row.estadoPago === 'APROBADO' && row.fechaAprobacion) {
+              <span class="text-[11px] text-muted flex items-center gap-1" [title]="'Aprobado por: ' + (row.usuarioApruebaNombre || 'Usuario #' + row.usuarioAprueba) + ' el ' + (row.fechaAprobacion | date:'dd/MM/yyyy HH:mm:ss')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>{{ row.fechaAprobacion | date:'dd/MM/yy HH:mm' }}</span>
+              </span>
+            }
+            @if (row.observaciones) {
+              <span class="obs-badge cursor-pointer" [title]="'Observación: ' + row.observaciones" (click)="verObservacion(row)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Observado</span>
+              </span>
+            }
+          </div>
+        </ng-template>
+
+        <!-- Column Acciones -->
+        <ng-template stColTemplate="acciones" let-row>
+          <div class="action-buttons">
+            <!-- Ver comprobante en Shared Drawer -->
+            <button
+              *ngIf="row.pathComprobante"
+              type="button"
+              class="icon-btn icon-btn-info"
+              title="Ver comprobante"
+              (click)="abrirComprobante(row.pathComprobante)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
+
+            <!-- Agregar / Editar Observación -->
+            <button
+              type="button"
+              class="icon-btn"
+              [ngClass]="row.observaciones ? 'icon-btn-warning' : 'icon-btn-secondary'"
+              [title]="row.observaciones ? 'Ver / Editar observación: ' + row.observaciones : 'Agregar observación al pago'"
+              (click)="verObservacion(row)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+
+            <!-- Secretaria General: Aprobar -->
+            <button
+              *ngIf="esSecretariaGeneral && row.estadoPago === 'PENDIENTE'"
+              type="button"
+              class="btn-text btn-text-success"
+              title="Aprobar pago"
+              (click)="confirmarAprobar(row)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>Aprobar</span>
+            </button>
+
+            <!-- Secretaria General: Rechazar -->
+            <button
+              *ngIf="esSecretariaGeneral && row.estadoPago === 'PENDIENTE'"
+              type="button"
+              class="btn-text btn-text-danger"
+              title="Rechazar pago"
+              (click)="confirmarRechazar(row)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>Rechazar</span>
+            </button>
+
+            <!-- Master Contabilidad: Cancelar -->
+            <button
+              *ngIf="esMasterContabilidad && row.estadoPago === 'APROBADO'"
+              type="button"
+              class="btn-text btn-text-danger"
+              title="Cancelar pago"
+              (click)="confirmarCancelar(row)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              <span>Cancelar</span>
+            </button>
+
+            <!-- Ver Saldo Alumno -->
+            <button
+              type="button"
+              class="btn-text btn-text-info"
+              title="Ver saldo del alumno"
+              (click)="verSaldoAlumno(row)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <span>Saldo</span>
+            </button>
+          </div>
+        </ng-template>
+      </app-shared-table>
+    </ng-container>
+  </section>
+</div>
+
+<!-- Drawer: Previsualizaciones del Comprobante de Pago -->
+<app-shared-drawer
+  [visible]="showComprobanteDrawer"
+  (visibleChange)="cerrarDrawerComprobante()"
+  (close)="cerrarDrawerComprobante()"
+  (cancel)="cerrarDrawerComprobante()"
+  title="Comprobante de Pago"
+  position="right"
+  size="lg"
+  [showFooter]="false"
+  [closeOnOverlayClick]="true">
+
+  <div class="comprobante-drawer-wrapper">
+    <ng-container *ngIf="selectedComprobanteUrl">
+      <div *ngIf="selectedComprobanteIsPdf" class="pdf-preview-container">
+        <iframe [src]="selectedComprobanteSafeUrl" class="pdf-iframe"></iframe>
+      </div>
+      <div *ngIf="!selectedComprobanteIsPdf" class="image-preview-container">
+        <app-shared-image-preview
+          [src]="selectedComprobanteUrl"
+          [fileName]="selectedComprobanteFileName">
+        </app-shared-image-preview>
+      </div>
+    </ng-container>
+  </div>
+</app-shared-drawer>
+
+<!-- Drawer: Saldo del Alumno -->
+<app-shared-drawer
+  [visible]="showSaldoDrawer"
+  (visibleChange)="cerrarDrawerSaldo()"
+  (close)="cerrarDrawerSaldo()"
+  (cancel)="cerrarDrawerSaldo()"
+  title="Saldo del Alumno"
+  position="right"
+  size="lg"
+  [showFooter]="false"
+  [closeOnOverlayClick]="true">
+
+  <div class="saldo-drawer-content">
+    @if (loadingSaldo) {
+      <div class="saldo-loading">
+        <svg class="saldo-spinner" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4 31.4"/>
+        </svg>
+        <span>Cargando saldo del alumno...</span>
+      </div>
+    }
+
+    @if (!loadingSaldo && saldoEstudiante) {
+      <div class="saldo-header">
+        <div class="saldo-avatar">
+          <span>{{ saldoEstudiante.nombreEstudiante?.charAt(0) || 'A' }}</span>
+        </div>
+        <div class="saldo-header-info">
+          <span class="saldo-header-name">{{ saldoEstudiante.nombreEstudiante }}</span>
+          <span class="saldo-header-doc">{{ saldoEstudiante.cedula }}</span>
+          <span class="saldo-header-matricula">Matrícula #{{ saldoEstudiante.idMatricula }}</span>
+        </div>
+      </div>
+
+      <div class="saldo-kpis">
+        <div class="saldo-kpi-card danger">
+          <span class="saldo-kpi-label">Saldo Pendiente</span>
+          <span class="saldo-kpi-value">${{ getSaldoPendienteTotal() | number:'1.2-2' }}</span>
+        </div>
+        <div class="saldo-kpi-card success">
+          <span class="saldo-kpi-label">Saldo Aprobado</span>
+          <span class="saldo-kpi-value">${{ getSaldoAprobadoTotal() | number:'1.2-2' }}</span>
+        </div>
+        <div class="saldo-kpi-card warn">
+          <span class="saldo-kpi-label">Pendiente Aprobación</span>
+          <span class="saldo-kpi-value">${{ getSaldoPendienteAprobacion() | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <div class="saldo-section-title">Detalle de Especies</div>
+
+      @for (especie of saldoEstudiante.especies; track especie.idCredito) {
+        <div class="saldo-especie-card">
+          <div class="saldo-especie-header">
+            <div class="saldo-especie-info">
+              <span class="saldo-especie-nombre">{{ especie.nombre }}</span>
+              <span class="saldo-especie-monto">${{ (especie.montoFinal || especie.valor) | number:'1.2-2' }}</span>
+            </div>
+            <span class="saldo-especie-estado status-badge status-{{ getEspecieSeverity(especie) }}">
+              {{ getEstadoLabel(especie) }}
+            </span>
+          </div>
+
+          @if (especie.detallesCredito && especie.detallesCredito.length > 0) {
+            <div class="saldo-cuotas">
+              <div class="saldo-cuota-header">
+                <span>#</span>
+                <span>Valor</span>
+                <span>Pagado</span>
+                <span>Saldo</span>
+                <span>Vencimiento</span>
+                <span>Estado</span>
+              </div>
+              @for (cuota of especie.detallesCredito; track cuota.idDetalleCredito) {
+                <div class="saldo-cuota-row" [class.cuota-pagada]="cuota.pagado" [class.cuota-pendiente-aprobacion]="cuota.estado === 'PENDIENTE_APROBACION'">
+                  <span>{{ cuota.numeroCuota }}</span>
+                  <span>${{ cuota.valor | number:'1.2-2' }}</span>
+                  <span>${{ cuota.valorCancelado | number:'1.2-2' }}</span>
+                  <span>${{ cuota.saldoCuota | number:'1.2-2' }}</span>
+                  <span>{{ cuota.fechaLimite ? (cuota.fechaLimite | date:'dd/MM/yyyy') : '-' }}</span>
+                  <span class="estado-cuota-badge" [class.estado-pagado]="cuota.pagado" [class.estado-pendiente-aprobacion]="cuota.estado === 'PENDIENTE_APROBACION'" [class.estado-pendiente]="!cuota.pagado && cuota.estado !== 'PENDIENTE_APROBACION'">
+                    {{ cuota.estado === 'PENDIENTE_APROBACION' ? 'En revisión' : (cuota.pagado ? 'Pagado' : 'Pendiente') }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="saldo-especie-footer">
+            <span>Pagado: <strong>${{ especie.valorPagado | number:'1.2-2' }}</strong></span>
+            <span>Deuda: <strong>${{ ( (especie.montoFinal || especie.valor) - especie.valorPagado ) | number:'1.2-2' }}</strong></span>
+          </div>
+        </div>
+      }
+
+      @if (saldoEstudiante.especies.length === 0) {
+        <div class="saldo-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <p>No se encontraron especies para esta matrícula.</p>
+        </div>
+      }
+    }
+  </div>
+</app-shared-drawer>

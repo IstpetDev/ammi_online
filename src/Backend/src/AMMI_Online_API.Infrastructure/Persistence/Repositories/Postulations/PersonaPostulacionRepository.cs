@@ -1,10 +1,11 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Postulations;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Postulations;
 
@@ -42,7 +43,6 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
                     .ThenInclude(info => info.IdEstadoCivilNavigation)
             .Include(p => p.IdPersonaNavigation)
                 .ThenInclude(persona => persona.PersonaInfo)
-                    .ThenInclude(info => info.IdTipoSangreNavigation)
             .Include(p => p.IdPersonaNavigation)
                 .ThenInclude(persona => persona.PersonaInfo)
                     .ThenInclude(info => info.IdNacionalidadEtnicaNavigation)
@@ -73,7 +73,8 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
             .Include(p => p.IdMallaNavigation)
                 .ThenInclude(m => m.IdCursosNavigation)
             .Include(p => p.IdMallaNavigation)
-                .ThenInclude(m => m.IdTipoOfertaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
+                    .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(p => p.IdMallaNavigation)
                 .ThenInclude(m => m.IdCicloNavigation)
                     .ThenInclude(c => c.IdPeriodoNavigation)
@@ -92,7 +93,7 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
             query = query.Where(p => p.IdMalla == idMalla.Value);
 
         if (idOferta.HasValue)
-            query = query.Where(p => p.IdMallaNavigation.IdTipoOferta == idOferta.Value);
+            query = query.Where(p => p.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idOferta.Value);
 
         return await query
             .OrderByDescending(p => p.FechaPostulacion)
@@ -117,7 +118,6 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
                     .ThenInclude(info => info.IdEstadoCivilNavigation)
             .Include(p => p.IdPersonaNavigation)
                 .ThenInclude(persona => persona.PersonaInfo)
-                    .ThenInclude(info => info.IdTipoSangreNavigation)
             .Include(p => p.IdPersonaNavigation)
                 .ThenInclude(persona => persona.PersonaInfo)
                     .ThenInclude(info => info.IdNacionalidadEtnicaNavigation)
@@ -148,7 +148,8 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
             .Include(p => p.IdMallaNavigation)
                 .ThenInclude(m => m.IdCursosNavigation)
             .Include(p => p.IdMallaNavigation)
-                .ThenInclude(m => m.IdTipoOfertaNavigation)
+                .ThenInclude(m => m.IdCicloNavigation)
+                    .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(p => p.IdMallaNavigation)
                 .ThenInclude(m => m.IdCicloNavigation)
                     .ThenInclude(c => c.IdPeriodoNavigation)
@@ -160,11 +161,11 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
         if (!string.IsNullOrWhiteSpace(documento))
             query = query.Where(p => p.IdPersonaNavigation.Documento == documento);
         if (idCiclo.HasValue)
-            query = query.Where(p => p.IdMallaNavigation.IdCiclo == idCiclo.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || (p.IdMallaNavigation != null && p.IdMallaNavigation.IdCiclo == idCiclo.Value));
         if (idMalla.HasValue)
-            query = query.Where(p => p.IdMalla == idMalla.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || p.IdMalla == idMalla.Value);
         if (idOferta.HasValue)
-            query = query.Where(p => p.IdMallaNavigation.IdTipoOferta == idOferta.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || (p.IdMallaNavigation != null && p.IdMallaNavigation.IdCicloNavigation != null && p.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idOferta.Value));
 
         return await query
             .OrderByDescending(p => p.FechaPostulacion)
@@ -185,11 +186,11 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
         if (!string.IsNullOrWhiteSpace(documento))
             query = query.Where(p => p.IdPersonaNavigation.Documento == documento);
         if (idCiclo.HasValue)
-            query = query.Where(p => p.IdMallaNavigation.IdCiclo == idCiclo.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || (p.IdMallaNavigation != null && p.IdMallaNavigation.IdCiclo == idCiclo.Value));
         if (idMalla.HasValue)
-            query = query.Where(p => p.IdMalla == idMalla.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || p.IdMalla == idMalla.Value);
         if (idOferta.HasValue)
-            query = query.Where(p => p.IdMallaNavigation.IdTipoOferta == idOferta.Value);
+            query = query.Where(p => (p.EsPostulacionRapida == true) || (p.IdMallaNavigation != null && p.IdMallaNavigation.IdCicloNavigation != null && p.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idOferta.Value));
 
         return await query.CountAsync(cancellationToken);
     }
@@ -228,6 +229,11 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
 
             await transaction.CommitAsync(cancellationToken);
             return persona.IdPersona;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw new InvalidOperationException(TraducirErrorSql(sqlEx), ex);
         }
         catch
         {
@@ -417,10 +423,15 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
 
             return persona.IdPersona;
         }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            Console.WriteLine($"Error en CrearPersonaPostulacionManual: {ex.Message}");
+            throw new InvalidOperationException(TraducirErrorSql(sqlEx), ex);
+        }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            // Log del error para debugging
             Console.WriteLine($"Error en CrearPersonaPostulacionManual: {ex.Message}");
             Console.WriteLine($"Inner Exception: {ex.InnerException?.Message}");
             throw;
@@ -496,6 +507,212 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
         _context.DetalleMatricula.AddRange(detallesMatricula);
     }
 
+    public async Task<int> ActualizarPostulacionContactoAsync(
+        int idPersona,
+        Persona persona,
+        PersonaInfo personaInfo,
+        List<DatosContacto> datosContacto,
+        PersonaDireccion direccion,
+        PersonaActividadEconomica? actividadEconomica,
+        PersonaDiscapacidad? discapacidad,
+        PersonaNacionalidad nacionalidad,
+        List<DocumentosPersonales> documentosPersonales,
+        Postulacion postulacion,
+        IFormFile? archivoDiscapacidad,
+        List<IFormFile> archivosDocumentosPersonales,
+        List<bool>? documentosRequierenArchivo = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            // 1. Actualizar Persona existente
+            var personaExistente = await _context.Persona.FindAsync(new object[] { idPersona }, cancellationToken);
+            if (personaExistente == null)
+                throw new InvalidOperationException("Persona no encontrada.");
+
+            personaExistente.IdTipoDocumento = persona.IdTipoDocumento;
+            personaExistente.Documento = persona.Documento;
+            personaExistente.IdGenero = persona.IdGenero;
+            personaExistente.PrimerNombre = persona.PrimerNombre;
+            personaExistente.SegundoNombre = persona.SegundoNombre;
+            personaExistente.PrimerApellido = persona.PrimerApellido;
+            personaExistente.SegundoApellido = persona.SegundoApellido;
+
+            // 2. Actualizar o crear PersonaInfo
+            var infoExistente = await _context.PersonaInfo
+                .FirstOrDefaultAsync(pi => pi.IdPersona == idPersona, cancellationToken);
+            if (infoExistente != null)
+            {
+                infoExistente.FechaNacimiento = personaInfo.FechaNacimiento;
+                infoExistente.IdEstadoCivil = personaInfo.IdEstadoCivil;
+                infoExistente.IdNacionalidadEtnica = personaInfo.IdNacionalidadEtnica;
+            }
+            else
+            {
+                personaInfo.IdPersona = idPersona;
+                _context.PersonaInfo.Add(personaInfo);
+            }
+
+            // 3. Eliminar contactos existentes y agregar nuevos
+            var contactosExistentes = await _context.DatosContacto
+                .Where(dc => dc.IdPersona == idPersona)
+                .ToListAsync(cancellationToken);
+            if (contactosExistentes.Any())
+            {
+                _context.DatosContacto.RemoveRange(contactosExistentes);
+                await _context.SaveChangesAsync(cancellationToken); // Guardar cambios para borrar en BD antes de insertar nuevos y evitar problemas de unicidad temporal
+            }
+
+            foreach (var contacto in datosContacto)
+            {
+                contacto.IdPersona = idPersona;
+            }
+            _context.DatosContacto.AddRange(datosContacto);
+
+            // 4. Actualizar o crear Dirección
+            var direccionExistente = await _context.PersonaDireccion
+                .FirstOrDefaultAsync(pd => pd.IdPersona == idPersona, cancellationToken);
+            if (direccionExistente != null)
+            {
+                direccionExistente.IdParroquia = direccion.IdParroquia;
+                direccionExistente.DireccionDomiciliaria = direccion.DireccionDomiciliaria;
+                direccionExistente.Activo = true;
+            }
+            else
+            {
+                direccion.IdPersona = idPersona;
+                _context.PersonaDireccion.Add(direccion);
+            }
+
+            // 5. Actualizar o crear Actividad Económica
+            var actividadExistente = await _context.PersonaActividadEconomica
+                .FirstOrDefaultAsync(pae => pae.IdPersona == idPersona, cancellationToken);
+            if (actividadEconomica != null)
+            {
+                if (actividadExistente != null)
+                {
+                    actividadExistente.IdTipoActividadEconomica = actividadEconomica.IdTipoActividadEconomica;
+                    actividadExistente.Valor = actividadEconomica.Valor;
+                    actividadExistente.EsPrincipal = actividadEconomica.EsPrincipal;
+                    actividadExistente.Activo = actividadEconomica.Activo;
+                }
+                else
+                {
+                    actividadEconomica.IdPersona = idPersona;
+                    _context.PersonaActividadEconomica.Add(actividadEconomica);
+                }
+            }
+
+            // 6. Actualizar o crear Discapacidad
+            var discapacidadExistente = await _context.PersonaDiscapacidad
+                .FirstOrDefaultAsync(pd => pd.IdPersona == idPersona, cancellationToken);
+
+            if (archivoDiscapacidad != null && archivoDiscapacidad.Length > 0)
+            {
+                var discapacidadAdjunto = await GuardarArchivoAsync(archivoDiscapacidad, "discapacidad", cancellationToken);
+                if (discapacidad != null)
+                    discapacidad.IdAdjunto = discapacidadAdjunto.IdAdjunto;
+            }
+
+            if (discapacidad != null)
+            {
+                if (discapacidadExistente != null)
+                {
+                    discapacidadExistente.Porcentaje = discapacidad.Porcentaje;
+                    discapacidadExistente.Recomendaciones = discapacidad.Recomendaciones;
+                    discapacidadExistente.IdTipoDiscapacidad = discapacidad.IdTipoDiscapacidad;
+                    if (discapacidad.IdAdjunto != 0)
+                        discapacidadExistente.IdAdjunto = discapacidad.IdAdjunto;
+                }
+                else
+                {
+                    discapacidad.IdPersona = idPersona;
+                    _context.PersonaDiscapacidad.Add(discapacidad);
+                }
+            }
+
+            // 7. Actualizar o crear Nacionalidad
+            var nacionalidadExistente = await _context.PersonaNacionalidad
+                .FirstOrDefaultAsync(pn => pn.IdPersona == idPersona, cancellationToken);
+            if (nacionalidadExistente != null)
+            {
+                nacionalidadExistente.IdPais = nacionalidad.IdPais;
+                nacionalidadExistente.Nacio = nacionalidad.Nacio;
+            }
+            else
+            {
+                nacionalidad.IdPersona = idPersona;
+                _context.PersonaNacionalidad.Add(nacionalidad);
+            }
+
+            // 8. Guardar archivos de documentos personales
+            if (documentosPersonales != null && archivosDocumentosPersonales != null && documentosRequierenArchivo != null)
+            {
+                var archivosValidos = archivosDocumentosPersonales
+                    .Where(a => a != null && a.Length > 0)
+                    .ToList();
+
+                int archivoIndex = 0;
+                int documentoIndex = 0;
+
+                foreach (var requiereArchivo in documentosRequierenArchivo)
+                {
+                    if (requiereArchivo && archivoIndex < archivosValidos.Count)
+                    {
+                        var archivo = archivosValidos[archivoIndex];
+                        var adjunto = await GuardarArchivoAsync(archivo, "documentos_personales", cancellationToken);
+
+                        if (documentoIndex < documentosPersonales.Count)
+                        {
+                            documentosPersonales[documentoIndex].IdAdjunto = adjunto.IdAdjunto;
+                        }
+                        archivoIndex++;
+                    }
+                    documentoIndex++;
+                }
+            }
+
+            // 9. Asignar IdPersona a documentos
+            if (documentosPersonales != null)
+            {
+                foreach (var doc in documentosPersonales)
+                {
+                    doc.IdPersona = idPersona;
+                }
+                _context.DocumentosPersonales.AddRange(documentosPersonales);
+            }
+
+            // 10. Actualizar Postulación
+            var postulacionExistente = await _context.Postulacion
+                .FirstOrDefaultAsync(p => p.IdPostulacion == postulacion.IdPostulacion, cancellationToken);
+            if (postulacionExistente != null)
+            {
+                postulacionExistente.IdMalla = postulacion.IdMalla;
+                postulacionExistente.IdTipoEstadoAprobacion = postulacion.IdTipoEstadoAprobacion;
+                postulacionExistente.IdUsuarioEvaluador = postulacion.IdUsuarioEvaluador;
+                postulacionExistente.ObservacionesRevision = postulacion.ObservacionesRevision;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return idPersona;
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw new InvalidOperationException(TraducirDbUpdateException(ex), ex);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            Console.WriteLine($"Error en ActualizarPostulacionContactoAsync: {ex.Message}");
+            Console.WriteLine($"Inner Exception: {ex.InnerException?.Message}");
+            throw;
+        }
+    }
+
     public async Task<IEnumerable<DetalleMalla>> GetDetallesMallaByMallaIdAsync(
     int idMalla,
     CancellationToken cancellationToken)
@@ -504,6 +721,76 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
             .AsNoTracking()
             .Where(dm => dm.IdMalla == idMalla)
             .Include(dm => dm.IdMateriaNavigation)
+            .ToListAsync(cancellationToken);
+    }
+
+    private static string TraducirErrorSql(SqlException sqlEx)
+    {
+        // 2601 = unique index violation, 2627 = unique constraint violation
+        if (sqlEx.Number is 2601 or 2627)
+        {
+            var msg = sqlEx.Message.ToLower();
+            if (msg.Contains("documento"))
+                return "El número de documento ya se encuentra registrado.";
+            if (msg.Contains("correo") || msg.Contains("email") || msg.Contains("detalle") && msg.Contains("@"))
+                return "El correo electrónico ya se encuentra registrado.";
+            if (msg.Contains("celular") || msg.Contains("telefono") || msg.Contains("phone"))
+                return "El número de celular/teléfono ya se encuentra registrado.";
+            if (msg.Contains("username"))
+                return "El nombre de usuario ya se encuentra registrado.";
+            return $"Ya existe un registro con uno de los datos únicos proporcionados. Detalle: {sqlEx.Message}";
+        }
+
+        return $"Error de base de datos: {sqlEx.Message}";
+    }
+ 
+    private static string TraducirDbUpdateException(DbUpdateException ex)
+    {
+        if (ex.InnerException is SqlException sqlEx)
+        {
+            return TraducirErrorSql(sqlEx);
+        }
+
+        var innerMessage = ex.InnerException?.Message ?? "";
+        var msgLower = innerMessage.ToLower();
+
+        if (msgLower.Contains("duplicate") || msgLower.Contains("key 'detalle_unique'") || msgLower.Contains("detalle_unique") || msgLower.Contains("key 'documento'") || msgLower.Contains("key 'username'"))
+        {
+            if (msgLower.Contains("documento"))
+                return "El número de documento ya se encuentra registrado.";
+            if (msgLower.Contains("correo") || msgLower.Contains("email") || msgLower.Contains("@") || msgLower.Contains("pcontacto") || msgLower.Contains("detalle"))
+            {
+                if (msgLower.Contains("+") || System.Text.RegularExpressions.Regex.IsMatch(msgLower, @"\b\d{7,15}\b"))
+                    return "El número de celular/teléfono ya se encuentra registrado.";
+                return "El correo electrónico o número de contacto ya se encuentra registrado por otra persona.";
+            }
+            if (msgLower.Contains("celular") || msgLower.Contains("telefono") || msgLower.Contains("phone"))
+                return "El número de celular/teléfono ya se encuentra registrado.";
+            if (msgLower.Contains("username"))
+                return "El nombre de usuario ya se encuentra registrado.";
+            return "Ya existe un registro con uno de los datos únicos proporcionados.";
+        }
+
+        return $"Error de base de datos: {innerMessage}";
+    }
+
+    public async Task<bool> ExisteDocumentoAsync(string documento, CancellationToken cancellationToken)
+    {
+        return await _context.Persona
+            .AsNoTracking()
+            .AnyAsync(p => p.Documento == documento, cancellationToken);
+    }
+
+    public async Task<List<string>> ObtenerContactosDuplicadosAsync(
+        IEnumerable<string> detalles,
+        CancellationToken cancellationToken)
+    {
+        var lista = detalles.ToList();
+        return await _context.DatosContacto
+            .AsNoTracking()
+            .Where(dc => lista.Contains(dc.Detalle))
+            .Select(dc => dc.Detalle)
+            .Distinct()
             .ToListAsync(cancellationToken);
     }
 }

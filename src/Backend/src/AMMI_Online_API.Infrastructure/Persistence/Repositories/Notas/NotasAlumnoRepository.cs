@@ -19,6 +19,8 @@ public class NotasAlumnoRepository : INotasAlumnoRepository
         return await _context.NotasAlumno
             .Include(n => n.IdPlantillaEstructuraNavigation)
             .Include(n => n.IdDetaleMatriculaNavigation)
+                .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+                    .ThenInclude(dml => dml.IdMateriaNavigation)
             .FirstOrDefaultAsync(n => n.IdNotasAlumno == id, ct);
     }
 
@@ -83,7 +85,9 @@ public class NotasAlumnoRepository : INotasAlumnoRepository
         return await _context.NotasAlumno
             .Include(n => n.IdPlantillaEstructuraNavigation)
             .Include(n => n.IdDetaleMatriculaNavigation)
-            .Where(n => n.IdDetaleMatriculaNavigation.IdMatricula == idMatricula 
+                .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+                    .ThenInclude(dml => dml.IdMateriaNavigation)
+            .Where(n => n.IdDetaleMatriculaNavigation.IdMatricula == idMatricula
                      && n.IdPlantillaEstructuraNavigation.IdPlantillaEvaluacion == idPlantillaEvaluacion)
             .ToListAsync(ct);
     }
@@ -154,7 +158,7 @@ public class NotasAlumnoRepository : INotasAlumnoRepository
         await _context.SaveChangesAsync(ct);
     }
 
-    public async Task<IEnumerable<NotasAlumno>> GetByParaleloAndEstructuraAsync(int idParalelo, int idPlantillaEstructura, CancellationToken ct)
+    public async Task<IEnumerable<NotasAlumno>> GetByMallaParaleloAndEstructuraAsync(int idMallaParalelo, int idPlantillaEstructura, CancellationToken ct)
     {
         return await _context.NotasAlumno
             .Include(n => n.IdDetaleMatriculaNavigation)
@@ -162,11 +166,11 @@ public class NotasAlumnoRepository : INotasAlumnoRepository
                     .ThenInclude(m => m.IdUsuarioAlumnoNavigation)
                         .ThenInclude(u => u.IdPersonaNavigation)
             .Where(n => n.IdPlantillaEstructura == idPlantillaEstructura 
-                     && n.IdDetaleMatriculaNavigation.IdMatriculaNavigation.IdParalelo == idParalelo)
+                     && n.IdDetaleMatriculaNavigation.IdMatriculaNavigation.IdMallaParalelo == idMallaParalelo)
             .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<NotasAlumno>> GetByParaleloAndDetalleMallaAsync(int idParalelo, int idDetalleMalla, CancellationToken ct)
+    public async Task<IEnumerable<NotasAlumno>> GetByMallaParaleloAndDetalleMallaAsync(int idMallaParalelo, int idDetalleMalla, CancellationToken ct)
     {
         return await _context.NotasAlumno
             .Include(n => n.IdDetaleMatriculaNavigation)
@@ -174,8 +178,32 @@ public class NotasAlumnoRepository : INotasAlumnoRepository
                     .ThenInclude(m => m.IdUsuarioAlumnoNavigation)
                         .ThenInclude(u => u.IdPersonaNavigation)
             .Include(n => n.IdPlantillaEstructuraNavigation)
-            .Where(n => n.IdDetaleMatriculaNavigation.IdMatriculaNavigation.IdParalelo == idParalelo
+            .Where(n => n.IdDetaleMatriculaNavigation.IdMatriculaNavigation.IdMallaParalelo == idMallaParalelo
                      && n.IdDetaleMatriculaNavigation.IdDetalleMalla == idDetalleMalla)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IEnumerable<NotasAlumno>> GetByParaleloAsync(int idMallaParalelo, int? idDetalleMatricula, int? idDetalleMalla, int? idMatricula, CancellationToken ct)
+    {
+        var idsDetalle = await (
+            from dm in _context.DetalleMatricula
+            join m in _context.Matricula on dm.IdMatricula equals m.IdMatricula
+            where m.IdMallaParalelo == idMallaParalelo
+                && (!idMatricula.HasValue      || dm.IdMatricula       == idMatricula.Value)
+                && (!idDetalleMalla.HasValue   || dm.IdDetalleMalla    == idDetalleMalla.Value)
+                && (!idDetalleMatricula.HasValue || dm.IdDetalleMatricula == idDetalleMatricula.Value)
+            select dm.IdDetalleMatricula
+        ).ToListAsync(ct);
+
+        if (!idsDetalle.Any())
+            return Enumerable.Empty<NotasAlumno>();
+
+        return await _context.NotasAlumno
+            .Include(n => n.IdPlantillaEstructuraNavigation)
+            .Include(n => n.IdDetaleMatriculaNavigation)
+                .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+                    .ThenInclude(dml => dml.IdMateriaNavigation)
+            .Where(n => idsDetalle.Contains(n.IdDetaleMatricula))
             .ToListAsync(ct);
     }
 }

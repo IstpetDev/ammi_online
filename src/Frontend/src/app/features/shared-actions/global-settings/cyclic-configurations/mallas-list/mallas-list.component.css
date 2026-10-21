@@ -1,0 +1,210 @@
+/* ══ Botones de acción ══ */
+:host ::ng-deep .btn-accion-agregar.p-button,
+:host ::ng-deep .btn-accion-duplicar.p-button {
+  background-color: var(--brand-yellow-dark) !important;
+  border-color: var(--brand-yellow-dark) !important;
+  color: var(--brand-black) !important;
+  font-weight: 600;
+}
+:host ::ng-deep .btn-accion-agregar.p-button:hover,
+:host ::ng-deep .btn-accion-duplicar.p-button:hover {
+  background-color: var(--brand-yellow) !important;
+  border-color: var(--brand-yellow) !important;
+}
+
+/* ══ Layout ══ */
+.seasons-container { padding: 20px; }
+.seasons-header { margin-bottom: 2rem; }
+
+/* ══ Header ══ */
+.seasons-header-content, .header-content {
+  border-left: 3px solid var(--brand-yellow-dark);
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.seasons-header-title h1, .seasons-header-title h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+  text-shadow: none;
+  text-transform: none;
+}
+.seasons-header-title p {
+  font-style: normal;
+  color: var(--text-color-secondary);
+  margin: 0.25rem 0 0 0;
+}
+
+/* ══ Content card ══ */
+.seasons-content-card, .content-card {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 10px;
+  padding: 0;
+}
+
+/* ══ Filtros ══ */
+.rol-filtros-container {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--surface-border);
+}
+.seasons-form-row, .form-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 1.25rem !important;
+}
+.seasons-form-label, .form-label {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--text-color) !important;
+  text-shadow: none !important;
+  letter-spacing: normal !important;
+}
+
+/* ══ Tabla ══ */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-ground) !important;
+  color: var(--text-color) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--brand-yellow-dark) !important;
+}
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-color);
+  background: var(--surface-card);
+}
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover > td {
+  background: var(--surface-hover) !important;
+}
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td { border-bottom: none; }
+:host ::ng-deep .p-datatable .p-paginator {
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+  padding: 0.75rem 1.25rem;
+}
+
+/* ══ Acciones ══ */
+.seasons-actions-cell, .actions-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+:host ::ng-deep .seasons-actions-cell .btn-edit,
+:host ::ng-deep .actions-cell .btn-edit {
+  background-color: rgba(233, 185, 2, 0.12) !important;
+  border: none !important;
+  color: var(--brand-yellow-dark) !important;
+  border-radius: 8px !important;
+}
+:host ::ng-deep .seasons-actions-cell .btn-edit:hover,
+:host ::ng-deep .actions-cell .btn-edit:hover {
+  background-color: rgba(233, 185, 2, 0.25) !important;
+}
+:host ::ng-deep .seasons-actions-cell .btn-delete,
+:host ::ng-deep .actions-cell .btn-delete {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: none !important;
+  color: #ef4444 !important;
+  border-radius: 8px !important;
+}
+:host ::ng-deep .seasons-actions-cell .btn-delete:hover,
+:host ::ng-deep .actions-cell .btn-delete:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* ══ Estado vacío / sin selección ══ */
+.select-warning-box {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  margin: 1rem 0;
+  min-height: 35vh;
+}
+.select-warning-icon {
+  font-size: 2.2rem;
+  color: var(--brand-yellow-dark);
+  opacity: 0.7;
+}
+.select-warning-text {
+  font-size: 1rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+  text-align: center;
+}
+
+.table-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+.table-empty-state .empty-icon {
+  font-size: 2.4rem;
+  color: var(--brand-yellow-dark);
+  margin-bottom: 0.65rem;
+  display: block;
+  opacity: 0.7;
+}
+.table-empty-state .empty-text {
+  font-size: 1rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+/* ══ Formulario ══ */
+.seasons-form-control, .form-control {
+  padding: 0.65rem 0.9rem !important;
+  border: 1.5px solid var(--surface-border) !important;
+  border-radius: 8px !important;
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+  font-size: 0.9rem !important;
+  box-shadow: none !important;
+}
+.seasons-form-control:focus, .form-control:focus {
+  outline: none !important;
+  border-color: var(--brand-yellow-dark) !important;
+  box-shadow: 0 0 0 3px rgba(233, 185, 2, 0.15) !important;
+}
+.seasons-form-grid, .form-grid { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; }
+.seasons-form-actions, .form-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid var(--surface-border) !important;
+  margin-top: 0 !important;
+}
+
+/* ══ Responsive ══ */
+.filtros-row-fullwidth { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; width: 100%; }
+.filtro-item { width: 100%; min-width: 0; display: flex; flex-direction: column; }
+.filtro-botones { display: flex; gap: 0.5rem; align-items: flex-end; justify-content: flex-end; }
+@media (max-width: 900px) { .filtros-row-fullwidth { grid-template-columns: 1fr 1fr; row-gap: 1rem; } }
+@media (max-width: 600px) {
+  .filtros-row-fullwidth { grid-template-columns: 1fr; }
+  .filtro-botones { justify-content: flex-start; }
+}

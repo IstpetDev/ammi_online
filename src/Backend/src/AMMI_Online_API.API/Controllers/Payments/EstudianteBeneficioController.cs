@@ -13,7 +13,7 @@ public class EstudianteBeneficioController : ApiController
     /// Lista todos los beneficios (activos e inactivos) asignados a un alumno.
     /// </summary>
     [HttpGet("ByAlumno/{idPersona:int}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetByAlumno(int idPersona, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetBeneficiosByAlumnoQuery(idPersona), cancellationToken);
@@ -25,7 +25,7 @@ public class EstudianteBeneficioController : ApiController
     /// Si el beneficio tiene RequiereRenovacion = true, IdCiclo es obligatorio en el body.
     /// </summary>
     [HttpPost]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> Asignar(
         [FromBody] EstudianteBeneficioCreateDTO dto,
         CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ public class EstudianteBeneficioController : ApiController
     /// Opcionalmente recibe el motivo en Observaciones.
     /// </summary>
     [HttpPut("Desactivar")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> Desactivar(
         [FromBody] EstudianteBeneficioDesactivarDTO dto,
         CancellationToken cancellationToken)

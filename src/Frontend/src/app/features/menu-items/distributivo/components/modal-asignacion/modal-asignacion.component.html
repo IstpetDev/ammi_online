@@ -1,139 +1,98 @@
-<p-dialog 
-  [header]="isEditing ? 'Editar Asignación' : 'Nueva Asignación'"
-  [visible]="show"
-  [modal]="true"
-  [closable]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [style]="{ width: '600px', maxWidth: '95vw' }"
-  [styleClass]="'asignacion-dialog'"
-  (onHide)="onClose()">
-  
+<app-shared-drawer [visible]="show" [title]="drawerTitle" mode="drawer" position="right" size="lg"
+  [showCloseButton]="true" [closeOnOverlayClick]="false"
+  [showFooter]="true" cancelText="Cancelar" [confirmText]="isEditing ? 'Actualizar' : 'Guardar'"
+  [confirmDisabled]="form.invalid || loadingMaterias || saving" [confirmLoading]="saving"
+  (close)="onClose()" (confirm)="onSubmit()">
+
   <form [formGroup]="form" class="form-grid">
-    <!-- Malla Curricular -->
-    <div class="form-field">
-      <label class="field-label">
-        <i class="pi pi-book"></i> Malla Curricular <span class="required">*</span>
-      </label>
-      <p-select 
-        [options]="mallasOptions" 
-        formControlName="idMalla"
-        optionLabel="label" 
-        optionValue="value"
-        placeholder="Seleccione una malla"
-        [filter]="true"
-        filterBy="label"
-        [showClear]="true"
-        appendTo="body"
-        [scrollHeight]="'200px'">
-      </p-select>
-      @if (form.get('idMalla')?.invalid && form.get('idMalla')?.touched) {
-        <small class="error-text">Seleccione una malla curricular</small>
-      }
+
+    <div class="form-section">
+      <p class="section-title"><i class="pi pi-book"></i> Información curricular</p>
+
+      <div class="form-field" style="margin-bottom: 1rem;">
+        <label class="field-label">
+          Malla Curricular <span class="required">*</span>
+        </label>
+        <app-custom-select [items]="mallasOptions" labelField="label" valueField="value"
+          [selectedValue]="form.get('idMalla')?.value"
+          (selectedValueChange)="onMallaChange($event)"
+          placeholder="Seleccione una malla" [searchable]="true">
+        </app-custom-select>
+        @if (form.get('idMalla')?.invalid && form.get('idMalla')?.touched) {
+          <small class="error-text"><i class="pi pi-exclamation-circle"></i> Seleccione una malla curricular</small>
+        }
+      </div>
+
+      <div class="form-field">
+        <label class="field-label">
+          Materia <span class="required">*</span>
+        </label>
+        @if (loadingMaterias) {
+          <div class="loading-materias">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Cargando materias...</span>
+          </div>
+        } @else {
+          <app-custom-select [items]="materiasOptions" labelField="label" valueField="value"
+            [selectedValue]="form.get('idDetalleMalla')?.value"
+            (selectedValueChange)="onMateriaChange($event)"
+            [placeholder]="form.get('idMalla')?.value ? 'Seleccione una materia' : 'Primero seleccione una malla'"
+            [searchable]="true" [disabled]="!form.get('idMalla')?.value">
+          </app-custom-select>
+          @if (!form.get('idMalla')?.value) {
+            <small class="hierarchy-hint"><i class="pi pi-info-circle"></i> Seleccione primero una malla curricular</small>
+          }
+          @if (materiasOptions.length === 0 && form.get('idMalla')?.value && !loadingMaterias) {
+            <small class="info-text"><i class="pi pi-info-circle"></i> No hay materias disponibles</small>
+          }
+        }
+        @if (form.get('idDetalleMalla')?.invalid && form.get('idDetalleMalla')?.touched && !loadingMaterias) {
+          <small class="error-text"><i class="pi pi-exclamation-circle"></i> Seleccione una materia</small>
+        }
+      </div>
     </div>
 
-    <!-- Materia -->
-    <div class="form-field">
-      <label class="field-label">
-        <i class="pi pi-file-edit"></i> Materia <span class="required">*</span>
-      </label>
-      @if (loadingMaterias) {
-        <div class="loading-materias">
-          <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="4" />
-          <span>Cargando materias...</span>
+    <div class="form-section">
+      <p class="section-title"><i class="pi pi-users"></i> Asignación</p>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="field-label">
+            Paralelo <span class="required">*</span>
+          </label>
+          <app-custom-select [items]="paralelosFiltrados" labelField="label" valueField="value"
+            [selectedValue]="form.get('idMallaParalelo')?.value"
+            (selectedValueChange)="onParaleloChange($event)"
+            [placeholder]="form.get('idDetalleMalla')?.value ? 'Seleccione un paralelo' : 'Primero seleccione una materia'"
+            [searchable]="true" [disabled]="!form.get('idDetalleMalla')?.value">
+          </app-custom-select>
+          @if (!form.get('idDetalleMalla')?.value) {
+            <small class="hierarchy-hint"><i class="pi pi-info-circle"></i> Seleccione primero una materia</small>
+          }
+          @if (paralelosFiltrados.length === 0 && form.get('idDetalleMalla')?.value) {
+            <small class="info-text"><i class="pi pi-info-circle"></i> Todos los paralelos están asignados</small>
+          }
+          @if (form.get('idMallaParalelo')?.invalid && form.get('idMallaParalelo')?.touched) {
+            <small class="error-text"><i class="pi pi-exclamation-circle"></i> Seleccione un paralelo</small>
+          }
         </div>
-      } @else {
-        <p-select 
-          [options]="materiasOptions" 
-          formControlName="idDetalleMalla"
-          optionLabel="label" 
-          optionValue="value"
-          placeholder="Seleccione una materia"
-          [filter]="true"
-          filterBy="label"
-          [showClear]="true"
-          [disabled]="materiasOptions.length === 0"
-          appendTo="body"
-          [scrollHeight]="'200px'">
-        </p-select>
-        @if (materiasOptions.length === 0 && form.get('idMalla')?.value) {
-          <small class="error-text">No hay materias disponibles para esta malla</small>
-        }
-      }
-      @if (form.get('idDetalleMalla')?.invalid && form.get('idDetalleMalla')?.touched && !loadingMaterias) {
-        <small class="error-text">Seleccione una materia</small>
-      }
-    </div>
 
-    <div class="form-row">
-      <!-- Paralelo -->
-      <div class="form-field">
-        <label class="field-label">
-          <i class="pi pi-users"></i> Paralelo <span class="required">*</span>
-        </label>
-        <p-select 
-          [options]="paralelosOptions" 
-          formControlName="idParalelo"
-          optionLabel="label" 
-          optionValue="value"
-          placeholder="Seleccione paralelo"
-          [showClear]="true"
-          appendTo="body"
-          [scrollHeight]="'200px'">
-        </p-select>
-        @if (form.get('idParalelo')?.invalid && form.get('idParalelo')?.touched) {
-          <small class="error-text">Seleccione un paralelo</small>
-        }
-      </div>
-
-      <!-- Docente -->
-      <div class="form-field">
-        <label class="field-label">
-          <i class="pi pi-user"></i> Docente <span class="required">*</span>
-        </label>
-        <p-select 
-          [options]="docentesOptions" 
-          formControlName="idPersona"
-          optionLabel="nombre" 
-          optionValue="value"
-          placeholder="Seleccione docente"
-          [filter]="true"
-          filterBy="nombre,documento"
-          [showClear]="true"
-          appendTo="body"
-          [scrollHeight]="'200px'">
-          <ng-template pTemplate="selectedItem" let-selected>
-            <div class="docente-selected">
-              <span>{{ selected?.nombre }}</span>
-            </div>
-          </ng-template>
-          <ng-template pTemplate="item" let-docente>
-            <div class="docente-item">
-              <span class="docente-nombre">{{ docente.nombre }}</span>
-              <small class="docente-ci">CI: {{ docente.documento }}</small>
-            </div>
-          </ng-template>
-        </p-select>
-        @if (form.get('idPersona')?.invalid && form.get('idPersona')?.touched) {
-          <small class="error-text">Seleccione un docente</small>
-        }
+        <div class="form-field">
+          <label class="field-label">
+            Docente <span class="required">*</span>
+          </label>
+          <app-custom-select [items]="docentesOptions" labelField="label" valueField="value"
+            [selectedValue]="form.get('idPersona')?.value"
+            (selectedValueChange)="onDocenteChange($event)"
+            placeholder="Seleccione un docente" [searchable]="true">
+          </app-custom-select>
+          @if (form.get('idPersona')?.invalid && form.get('idPersona')?.touched) {
+            <small class="error-text"><i class="pi pi-exclamation-circle"></i> Seleccione un docente</small>
+          }
+        </div>
       </div>
     </div>
+
   </form>
 
-  <div class="modal-footer">
-    <p-button 
-      label="Cancelar" 
-      icon="pi pi-times" 
-      severity="secondary"
-      [outlined]="true"
-      (click)="onClose()">
-    </p-button>
-    <p-button 
-      [label]="isEditing ? 'Actualizar' : 'Guardar'"
-      [icon]="isEditing ? 'pi pi-check' : 'pi pi-save'"
-      (click)="onSubmit()"
-      [disabled]="form.invalid || loadingMaterias">
-    </p-button>
-  </div>
-</p-dialog>
+</app-shared-drawer>

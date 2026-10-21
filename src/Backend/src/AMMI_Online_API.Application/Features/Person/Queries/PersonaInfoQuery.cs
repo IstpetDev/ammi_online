@@ -9,7 +9,6 @@ public record GetPersonasInfoQuery
     int? IdPersona,
     DateOnly? FechaNacimiento,
     int? IdEstadoCivil,
-    int? IdNacionalidadEtnica,
-    int? IdTipoSangre
+    int? IdNacionalidadEtnica
     ) : IRequest<Response<IEnumerable<PersonaInfoDTO>>>;
 

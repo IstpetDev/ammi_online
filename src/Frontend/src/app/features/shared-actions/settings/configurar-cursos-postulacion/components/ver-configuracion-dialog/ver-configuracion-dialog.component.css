@@ -1,0 +1,67 @@
+.ccp-dialog-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.ver-section {
+  margin-bottom: 1.5rem;
+}
+
+.ver-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  border-bottom: 1px solid var(--surface-border, #e5e7eb);
+  padding-bottom: 0.25rem;
+}
+
+.icon-brand {
+  color: var(--brand-yellow-dark, #eab308);
+}
+
+.ver-table-wrap {
+  overflow-x: auto;
+}
+
+.ver-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.ver-table thead tr {
+  background: var(--surface-ground, #f9fafb);
+  text-align: left;
+}
+
+.ver-table th,
+.ver-table td {
+  padding: 0.5rem;
+}
+
+.ver-table tbody tr {
+  border-bottom: 1px solid var(--surface-border, #e5e7eb);
+}
+
+.ver-cell-main {
+  font-weight: 600;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-color-secondary, #6b7280);
+  gap: 0.5rem;
+}
+
+.empty-icon {
+  font-size: 2rem;
+}

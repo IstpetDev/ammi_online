@@ -172,9 +172,10 @@ public class NotasCalculoService : INotasCalculoService
             var byPadre = estructura.ToLookup(e => e.IdNodoPadre);
             var raices = byPadre[null].OrderBy(e => e.Orden).ToList();
 
+            var estadoCompletado = matricula.IdEstadoMatriculaNavigation?.Completado ?? false;
             var estado = dm.Aprobado == true ? "Aprobado"
-                       : dm.Aprobado == false ? (matricula.EsFinalizada ? "Reprobado" : "En Curso")
-                       : matricula.EsFinalizada ? "Reprobado"
+                       : dm.Aprobado == false ? (estadoCompletado ? "Reprobado" : "En Curso")
+                       : estadoCompletado ? "Reprobado"
                        : "En Curso";
 
             materias.Add(new BoletinMateriaDTO
@@ -194,7 +195,7 @@ public class NotasCalculoService : INotasCalculoService
         {
             IdMatricula = matricula.IdMatricula,
             NombreAlumno = nombreAlumno,
-            Paralelo = matricula.IdParaleloNavigation?.NombreParalelo ?? string.Empty,
+            Paralelo = matricula.IdMallaParaleloNavigation?.IdParaleloNavigation?.Detalle ?? string.Empty,
             Materias = materias
         };
     }

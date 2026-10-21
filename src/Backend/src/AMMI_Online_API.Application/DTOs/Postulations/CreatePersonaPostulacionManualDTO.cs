@@ -1,4 +1,4 @@
-﻿namespace AMMI_Online_API.Application.DTOs.Postulations;
+namespace AMMI_Online_API.Application.DTOs.Postulations;
 
 public class CreatePersonaPostulacionManualDTO
 {
@@ -7,15 +7,14 @@ public class CreatePersonaPostulacionManualDTO
     public string Documento { get; set; }
     public int IdGenero { get; set; }
     public string PrimerNombre { get; set; }
-    public string SegundoNombre { get; set; }
+    public string? SegundoNombre { get; set; }
     public string PrimerApellido { get; set; }
-    public string SegundoApellido { get; set; }
+    public string? SegundoApellido { get; set; }
 
     // Create PersonaInfo
     public DateOnly? FechaNacimiento { get; set; }
     public int? IdEstadoCivil { get; set; }
     public int? IdNacionalidadEtnica { get; set; }
-    public int? IdTipoSangre { get; set; }
 
     // Create Datos Contacto
     public DatosContactoItem[] DatosContactos { get; set; } = Array.Empty<DatosContactoItem>();
@@ -37,6 +36,7 @@ public class CreatePersonaPostulacionManualDTO
 
     // Create Nacionalidad
     public int IdPais { get; set; }
+    public string? Nacio { get; set; }
 
     // Create Documentos Personales
     public DocumentosPersonalesItem[] DocumentosPersonales { get; set; } = Array.Empty<DocumentosPersonalesItem>();

@@ -10,15 +10,33 @@ namespace AMMI_Online_API.API.Controllers.Postulations;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
+
 public class PostulacionController : ApiController
 {
     [HttpGet]
-    [AllowAnonymous]
-    public async Task<Response<IEnumerable<PostulacionDTO>>> GetPostulaciones(CancellationToken cancellationToken)
-        => await Mediator.Send(new GetPostulacionesQuery(), cancellationToken);
+    public async Task<Response<PaginatedResult<PostulacionDTO>>> GetPostulaciones(
+        [FromQuery] int? idEstado,
+        [FromQuery] int? idMalla,
+        [FromQuery] int? idCiclo,
+        [FromQuery] string? search,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var excludeContactoPersona = User.IsInRole("SECRETARIA-GENERAL") || User.IsInRole("SECRETARIA");
+        return await Mediator.Send(new GetPostulacionesQuery(idEstado, idMalla, idCiclo, pageNumber, pageSize, excludeContactoPersona, search), cancellationToken);
+    }
 
     [HttpPut("{id}/malla")]
-    [AllowAnonymous]
     public async Task<Response<int>> ActualizarMalla(int id, [FromBody] ActualizarMallaPostulacionDTO dto, CancellationToken cancellationToken)
         => await Mediator.Send(new ActualizarMallaPostulacionCommand(id, dto), cancellationToken);
+
+    [HttpDelete("{id}")]
+    public async Task<Response<bool>> EliminarPostulacion(int id, CancellationToken cancellationToken)
+        => await Mediator.Send(new EliminarPostulacionCommand(id), cancellationToken);
+
+    [HttpPut("{id}/datos-basicos")]
+    public async Task<Response<bool>> ActualizarDatosBasicos(int id, [FromBody] ActualizarDatosBasicosPostulanteDTO dto, CancellationToken cancellationToken)
+        => await Mediator.Send(new ActualizarDatosBasicosPostulanteCommand(id, dto), cancellationToken);
 }

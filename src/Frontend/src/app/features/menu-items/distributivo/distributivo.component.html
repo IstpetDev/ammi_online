@@ -1,5 +1,4 @@
-
-<div class="distributivo-container">
+<div class="menu-container">
   <!-- Header Section -->
   <div class="page-header">
     <div class="header-content">
@@ -12,122 +11,325 @@
           <p class="page-subtitle">Gestión de asignaciones de docentes a materias y paralelos</p>
         </div>
       </div>
-      
-      @if (vistaActual === 'tabla') {
-        <div class="header-actions">
-          <p-button 
-            label="Asignación Masiva" 
-            icon="pi pi-clone" 
-            [outlined]="true"
-            severity="secondary"
-            (onClick)="abrirModalMasivo()">
-          </p-button>
-          <p-button 
-            label="Nueva Asignación" 
-            icon="pi pi-plus"
-            (onClick)="abrirModalNuevo()">
-          </p-button>
-        </div>
+
+      @if (vistaActual === 'tabla' && selectedCiclo) {
+      <div class="header-actions">
+        <p-button label="Asignación Masiva" icon="pi pi-clone" [outlined]="true" severity="secondary"
+          (onClick)="abrirModalMasivo()">
+        </p-button>
+      </div>
       }
 
       @if (vistaActual === 'carga-docente') {
-        <p-button 
-          label="Volver al Distributivo" 
-          icon="pi pi-arrow-left" 
-          [outlined]="true"
-          severity="secondary"
-          (onClick)="volverATabla()">
-        </p-button>
+      <p-button label="Volver al Distributivo" icon="pi pi-arrow-left" [outlined]="true" severity="secondary"
+        (onClick)="volverATabla()">
+      </p-button>
       }
     </div>
   </div>
 
-  <!-- Loading State -->
+  <!-- Loading State - Skeleton -->
   @if (loading) {
-    <div class="loading-container">
-      <div class="loading-content">
-        <i class="pi pi-spin pi-spinner"></i>
-        <p>Cargando datos del distributivo...</p>
+  <div class="skeleton-container">
+    @for (item of [1,2,3]; track item) {
+    <div class="skeleton-card">
+      <div class="skeleton-header">
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-subtitle"></div>
+      </div>
+      <div class="skeleton-body">
+        <div class="skeleton-line skeleton-row"></div>
+        <div class="skeleton-line skeleton-row"></div>
       </div>
     </div>
+    }
+  </div>
   }
 
   <!-- Vista Tabla -->
   @if (!loading && vistaActual === 'tabla') {
-    <!-- Filtros -->
-    <app-filtros-distributivo
-      [mallas]="mallas"
-      [ciclos]="ciclos"
-      [paralelos]="paralelos"
-      (filtrosChange)="onFiltrosChange($event)">
-    </app-filtros-distributivo>
+  <!-- Filtros Principales -->
+  <div class="filters-section">
 
-    <!-- Estadísticas rápidas -->
-    <div class="stats-bar">
-      <div class="stat-item">
-        <i class="pi pi-list"></i>
-        <span class="stat-value">{{ distributivosFiltrados.length }}</span>
-        <span class="stat-label">Asignaciones</span>
+    <div class="filter-group">
+      <label for="periodo">Período Lectivo: <span class="required">*</span></label>
+      <app-custom-select [items]="periodosOptions" labelField="label" valueField="value"
+        [selectedValue]="selectedPeriodo?.idPeriodoLectivo"
+        (selectedValueChange)="onPeriodoSelect($event)"
+        placeholder="Seleccione un período" [searchable]="true">
+      </app-custom-select>
+    </div>
+    <div class="filter-group">
+      <label for="ciclo">Ciclo: <span class="required">*</span></label>
+      <app-custom-select [items]="ciclosOptions" labelField="label" valueField="value"
+        [selectedValue]="selectedCiclo?.idCiclo"
+        (selectedValueChange)="onCicloSelect($event)"
+        [placeholder]="selectedPeriodo ? 'Seleccione un ciclo' : 'Seleccione primero un período'"
+        [disabled]="!selectedPeriodo" [searchable]="true">
+      </app-custom-select>
+    </div>
+    <div class="filter-group button-group">
+      <label>&nbsp;</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn-clear" type="button" (click)="limpiarFiltrosBusqueda()"
+          pTooltip="Limpia solo los filtros de búsqueda">
+          <i class="pi pi-filter-slash"></i> Limpiar búsqueda
+        </button>
+        <button class="btn-clear" type="button" (click)="clearMainFilters()"
+          pTooltip="Reinicia todos los filtros incluyendo período y ciclo">
+          <i class="pi pi-refresh"></i> Reiniciar todo
+        </button>
       </div>
-      <div class="stat-item">
-        <i class="pi pi-book"></i>
-        <span class="stat-value">{{ mallas.length }}</span>
-        <span class="stat-label">Mallas</span>
-      </div>
-      <div class="stat-item">
-        <i class="pi pi-users"></i>
-        <span class="stat-value">{{ docentes.length }}</span>
-        <span class="stat-label">Docentes</span>
-      </div>
-      <div class="stat-item">
-        <i class="pi pi-th-large"></i>
-        <span class="stat-value">{{ paralelos.length }}</span>
-        <span class="stat-label">Paralelos</span>
+    </div>
+  </div>
+
+  <!-- Estado vacío cuando no se han seleccionado los filtros -->
+  @if (!selectedCiclo) {
+  <app-shared-empty-state icon="pi pi-filter" title="Seleccione los filtros para buscar"
+    description="Debe seleccionar un período lectivo y ciclo para visualizar los distributivos."
+    minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
+  }
+
+  <!-- Estado vacío cuando no hay cursos en el ciclo - CON BOTÓN -->
+  @if (selectedCiclo && mallasPorCiclo.length === 0 && distributivos.length === 0) {
+  <app-shared-empty-state icon="pi pi-inbox" title="No hay cursos en este ciclo"
+    description="No hay mallas configuradas para el ciclo seleccionado."
+    actionText="Crear Paralelo Nuevo" actionIcon="pi pi-plus-circle"
+    (action)="abrirModalCrearParaleloMalla()" minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
+  }
+
+  <!-- Contenido cuando hay cursos o distributivos -->
+  @if (selectedCiclo && (mallasPorCiclo.length > 0 || distributivos.length > 0)) {
+  <!-- Barra de control de visualización y filtros -->
+  <div class="view-controls">
+    <div class="toggle-view">
+      <label class="toggle-label">Visualizar por:</label>
+      <div class="toggle-buttons">
+        <button class="toggle-btn" [class.active]="tipoVisualizacion === 'curso'"
+          (click)="cambiarVisualizacion('curso')">
+          <i class="pi pi-graduation-cap"></i>
+          Curso
+        </button>
+        <button class="toggle-btn" [class.active]="tipoVisualizacion === 'docente'"
+          (click)="cambiarVisualizacion('docente')">
+          <i class="pi pi-user"></i>
+          Docente
+        </button>
       </div>
     </div>
 
-    <!-- Tabla -->
-    <app-tabla-distributivo
-      [distributivos]="distributivosFiltrados"
-      (editar)="abrirModalEditar($event)"
-      (eliminar)="onEliminar($event)"
-      (verCarga)="verCargaDocente($event)">
-    </app-tabla-distributivo>
+    <!-- Filtros de búsqueda con debounce -->
+    <div class="search-filters">
+      <div class="filter-item-inline">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="filtros.curso" (input)="onFiltroInput()" placeholder="Buscar curso..."
+          class="search-input">
+      </div>
+      <div class="filter-item-inline">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="filtros.docente" (input)="onFiltroInput()" placeholder="Buscar docente..."
+          class="search-input">
+      </div>
+      <div class="filter-item-inline">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="filtros.materia" (input)="onFiltroInput()" placeholder="Buscar materia..."
+          class="search-input">
+      </div>
+      <div class="filter-item-inline">
+        <app-custom-select [items]="paralelosOptionsFilter" labelField="label" valueField="value"
+          [selectedValue]="filtros.idParalelo"
+          (selectedValueChange)="onParaleloFilterSelect($event)"
+          placeholder="Todos los paralelos" [searchable]="true">
+        </app-custom-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contador de resultados -->
+  @if (distributivos.length > 0) {
+  <div class="results-bar">
+    <span class="results-text">
+      Mostrando <strong>{{ distributivosFiltrados.length }}</strong> de <strong>{{ distributivos.length }}</strong> distributivos
+      @if (distributivosFiltrados.length !== distributivos.length) {
+        <span> ({{ distributivos.length - distributivosFiltrados.length }} ocultos)</span>
+      }
+    </span>
+  </div>
   }
 
-  <!-- Vista Carga Docente -->
-  @if (!loading && vistaActual === 'carga-docente') {
-    <app-vista-carga-docente
-      [carga]="cargaDocenteSeleccionado"
-      (volver)="volverATabla()">
-    </app-vista-carga-docente>
+  <!-- Estado sin resultados -->
+  @if (distributivosFiltrados.length === 0 && mallasPorCicloFiltradas.length === 0 && (distributivos.length > 0 || mallasPorCiclo.length > 0)) {
+  <app-shared-empty-state icon="pi pi-search" title="Sin resultados"
+    description="No se encontraron distributivos con los filtros aplicados. Intente con otros criterios de búsqueda."
+    actionText="Limpiar búsqueda" actionIcon="pi pi-filter-slash"
+    (action)="limpiarFiltrosBusqueda()" minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
   }
+
+  <!-- Tabla -->
+  @if (distributivosFiltrados.length > 0 || mallasPorCicloFiltradas.length > 0) {
+  <app-tabla-distributivo [distributivos]="distributivosFiltrados" [tipoVisualizacion]="tipoVisualizacion"
+    [docentes]="docentes"
+    [paralelos]="paralelos"
+    [mallas]="mallasPorCicloFiltradas"
+    (editar)="abrirModalEditar($event)"
+    (editarFechas)="abrirModalFechasNotas($event)"
+    (eliminar)="onEliminar($event)"
+    (crearParalelo)="abrirModalCrearParaleloMalla()">
+  </app-tabla-distributivo>
+  }
+  }
+  }
+
 </div>
 
 <!-- Toast para notificaciones -->
-<p-toast position="top-right" />
+<app-shared-toast></app-shared-toast>
 
 <!-- Confirm Dialog -->
 <p-confirmDialog />
 
 <!-- Modal Nueva/Editar Asignación -->
-<app-modal-asignacion
-  [show]="showModalAsignacion"
-  [distributivo]="distributivoEditar"
-  [mallas]="mallas"
-  [cicloss]="ciclos"
-  [paralelos]="paralelos"
-  [docentes]="docentes"
-  (close)="cerrarModales()"
-  (save)="onGuardarAsignacion($event)">
+<app-modal-asignacion [show]="showModalAsignacion" [distributivo]="distributivoEditar" [mallas]="mallasPorCiclo"
+  [cicloss]="ciclos" [docentes]="docentes"
+  [idMallaInicial]="distributivoEditar?.idMalla ?? null"
+  [distributivoExistentes]="todosLosDistributivos"
+  (close)="cerrarModales()" (save)="onGuardarAsignacion($event)">
 </app-modal-asignacion>
 
 <!-- Modal Asignación Masiva -->
-<app-modal-asignacion-masiva
-  [show]="showModalMasivo"
-  [mallas]="mallas"
-  [paralelos]="paralelos"
-  [docentes]="docentes"
-  (close)="cerrarModales()"
-  (save)="onGuardarMasivo($event)">
+<app-modal-asignacion-masiva [show]="showModalMasivo" [mallas]="mallas"
+  [docentes]="docentes" [cicloPreseleccionado]="selectedCiclo"
+  [distributivoExistentes]="todosLosDistributivos"
+  (close)="cerrarModales()" (save)="onGuardarMasivo($event)"
+  (mallaCreada)="onMallaCreada()">
 </app-modal-asignacion-masiva>
+
+<!-- Modal Crear Docente -->
+<app-modal-crear-docente
+  [show]="showModalCrearDocente"
+  (close)="showModalCrearDocente = false"
+  (saved)="onDocenteCreado()">
+</app-modal-crear-docente>
+
+<!-- Modal Crear Paralelo en Malla -->
+<app-modal-crear-paralelo-malla
+  [show]="showModalCrearParaleloMalla"
+  [mallas]="mallasPorCiclo.length ? mallasPorCiclo : mallas"
+  [paralelos]="paralelos"
+  (close)="showModalCrearParaleloMalla = false"
+  (saved)="onParaleloMallaCreado()">
+</app-modal-crear-paralelo-malla>
+
+<!-- Drawer Lateral para Configurar Fechas de Notas -->
+<app-shared-drawer [visible]="showModalFechasNotas" title="Plazos de Calificaciones" mode="drawer" position="right" size="md"
+  [showCloseButton]="!savingFechas" [closeOnOverlayClick]="false"
+  [showFooter]="true" cancelText="Cancelar" confirmText="Guardar Fechas"
+  [confirmDisabled]="savingFechas || !fechaInicioNotas || !fechaFinNotas" [confirmLoading]="savingFechas"
+  (close)="cerrarModalFechasNotas()" (confirm)="guardarFechasNotas()">
+
+  @if (materiaFechasEditar) {
+    <div class="fechas-drawer-content">
+
+      <!-- Tarjeta Resumen de Materia -->
+      <div class="materia-card-header">
+        <div class="materia-card-icon">
+          <i class="pi pi-book"></i>
+        </div>
+        <div class="materia-card-info">
+          <span class="materia-card-title">{{ materiaFechasEditar.nombreMateria }}</span>
+          <span class="materia-card-subtitle">
+            <i class="pi pi-graduation-cap"></i> {{ materiaFechasEditar.nombreMalla }}
+          </span>
+          @if (selectedCiclo) {
+            <span class="materia-card-ciclo">
+              <i class="pi pi-calendar"></i> {{ selectedCiclo.detalle }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Alerta de Límites del Ciclo -->
+      <div class="ciclo-limites-banner">
+        <div class="banner-icon">
+          <i class="pi pi-info-circle"></i>
+        </div>
+        <div class="banner-body">
+          <span class="banner-title">Límites permitidos del ciclo académico</span>
+          <span class="banner-desc">
+            @if (minFechaCiclo && maxFechaCiclo) {
+              Rango disponible: <strong>{{ minFechaCiclo }}</strong> al <strong>{{ maxFechaCiclo }}</strong>.
+            } @else {
+              No se han definido límites específicos para este ciclo.
+            }
+          </span>
+        </div>
+      </div>
+
+      <!-- Alerta de Error si ocurre -->
+      @if (errorFechasModal) {
+        <div class="drawer-error-alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ errorFechasModal }}</span>
+        </div>
+      }
+
+      <!-- Formulario de Configuración de Fechas -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="pi pi-clock"></i> Configuración del Período
+        </div>
+
+        <!-- Fecha de Inicio -->
+        <div class="form-field">
+          <label class="field-label" for="drawerFechaInicio">
+            <i class="pi pi-calendar-plus"></i>
+            Fecha de Inicio de Calificación <span class="required">*</span>
+          </label>
+          <input id="drawerFechaInicio" type="date" [(ngModel)]="fechaInicioNotas"
+            [min]="minFechaCiclo" [max]="fechaFinNotas || maxFechaCiclo"
+            class="form-input" />
+          <span class="field-hint">
+            A partir de este día, docentes y estudiantes tendrán habilitada la materia.
+          </span>
+        </div>
+
+        <!-- Fecha de Fin -->
+        <div class="form-field">
+          <label class="field-label" for="drawerFechaFin">
+            <i class="pi pi-calendar-times"></i>
+            Fecha de Cierre Ordinario <span class="required">*</span>
+          </label>
+          <input id="drawerFechaFin" type="date" [(ngModel)]="fechaFinNotas"
+            [min]="fechaInicioNotas || minFechaCiclo" [max]="maxFechaCiclo"
+            class="form-input" />
+          <span class="field-hint">
+            Fecha límite ordinaria para ingresar y asentar notas en el sistema.
+          </span>
+        </div>
+
+        <!-- Días de Gracia -->
+        <div class="form-field">
+          <label class="field-label" for="drawerDiasGracia">
+            <i class="pi pi-shield"></i>
+            Días de Gracia / Prórroga Extraordinaria
+          </label>
+          <div class="input-with-suffix">
+            <input id="drawerDiasGracia" type="number" [(ngModel)]="diasGraciaNotas" min="0" max="60"
+              class="form-input" placeholder="0" />
+            <span class="input-suffix">días</span>
+          </div>
+          <span class="field-hint">
+            Días adicionales tras el cierre ordinario para ajustes excepcionales.
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+  }
+
+</app-shared-drawer>
+

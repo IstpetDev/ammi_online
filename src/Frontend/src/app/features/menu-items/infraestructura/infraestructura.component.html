@@ -3,7 +3,7 @@
   <div class="page-header">
     <div class="header-content">
       <div class="title-section">
-          <button *ngIf="showSeasonsComponent || showStudyAreasComponent || showMallasComponent || showGradesComponent" (click)="hideComponents()" class="mr-4 p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Volver a Infraestructura">
+          <button *ngIf="showSeasonsComponent || showStudyAreasComponent || showCyclicConfigurationsComponent || showGradesComponent || showMallasComponent" (click)="hideComponents()" class="mr-4 p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Volver a Infraestructura">
             <i class="pi pi-arrow-left text-lg"></i>
           </button>
         <div class="title-icon">
@@ -12,8 +12,8 @@
         <div class="flex items-center">
 
           <div>
-            <h1 class="page-title">Gestión de Infraestructura</h1>
-            <p class="page-subtitle">Administra y controla la infraestructura</p>
+            <h1 class="page-title">Parametrización</h1>
+            <p class="page-subtitle">Administra y controla la parametrización del sistema</p>
           </div>
         </div>
       </div>
@@ -32,9 +32,9 @@
     <app-study-areas></app-study-areas>
   </div>
 
-  <!-- Mostrar componente mallas si está activado -->
-  <div *ngIf="showMallasComponent" class="mallas-container">
-    <app-mallas></app-mallas>
+  <!-- Mostrar componente cyclic-configurations si está activado -->
+  <div *ngIf="showCyclicConfigurationsComponent" class="cyclic-configurations-container">
+    <app-cyclic-configurations></app-cyclic-configurations>
   </div>
 
   <!-- Mostrar componente grades si está activado -->
@@ -42,44 +42,81 @@
     <app-grades></app-grades>
   </div>
 
+    <!-- Mostrar componente mallas si está activado -->
+  <div *ngIf="showMallasComponent" class="mallas-container">
+    <app-mallas></app-mallas>
+  </div>
+
+
   <!-- Mostrar tarjetas si no está mostrando ningún componente -->
-  <div *ngIf="!showSeasonsComponent && !showStudyAreasComponent && !showMallasComponent && !showGradesComponent" class="card-grid">
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showSeasons()">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-calendar text-6xl"></i>
+  <div *ngIf="!showSeasonsComponent && !showStudyAreasComponent && !showCyclicConfigurationsComponent && !showGradesComponent && !showMallasComponent" class="actions-grid">
+    <div class="action-card" (click)="showSeasons()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-calendar action-icon"></i>
       </div>
- 
-      <h2 class="card-title text-xl font-semibold text-center">Temporadas</h2>
- 
-      <p class="card-description text-center">Gestionar temporadas académicas</p>
+      <h4>Configuracion de Ciclos</h4>
+      <p>Gestión de períodos académicos y ciclos lectivos</p>
+      <span class="action-badge">Abrir</span>
     </div>
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showStudyAreas()">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-map text-6xl"></i>
+    <div class="action-card" (click)="showStudyAreas()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-map action-icon"></i>
       </div>
- 
-      <h2 class="card-title text-xl font-semibold text-center">Áreas de Estudio</h2>
- 
-      <p class="card-description text-center">Gestionar áreas de estudio disponibles</p>
+      <h4>Áreas de Estudio</h4>
+      <p>Administración de campos académicos y especialidades</p>
+      <span class="action-badge">Abrir</span>
     </div>
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showMallas()">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-sitemap text-6xl"></i>
+    <div class="action-card" (click)="showCyclicConfigurations()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-cog action-icon"></i>
       </div>
- 
-      <h2 class="card-title text-xl font-semibold text-center">Mallas</h2>
- 
-      <p class="card-description text-center">Administrar mallas curriculares</p>
+      <h4>Configuracion de Mallas Academicas</h4>
+      <p>Parámetros recurrentes y configuraciones periódicas de mallas</p>
+      <span class="action-badge">Abrir</span>
     </div>
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" (click)="showGrades()">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-book text-6xl"></i>
+       <div class="action-card" (click)="showMallas()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-sitemap action-icon"></i>
       </div>
+      <h4>Estructuras Académicas</h4>
+      <p>Estructuras académicas y planes de estudio</p>
+      <span class="action-badge">Configurar</span>
+    </div>
 
-      <h2 class="card-title text-xl font-semibold text-center">Notas</h2>
-
-      <p class="card-description text-center">Gestionar calificaciones y notas</p>
+    <div class="action-card" (click)="showGrades()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-graduation-cap action-icon"></i>
+      </div>
+      <h4>Plantillas de Evaluacion</h4>
+      <p>Plantillas de evaluación para diferentes asignaturas o detalle malla</p>
+      <span class="action-badge">Abrir</span>
     </div>
- 
+
+    <div class="action-card" (click)="goToPlanificacion()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-pencil action-icon"></i>
+      </div>
+      <h4>Planificación de Asignaturas</h4>
+      <p>Gestión de asignaturas y materias del sistema</p>
+      <span class="action-badge">Abrir</span>
+    </div>
+
+    <div class="action-card" (click)="goToRequisitos()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-check-square action-icon"></i>
+      </div>
+      <h4>Planificación de Requisitos</h4>
+      <p>Gestión de requisitos de postulación</p>
+      <span class="action-badge">Abrir</span>
+    </div>
+
+    <div class="action-card action-card-highlight" (click)="goToCrearMallaCompleta()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-bolt action-icon"></i>
+      </div>
+      <h4>Crear Malla Completa</h4>
+      <p>Crea ciclo, malla, materias y pagos en un solo proceso atómico guiado por pasos</p>
+      <span class="action-badge">Iniciar</span>
+    </div>
   </div>
 </div>

@@ -58,11 +58,12 @@ export interface MallaHistorialDTO {
 export interface CicloHistorialDTO {
   idCiclo: number;
   nombreCiclo: string;
-  fechaInicio?: Date;
-  fechaFin?: Date;
+  nombreParalelo?: string | null;
+  fechaInicio?: string | Date;
+  fechaFin?: string | Date;
   idMatricula: number;
   materias: MateriaHistorialDTO[];
-  promedioGeneral: number;
+  promedioGeneral?: number;
 }
 
 /**
@@ -70,9 +71,23 @@ export interface CicloHistorialDTO {
  */
 export interface MateriaHistorialDTO {
   idDetalleMalla: number;
+  idDetalleMatricula?: number | null;
+  idPlantillaEvaluacion?: number | null;
   nombreMateria: string;
   notaFinal: number | null;
-  estado: EstadoMateria;
+  examenRemedial: number | null;
+  estado: string | null;
+  docente?: string | null;
+  emailDocente?: string | null;
+  fechaInicio?: string | Date | null;
+  fechaFin?: string | Date | null;
+  duracionHoras?: number | null;
+  modulo?: number | null;
+  areaCompetencia?: string | null;
+  diasGracia?: number | null;
+  statusPeriodo?: string | null;
+  periodoActivo?: boolean;
+  mensajePeriodo?: string | null;
 }
 
 /**

@@ -11,28 +11,24 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class AreaController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<AreaDTO>>> GetArea(
             [FromQuery] GetAreaQuery query,
             CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<int>> CreateArea(
             [FromBody] CreateAreaCommand command,
             CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<bool>> UpdateArea(
             [FromBody] UpdateAreaCommand command,
             CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeleteArea(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteAreaCommand(id), cancellationToken);
     }

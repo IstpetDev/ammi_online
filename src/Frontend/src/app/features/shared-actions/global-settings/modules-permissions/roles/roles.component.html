@@ -1,30 +1,37 @@
 <div class="seasons-container">
-  <div class="seasons-header">
-    <div class="seasons-header-content">
-      <div class="seasons-header-title">
-        <h1>Gestión de Roles</h1>
-        <p>Aquí se gestionarán los roles del sistema.</p>
-      </div>
-      <div class="seasons-header-actions">
-        <p-button label="Nuevo" icon="pi pi-plus" (onClick)="openNewRoleDialog()" styleClass="p-button-primary p-button-lg"></p-button>
-      </div>
+  <!-- Header -->
+  <div class="settings-header">
+    <div class="seasons-header-title">
+      <h1>Gestión de Roles</h1>
+      <p>Aquí se gestionarán los roles del sistema.</p>
     </div>
+    <p-button label="Nuevo Rol" icon="pi pi-plus" (onClick)="openNewRoleDialog()" styleClass="btn-nuevo"></p-button>
   </div>
 
   <div class="seasons-content-card">
-    <p-table [value]="roles" [loading]="loading" styleClass="p-datatable-striped">
+    <p-table [value]="roles" [loading]="loading">
       <ng-template pTemplate="header">
         <tr>
           <th>Detalle</th>
-          <th>Acciones</th>
+          <th style="width: 90px; text-align:center">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-role>
         <tr>
-          <td>{{ role.detalle }}</td>
-          <td>
-            <p-button icon="pi pi-pencil" (onClick)="editRole(role)" class="p-button-rounded p-button-success p-mr-2"></p-button>
-            <p-button icon="pi pi-trash" (onClick)="deleteRole(role)" class="p-button-rounded p-button-danger"></p-button>
+          <td class="col-primary">{{ role.detalle }}</td>
+          <td class="seasons-actions-cell" style="justify-content:center">
+            <p-button icon="pi pi-pencil" (onClick)="editRole(role)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="deleteRole(role)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2">
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-color-secondary)">
+              <i class="pi pi-inbox" style="font-size:2rem; display:block; margin-bottom:0.5rem"></i>
+              No hay roles registrados aún.
+            </div>
           </td>
         </tr>
       </ng-template>
@@ -44,9 +51,10 @@
   <ng-template pTemplate="footer">
     <div class="seasons-form-actions">
       <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideRoleDialog()" styleClass="p-button-secondary"></p-button>
-      <p-button label="Guardar" icon="pi pi-check" (onClick)="saveRole()" styleClass="p-button-primary"></p-button>
+      <!-- Guardar: botón estilizado con los colores del sistema -->
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="saveRole()" styleClass="btn-guardar"></p-button>
     </div>
   </ng-template>
 </p-dialog>
 
-<p-toast></p-toast>
+<app-shared-toast></app-shared-toast>

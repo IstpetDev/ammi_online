@@ -1,0 +1,39 @@
+<div class="settings-page">
+
+  <nav class="settings-tabs">
+    <button class="settings-tab" [class.active]="activeTab === 'mallas'" (click)="setActiveTab('mallas')">
+      <i class="pi pi-sitemap"></i>
+      Creacion de mallas 
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'malla-requisitos'" (click)="setActiveTab('malla-requisitos')">
+      <i class="pi pi-list-check"></i>
+      Gestion de los requisitos de cada malla
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'detalle-malla'" (click)="setActiveTab('detalle-malla')">
+      <i class="pi pi-file"></i>
+      Gestion de asignaturas por malla
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'especies'" (click)="setActiveTab('especies')">
+      <i class="pi pi-calendar"></i>
+      Gestion de especie por ciclo
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'malla-paralelo'" (click)="setActiveTab('malla-paralelo')">
+      <i class="pi pi-th-large"></i>
+      Gestion de paralelos por malla
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'malla-clonar-completa'" (click)="setActiveTab('malla-clonar-completa')">
+      <i class="pi pi-copy"></i>
+      Clonar datos de cursos por ciclo
+    </button>
+  </nav>
+
+  <div>
+    <app-mallas-list *ngIf="activeTab === 'mallas'"></app-mallas-list>
+    <app-malla-clonar-completa *ngIf="activeTab === 'malla-clonar-completa'"></app-malla-clonar-completa>
+    <app-malla-requisitos *ngIf="activeTab === 'malla-requisitos'"></app-malla-requisitos>
+    <app-detalle-malla *ngIf="activeTab === 'detalle-malla'"></app-detalle-malla>
+    <app-especie-ciclo *ngIf="activeTab === 'especies'"></app-especie-ciclo>
+    <app-malla-paralelo *ngIf="activeTab === 'malla-paralelo'"></app-malla-paralelo>
+  </div>
+
+</div>

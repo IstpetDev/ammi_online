@@ -1,235 +1,289 @@
 <div class="postulacion-detail-container">
-  <p-toast></p-toast>
+  <app-shared-toast></app-shared-toast>
+
+  <!-- Modal: advertencia de cambios sin guardar al salir -->
+  <app-confirmation-modal
+    [(visible)]="mostrarModalSalida"
+    title="Tienes cambios sin guardar"
+    message="Si sales ahora, los documentos seleccionados <strong>no se guardarán</strong>. ¿Deseas guardarlos antes de salir?"
+    acceptLabel="Guardar y salir"
+    rejectLabel="Salir sin guardar"
+    [loading]="guardandoCambios"
+    (accept)="onModalSalidaAceptar()"
+    (reject)="onModalSalidaRechazar()"
+    (hide)="onModalSalidaCerrar()">
+  </app-confirmation-modal>
+
+  <!-- Modal: confirmación de eliminación de documento -->
+  <app-confirmation-modal
+    [(visible)]="mostrarDialogEliminarDocumento"
+    title="Confirmar eliminación"
+    [message]="mensajeEliminarDocumento"
+    acceptLabel="Eliminar"
+    rejectLabel="Cancelar"
+    [loading]="eliminandoDocumento"
+    (accept)="confirmarEliminarDocumento()"
+    (reject)="cancelarDialogEliminarDocumento()"
+    (hide)="cancelarDialogEliminarDocumento()">
+  </app-confirmation-modal>
+
 
   <div class="detail-content" *ngIf="postulacion">
-    <!-- Mostrar loading mientras se cargan los requisitos -->
+    <!-- Loading overlay -->
     <div class="loading-overlay" *ngIf="loading">
       <div class="loading-message">
         <p>Cargando detalles de tu postulación...</p>
       </div>
     </div>
 
-    <!-- Contenido principal cuando no está cargando -->
+    <!-- Contenido principal -->
     <div class="content-wrapper" *ngIf="!loading">
-    <!-- Zona Izquierda - 30% -->
-    <div class="left-panel">
-      <div class="info-section">
-        <h3>Mi Información</h3>
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-field">
-              <label>Nombre Completo</label>
-              <span>{{ postulacion.personasimple?.primerNombre + ' ' + postulacion.personasimple?.segundoNombre + ' ' + postulacion.personasimple?.primerApellido + ' ' + postulacion.personasimple?.segundoApellido || 'No especificado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Oferta Académica</label>
-              <span>{{ postulacion.malla?.detalle || 'No especificada' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Estado</label>
-              <span class="status-badge" [class]="'status-' + ((postulacion.tipoestadoaprobacion?.detalle?.toLowerCase() || 'desconocido').replace(' ', '-'))">{{ postulacion.tipoestadoaprobacion?.detalle || 'Sin Estado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Fecha de Postulación</label>
-              <span>{{ 'No disponible' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Ciclo</label>
-              <span>{{ postulacion.malla!.mallaCiclo?.ciclo?.detalle || 'No especificado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Curso</label>
-              <span>{{ postulacion.malla!.curso?.detalle || 'No especificado' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Edad</label>
-              <span>{{ calcularEdad(postulacion.personasimple!.pinfo?.fechaNacimiento) || 'No disponible' }}</span>
-            </div>
-          </div>
+
+      <!-- ══════════════════ PANEL IZQUIERDO 35% ══════════════════ -->
+      <div class="left-panel">
+        <div class="section-header">
+          <h3>Mi Información</h3>
         </div>
-      </div>
 
-      <div class="requisitos-section">
-        <h3>Requisitos y Documentos</h3>
-        <div class="requisitos-grid">
-          <div class="requisito-card" *ngFor="let requisito of requisitos">
-            <div class="requisito-header">
-              <span class="requisito-name">{{ requisito.detalle }}</span>
-              <div class="requisito-badges">
-                <span class="requisito-status" [class.required]="requisito.esObligatorio">
-                  {{ requisito.esObligatorio ? 'Obligatorio' : 'Opcional' }}
-                </span>
-                <span class="requisito-completed" *ngIf="requisito.completado">
-                  <i class="pi pi-check-circle"></i> Subido
-                </span>
-                <span class="requisito-approved" *ngIf="requisito.completado && requisito.documentoExistente?.estado === true">
-                  <i class="pi pi-check"></i> Aprobado
-                </span>
-                <span class="requisito-rejected" *ngIf="requisito.completado && requisito.documentoExistente?.estado === false">
-                  <i class="pi pi-times"></i> Rechazado
-                </span>
-              </div>
-            </div>
-            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'ADJUNTO'">
+        <div class="left-scroll-content">
 
-              <p-button
-                label="Subir"
-                icon="pi pi-upload"
-                (onClick)="subirDocumento(requisito)"
-                styleClass="p-button-sm p-button-outlined"
-                [disabled]="requisito.completado && !getDocumentoPendiente(requisito)">
-              </p-button>
-              <p-button
-                label="Ver"
-                icon="pi pi-eye"
-                (onClick)="verDocumento(requisito)"
-                styleClass="p-button-sm p-button-outlined"
-                [disabled]="!getDocumentoPendiente(requisito) && !requisito.completado">
-              </p-button>
-              <!-- Eliminar documento pendiente -->
-              <p-button
-                label="Quitar"
-                icon="pi pi-times"
-                (onClick)="eliminarDocumentoPendiente(requisito)"
-                styleClass="p-button-sm p-button-warning p-button-outlined"
-                [disabled]="!getDocumentoPendiente(requisito)"
-                *ngIf="getDocumentoPendiente(requisito)">
-              </p-button>
-              <!-- Eliminar documento completado del servidor -->
-              <p-button
-                label="Eliminar"
-                icon="pi pi-trash"
-                (onClick)="eliminarDocumentoCompletado(requisito)"
-                styleClass="p-button-sm p-button-danger"
-                [disabled]="!requisito.completado"
-                *ngIf="requisito.completado && !getDocumentoPendiente(requisito)">
-              </p-button>
-            </div>
-            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'BOOL'">
-              <!-- Estado: Sin selección y sin completar - Mostrar botones -->
-              <div class="bool-buttons" *ngIf="!requisito.completado && !getSeleccionBoolPendiente(requisito)">
-                <p-button
-                  label="Sí Cumple"
-                  icon="pi pi-check"
-                  (onClick)="marcarRequisitoCumple(requisito, true)"
-                  styleClass="p-button-sm p-button-success p-button-outlined">
-                </p-button>
-                <p-button
-                  label="No Cumple"
-                  icon="pi pi-times"
-                  (onClick)="marcarRequisitoCumple(requisito, false)"
-                  styleClass="p-button-sm p-button-warning p-button-outlined">
-                </p-button>
-              </div>
-
-              <!-- Estado: Selección pendiente - Mostrar selección con opción de cambiar -->
-              <div class="bool-pending" *ngIf="!requisito.completado && getSeleccionBoolPendiente(requisito)">
-                <div class="pending-selection">
-                  <span class="pending-badge" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'cumple' : 'no-cumple'">
-                    <i class="pi" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'pi-check' : 'pi-times'"></i>
-                    {{ getSeleccionBoolPendiente(requisito)?.valorBool ? 'Sí Cumple' : 'No Cumple' }}
-                    <small>(Pendiente)</small>
+          <!-- Info personal (estilo profile card) -->
+          <div class="info-section">
+            <div class="info-section-simplified">
+              <div class="profile-header">
+                <div class="profile-avatar">
+                  <i class="pi pi-user"></i>
+                </div>
+                <div class="profile-meta">
+                  <h4>{{ getNombreEstudiante() || 'No especificado' }}</h4>
+                  <span class="profile-sub">
+                    CI: {{ postulacion.items[0]?.personasimple?.documento || 'No disponible' }} •
+                    {{ calcularEdad(postulacion.items[0]?.personasimple?.pinfo?.fechaNacimiento) || 'Edad no disponible' }}
                   </span>
-                  <div class="pending-actions">
-                    <p-button
-                      label="Cambiar"
-                      icon="pi pi-pencil"
-                      (onClick)="eliminarSeleccionBoolPendiente(requisito)"
-                      styleClass="p-button-sm p-button-text p-button-secondary">
-                    </p-button>
+                </div>
+              </div>
+
+              <div class="profile-details-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Oferta Académica</span>
+                  <span class="detail-value">{{ postulacion.items[0]?.malla?.detalle || 'No especificada' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Curso / Ciclo</span>
+                  <span class="detail-value">
+                    {{ postulacion.items[0]?.malla?.curso?.detalle || 'No especificado' }} —
+                    {{ postulacion.items[0]?.malla?.mallaCiclo?.ciclo?.detalle || 'No especificado' }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Estado</span>
+                  <div>
+                    <span class="status-badge"
+                      [class]="'status-' + ((postulacion.items[0]?.tipoestadoaprobacion?.detalle?.toLowerCase() || 'desconocido').replace(' ', '-'))">
+                      {{ postulacion.items[0]?.tipoestadoaprobacion?.detalle || 'Sin Estado' }}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <!-- Estado: Completado - Mostrar resultado final -->
-              <div class="bool-result" *ngIf="requisito.completado">
-                <div class="bool-completed-content">
-                  <span class="result-badge" [class]="requisito.documentoExistente?.valorDato ? 'cumple' : 'no-cumple'">
-                    <i class="pi" [class]="requisito.documentoExistente?.valorDato ? 'pi-check' : 'pi-times'"></i>
-                    {{ requisito.documentoExistente?.valorDato ? 'Cumple' : 'No Cumple' }}
-                  </span>
-                  <p class="result-message" *ngIf="!requisito.documentoExistente?.valorDato">
-                    Un asesor se comunicará contigo para orientarte sobre este requisito.
-                  </p>
-                </div>
-                <div class="bool-completed-actions">
-                  <p-button
-                    label="Eliminar"
-                    icon="pi pi-trash"
-                    (onClick)="eliminarDocumentoCompletado(requisito)"
-                    styleClass="p-button-sm p-button-danger p-button-outlined">
-                  </p-button>
-                </div>
+              <div class="detail-item observation-item" *ngIf="postulacion.items[0]?.observacionesRevision">
+                <span class="detail-label">Observaciones</span>
+                <span class="detail-value">{{ postulacion.items[0]?.observacionesRevision }}</span>
               </div>
-            </div>
-          </div>
-        </div>
-        <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
-      </div>
-    </div>
 
-    <!-- Zona Derecha - 70% -->
-    <div class="right-panel">
-      <div class="preview-header">
-        <button type="button" (click)="volver()" class="btn-back-small">← Volver</button>
-        <button
-          type="button"
-          (click)="confirmarDatos()"
-          class="btn-confirm"
-          [disabled]="documentosPendientes.length === 0 || uploading">
-          <i class="pi pi-check"></i>
-          {{ uploading ? 'Subiendo...' : 'Confirmar Datos (' + documentosPendientes.length + ')' }}
-        </button>
-      </div>
-      <div class="document-preview">
-        <h3>Previsualización de Documentos</h3>
-        <div class="preview-content">
-          <div class="no-documents" *ngIf="!previewUrl">
-            <i class="pi pi-file"></i>
-            <p>Selecciona un documento y presiona "Ver" para previsualizarlo</p>
-            <p class="hint" *ngIf="documentosPendientes.length > 0">
-              Tienes {{ documentosPendientes.length }} documento(s) listo(s) para subir
-            </p>
-          </div>
-          <div class="preview-container" *ngIf="previewUrl">
-            <div class="preview-header-info">
-              <span class="preview-filename">
-                <i class="pi pi-file-pdf"></i>
-                {{ previewFileName }}
-              </span>
-            </div>
-            <!-- Mostrar iframe solo para tipos de archivo soportados -->
-            <iframe
-              [src]="previewUrl | safe:'resourceUrl'"
-              class="document-iframe"
-              width="100%"
-              height="600px"
-              frameborder="0"
-              *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType)">
-            </iframe>
-            <!-- Mostrar información para archivos no previsualizable -->
-            <div class="non-previewable-file" *ngIf="previewUrl && !esTipoPrevisualizable(previewFileName, previewFileType)">
-              <div class="file-info">
-                <i class="pi pi-file" style="font-size: 3rem; color: var(--primary-color);"></i>
-                <h4>Archivo cargado correctamente</h4>
-                <p><strong>Nombre:</strong> {{ previewFileName }}</p>
-                <p><strong>Tipo:</strong> {{ obtenerTipoArchivo(previewFileName, previewFileType) }}</p>
-                <p class="note">Este tipo de archivo no se puede previsualizar en el navegador, pero ha sido procesado correctamente.</p>
-                <a [href]="previewUrl" [download]="previewFileName" class="download-link">
-                  <i class="pi pi-download"></i> Descargar archivo
-                </a>
+              <div class="detail-item contacts-item" *ngIf="tieneDatosContacto">
+                <span class="detail-label">Datos de Contacto</span>
+                <div class="contacts-pills">
+                  <span class="contact-pill" *ngFor="let contacto of datosContacto">
+                    <i class="pi"
+                      [class.pi-envelope]="contacto?.tipocontacto?.detalle?.toUpperCase().includes('CORREO')"
+                      [class.pi-phone]="!contacto?.tipocontacto?.detalle?.toUpperCase().includes('CORREO')"></i>
+                    {{ contacto.detalle }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Requisitos -->
+          <div class="requisitos-section">
+            <div class="section-header">
+              <h3>Requisitos y Documentos</h3>
+              <small class="requisitos-info" style="color: #6c757d; font-weight: 500;">
+                <i class="pi pi-info-circle"></i> Máx. 15MB
+              </small>
+            </div>
+
+            <div class="requisitos-grid">
+              <div class="requisito-card" *ngFor="let requisito of requisitos">
+
+                <!-- Cabecera del requisito -->
+                <div class="requisito-header">
+                  <span class="requisito-name">{{ requisito.detalle }}</span>
+                  <div class="requisito-badges">
+                    <span class="requisito-status" [class.required]="requisito.esObligatorio">
+                      {{ requisito.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- ────── TIPO BOOL: solo informativo ────── -->
+                <div class="requisito-info-bool" *ngIf="requisito.tipoDato === 'BOOL'">
+                  <!-- Si no está definido, mostrar info -->
+                  <ng-container *ngIf="!requisito.completado">
+                    <i class="pi pi-info-circle"></i>
+                    <span>El encargado se comunicará contigo para fijar esta opción.</span>
+                  </ng-container>
+                  <!-- Si está definido, mostrar solo el estado -->
+                  <ng-container *ngIf="requisito.completado">
+                    <span [class.cumple]="requisito.documentoExistente?.valorDato"
+                      [class.no-cumple]="!requisito.documentoExistente?.valorDato">
+                      {{ requisito.documentoExistente?.valorDato ? 'Cumple' : 'No cumple' }}
+                    </span>
+                  </ng-container>
+                </div>
+
+                <!-- ────── TIPO ADJUNTO: máquina de estados ────── -->
+                <div class="requisito-actions" *ngIf="requisito.tipoDato === 'ADJUNTO'" [ngSwitch]="getEstado(requisito)">
+
+                  <!-- Estado 1: sin-documento → solo botón Subir -->
+                  <ng-container *ngSwitchCase="'sin-documento'">
+                    <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+                      (click)="iniciarSubida(requisito)" title="Subir documento">
+                      <i class="pi pi-upload"></i>
+                    </button>
+                  </ng-container>
+
+                  <!-- Estado 2: pendiente-local → archivo elegido, esperando confirmación -->
+                  <ng-container *ngSwitchCase="'pendiente-local'">
+                    <div class="archivo-local-info">
+                      <i class="pi pi-file-o"></i>
+                      <span title="{{ getArchivoLocal(requisito)?.file?.name }}">
+                        {{ getArchivoLocal(requisito)?.file?.name }}
+                      </span>
+                    </div>
+                    <div class="doc-action-group">
+                      <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+                        (click)="visualizarLocal(requisito)" [disabled]="esSubiendo(requisito)" title="Visualizar">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-approve-brand btn-icon-only"
+                        (click)="confirmarSubidaIndividual(requisito)" [disabled]="esSubiendo(requisito)" title="Confirmar subida">
+                        <i class="pi pi-cloud-upload"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-reject-brand btn-icon-only"
+                        (click)="quitarArchivoLocal(requisito)" [disabled]="esSubiendo(requisito)" title="Quitar">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </ng-container>
+
+                  <!-- Estado 3: subido-pendiente → en revisión -->
+                  <ng-container *ngSwitchCase="'subido-pendiente'">
+                    <div class="estado-badge estado-subido">
+                      <i class="pi pi-clock"></i> Subido – En revisión
+                    </div>
+                    <div class="doc-action-group">
+                      <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+                        (click)="verDocumento(requisito)" title="Ver documento">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-reject-brand btn-icon-only"
+                        (click)="eliminarDocumentoCompletado(requisito)"
+                        title="Eliminar">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </ng-container>
+
+                  <!-- Estado 4: aprobado -->
+                  <ng-container *ngSwitchCase="'aprobado'">
+                    <div class="estado-badge estado-aprobado">
+                      <i class="pi pi-check-circle"></i> Aprobado
+                    </div>
+                    <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+                      (click)="verDocumento(requisito)" title="Ver documento">
+                      <i class="pi pi-eye"></i>
+                    </button>
+                  </ng-container>
+
+                  <!-- Estado 5: rechazado → mostrar mensaje + botón subir de nuevo -->
+                  <ng-container *ngSwitchCase="'rechazado'">
+                    <div class="estado-badge estado-rechazado">
+                      <i class="pi pi-times-circle"></i> Rechazado
+                    </div>
+                    <div class="rechazado-mensaje">
+                      <i class="pi pi-exclamation-triangle"></i>
+                      <span>{{ getMensajeRechazo(requisito) }}</span>
+                    </div>
+                    <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+                      (click)="iniciarSubida(requisito)" title="Subir de nuevo">
+                      <i class="pi pi-upload"></i>
+                    </button>
+                  </ng-container>
+
+                </div><!-- /requisito-actions -->
+
+              </div><!-- /requisito-card -->
+            </div><!-- /requisitos-grid -->
+
+            <!-- Input de archivo oculto (compartido) -->
+            <input type="file" #fileInput hidden (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" />
+
+          </div><!-- /requisitos-section -->
+        </div><!-- /left-scroll-content -->
+      </div><!-- /left-panel -->
+
+      <!-- ══════════════════ PANEL DERECHO 70% ══════════════════ -->
+      <div class="right-panel">
+        <div class="document-preview">
+          <h3>Previsualización de Documentos</h3>
+          <div class="preview-content">
+
+            <!-- Sin documento seleccionado -->
+            <div class="no-documents" *ngIf="!previewUrl">
+              <i class="pi pi-file"></i>
+              <p>Selecciona un documento y presiona "Ver" para previsualizarlo</p>
+            </div>
+
+            <!-- Con documento -->
+            <div class="preview-container" *ngIf="previewUrl">
+              <div class="preview-header-info">
+                <span class="preview-filename">
+                  <i class="pi" [class.pi-image]="esImagenArchivo(previewFileName, previewFileType)"
+                    [class.pi-file-pdf]="!esImagenArchivo(previewFileName, previewFileType)"></i>
+                  {{ previewFileName }}
+                </span>
+              </div>
+              <!-- Mostrar imagen para archivos de imagen -->
+              <img [src]="previewUrl | safe:'resourceUrl'" class="document-image"
+                *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType) && esImagenArchivo(previewFileName, previewFileType)" />
+              <!-- Mostrar iframe para otros tipos de archivo soportados (PDF, texto) -->
+              <iframe
+                *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType) && !esImagenArchivo(previewFileName, previewFileType)"
+                [src]="previewUrl | safe:'resourceUrl'" class="document-iframe" width="100%" height="100%"
+                frameborder="0">
+              </iframe>
+              <!-- Tipos no previsualizable -->
+              <div class="non-previewable-file" *ngIf="previewUrl && !esTipoPrevisualizable(previewFileName, previewFileType)">
+                <div class="file-info">
+                  <i class="pi pi-file" style="font-size: 3rem; color: var(--primary-color);"></i>
+                  <h4>Archivo cargado correctamente</h4>
+                  <p><strong>Nombre:</strong> {{ previewFileName }}</p>
+                  <p><strong>Tipo:</strong> {{ obtenerTipoArchivo(previewFileName, previewFileType) }}</p>
+                  <p class="note">Este tipo de archivo no se puede previsualizar en el navegador.</p>
+                  <a [href]="previewUrl" [download]="previewFileName" class="download-link">
+                    <i class="pi pi-download"></i> Descargar archivo
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
-      </div>
-    </div>
-    </div>
-  </div>
+      </div><!-- /right-panel -->
+
+    </div><!-- /content-wrapper -->
+  </div><!-- /detail-content -->
+
 </div>

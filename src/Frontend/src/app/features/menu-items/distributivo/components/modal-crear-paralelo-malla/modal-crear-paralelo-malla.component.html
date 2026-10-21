@@ -1,0 +1,84 @@
+<app-shared-drawer [visible]="show" title="Configurar Paralelo en Malla" mode="modal" size="md"
+  [showCloseButton]="true" [closeOnOverlayClick]="false"
+  [showFooter]="true" cancelText="Cancelar" confirmText="Configurar Paralelo"
+  [confirmDisabled]="form.invalid || saving" [confirmLoading]="saving"
+  (close)="onClose()" (confirm)="onSave()">
+
+  <form [formGroup]="form" class="form-grid" (ngSubmit)="onSave()">
+
+    @if (errorMsg) {
+      <div class="alert-error">
+        <i class="pi pi-exclamation-circle"></i>
+        {{ errorMsg }}
+      </div>
+    }
+
+    <div class="info-note">
+      <i class="pi pi-info-circle"></i>
+      <span>
+        Al configurar un paralelo en una malla, podrás asignar docentes a sus materias
+        desde el distributivo. Usa <strong>Asignación Masiva</strong> después para
+        poblar todas las materias del nuevo paralelo rápidamente.
+      </span>
+    </div>
+
+    <div class="alert-warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>
+        <strong>¡Importante!</strong> Para evitar errores, asegúrese de que la
+        configuración de <strong>Detalle de Malla</strong> esté completamente terminada
+        antes de crear este paralelo.
+      </span>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title"><i class="pi pi-graduation-cap"></i> Malla y Paralelo</div>
+
+      <div class="form-field" style="margin-bottom: 1rem;">
+        <label class="field-label"><i class="pi pi-book"></i> Malla / Curso <span class="required">*</span></label>
+        <app-custom-select [items]="mallasOptions" labelField="label" valueField="value"
+          [selectedValue]="form.get('idMalla')?.value"
+          (selectedValueChange)="onMallaChange($event)"
+          placeholder="Seleccione una malla…" [searchable]="true">
+        </app-custom-select>
+        @if (f['idMalla'].invalid && f['idMalla'].touched) {
+          <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+        }
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="field-label"><i class="pi pi-tag"></i> Paralelo <span class="required">*</span></label>
+          <app-custom-select [items]="paralelosOptions" labelField="label" valueField="value"
+            [selectedValue]="form.get('idParalelo')?.value"
+            (selectedValueChange)="onParaleloChange($event)"
+            [placeholder]="mallaSeleccionada ? 'Seleccione un paralelo' : 'Primero seleccione una malla'"
+            [searchable]="true" [disabled]="!mallaSeleccionada" [loading]="loadingParalelos">
+          </app-custom-select>
+          @if (!mallaSeleccionada) {
+            <small class="hierarchy-hint"><i class="pi pi-info-circle"></i> Seleccione primero una malla</small>
+          }
+          @if (mallaSeleccionada && paralelosOptions.length === 0 && !loadingParalelos) {
+            <small class="hierarchy-hint" style="color:#f59e0b;"><i class="pi pi-exclamation-triangle"></i> Todos los paralelos ya están configurados</small>
+          }
+          @if (f['idParalelo'].invalid && f['idParalelo'].touched) {
+            <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="field-label"><i class="pi pi-users"></i> Cupo Máximo <span class="required">*</span></label>
+          <input class="form-input" type="number"
+            formControlName="cupoMaximo" min="1" max="500"
+            [disabled]="!mallaSeleccionada"
+            placeholder="30">
+          @if (f['cupoMaximo'].invalid && f['cupoMaximo'].touched) {
+            <span class="error-text"><i class="pi pi-times-circle"></i>Mínimo 1</span>
+          }
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+</app-shared-drawer>

@@ -1,6 +1,9 @@
-<p-dialog [header]="title" [(visible)]="visible" [modal]="true"
-          [breakpoints]="{'960px': '75vw', '640px': '90vw'}" [style]="{width: '550px'}"
-          (onHide)="onCancel()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+<app-shared-drawer
+  [(visible)]="visible"
+  [title]="title"
+  [mode]="'modal'"
+  [size]="'md'"
+  (close)="onCancel()">
 
   <form [formGroup]="nodoForm" (ngSubmit)="onSubmit()" class="p-fluid">
 
@@ -36,8 +39,8 @@
       <small *ngIf="nodoForm.get('idTipoPlantillaEstructura')?.invalid && nodoForm.get('idTipoPlantillaEstructura')?.touched" class="p-error block">
         El tipo es requerido
       </small>
-      <small *ngIf="tiposEstructura.length === 0" class="text-orange-500 block mt-1">
-        <i class="pi pi-exclamation-triangle mr-1"></i> No hay tipos disponibles. Verifique la conexion con el servidor.
+      <small class="block mt-1" style="color: var(--text-color-secondary);">
+        No hay tipos disponibles. Verifique la conexion con el servidor.
       </small>
     </div>
 
@@ -68,9 +71,13 @@
       <div class="flex align-items-center gap-2">
         <p-checkbox formControlName="configurarRegla" [binary]="true" inputId="configurarRegla"></p-checkbox>
         <label for="configurarRegla" class="cursor-pointer">Configurar regla de calculo para este nodo</label>
-        <i class="pi pi-info-circle text-gray-400 ml-1"
-           pTooltip="Las reglas de calculo definen como se calcularan las notas de nodos padre a partir de sus hijos"
-           tooltipPosition="top"></i>
+        <span pTooltip="Las reglas de calculo definen como se calcularan las notas de nodos padre a partir de sus hijos"
+              tooltipPosition="top"
+              class="icon-helper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-20">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </span>
       </div>
     </div>
 
@@ -110,18 +117,22 @@
         </div>
       </div>
 
-      <small class="text-gray-500 block mt-2">
-        <i class="pi pi-info-circle mr-1"></i>
+      <small style="color: var(--text-color-secondary);" class="block mt-2">
         Los estudiantes con notas menores a "Min. Recuperar" reprobaran directamente.
       </small>
     </div>
 
   </form>
 
-  <ng-template pTemplate="footer">
-    <div class="flex justify-content-end gap-2">
-      <p-button label="Cancelar" icon="pi pi-times" (onClick)="onCancel()" [text]="true" severity="secondary"></p-button>
-      <p-button label="Guardar" icon="pi pi-check" (onClick)="onSubmit()" [disabled]="nodoForm.invalid"></p-button>
-    </div>
-  </ng-template>
-</p-dialog>
+  <div drawer-footer>
+    <button type="button" class="btn-drawer btn-drawer-cancel" (click)="onCancel()">
+      Cancelar
+    </button>
+    <button type="submit" class="btn-drawer btn-drawer-confirm" (click)="onSubmit()" [disabled]="nodoForm.invalid">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-svg">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Guardar
+    </button>
+  </div>
+</app-shared-drawer>

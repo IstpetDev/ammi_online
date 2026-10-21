@@ -105,7 +105,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<Response<bool>>> ForgotPassword(
         [FromBody] ForgotPasswordRequestDTO request,
         CancellationToken cancellationToken)
@@ -116,7 +116,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("reset-password")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<Response<bool>>> ResetPassword(
         [FromBody] ResetPasswordRequestDTO request,
         CancellationToken cancellationToken)

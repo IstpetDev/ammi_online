@@ -1,86 +1,211 @@
-import { Component, OnInit, ViewChild, ElementRef, inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Pipe, PipeTransform } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { PostulacionService, EstadoPostulacion } from '../../../../core/services/postulaciones';
 import { RequisitosService } from '../../../../core/services/postulaciones/requisitos.service';
-import { PostulacionCompletaDTO, RequisitosDTO, PersonaDTO, PostulacionByDocumentoDTO } from '../../../../data/models/Entities';
+import { PersonaDTO, MallaParaleloDTO, DetalleCreditoDTO, CreditoConDetallesDTO, MallaDTO } from '../../../../data/models/Entities';
 import { AuthService } from '../../../../core/auth/index';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { PersonaService } from '../../../../core/services/postulaciones/persona.service';
-import { MallaService } from '../../../../core/services/infrastructure/malla.service';
-import { API_ENDPOINTS } from '../../../../core/constants/app.constants';
+import { CreditoService } from '../../../../core/services/pagos/credito.service';
+import { MallaParaleloService } from '../../../../core/services/infrastructure/malla-paralelo.service';
+import { EmailService } from '../../../../core/services/postulaciones/email.service';
+import { PagoEstudiante, Especie } from '../../../../shared/models/pagos.model';
+import { VerDetallesComponent } from '../../../menu-items/pagos/ver-detalles/ver-detalles';
+import { PaginatedPostulacionesResponse } from '../../../../core/services/postulaciones/postulacion.service';
+import { CreatePostulationManualComponent } from '../create-manual/create-postulation-manual.component';
+import { SharedDrawerComponent } from '../../../../shared/shared-drawer/shared-drawer.component';
+import { EmailTemplatesService, EmailTemplateData } from '../../../../shared/email-templates.service';
+import { DetalleMallaService } from '../../../../core/services/infrastructure/detalle-malla.service';
+import { EspecieCicloService } from '../../../../core/services/infrastructure/especie-ciclo.service';
+import { MallaService } from '../../../../core/services/postulaciones/malla.service';
+import { forkJoin } from 'rxjs';
+import { SharedToastComponent } from '../../../../shared/shared-toast/shared-toast.component';
+import { SharedModalComponent } from '../../../../shared/shared-modal/shared-modal.component';
 
-interface RequisitoExtendido extends RequisitosDTO {
-  completado?: boolean;
-  documentoExistente?: any;
-}
-
-interface DocumentoTemp {
-  requisito: RequisitoExtendido;
-  file?: File; // Opcional para requisitos BOOL
-  idTipoDocumentoPersonal: number;
-  observacion: string;
-  // Para requisitos BOOL
-  esRequisitoBool?: boolean;
-  valorBool?: boolean;
-}
-
-@Pipe({
-  name: 'safe',
-  standalone: true
-})
-export class SafePipe implements PipeTransform {
-  constructor(private sanitizer: DomSanitizer) { }
-  
-  transform(url: string, type: string): SafeResourceUrl {
-    if (type === 'resourceUrl') {
-      // Para blob URLs, usar bypassSecurityTrustResourceUrl
-      if (url && url.startsWith('blob:')) {
-        return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-      }
-      // Para otras URLs, usar bypassSecurityTrustResourceUrl
-      return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    }
-    return url;
-  }
-}
+// Importación de subcomponentes modulares
+import { PostulanteInfoComponent } from './components/postulante-info/postulante-info.component';
+import { RequisitosListComponent, RequisitoExtendido } from './components/requisitos-list/requisitos-list.component';
+import { AccionesPostulacionComponent } from './components/acciones-postulacion/acciones-postulacion.component';
+import { DocumentoPreviewComponent } from './components/documento-preview/documento-preview.component';
 
 @Component({
   selector: 'app-get-postulacion-by-id',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, ToastModule, ConfirmDialogModule, SafePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    ConfirmDialogModule,
+    DialogModule,
+    ProgressSpinnerModule,
+    VerDetallesComponent,
+    SharedToastComponent,
+    SharedModalComponent,
+    SharedDrawerComponent,
+    CreatePostulationManualComponent,
+    PostulanteInfoComponent,
+    RequisitosListComponent,
+    AccionesPostulacionComponent,
+    DocumentoPreviewComponent
+  ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './get-postulacion-by-id.component.html',
   styleUrls: ['./get-postulacion-by-id.component.css']
 })
 export class GetPostulacionByidComponent implements OnInit, OnDestroy {
+  mostrarDialogAprobarPostulacion: boolean = false;
+  mostrarDialogRechazarPostulacion: boolean = false;
+  motivoRechazoPostulacion: string = '';
+
+  // Paralelo selection for approval
+  mallaParalelos: MallaParaleloDTO[] = [];
+  loadingParalelos = false;
+  selectedIdMallaParalelo: number | null = null;
+
+  // Dialog de ver detalles tras aprobación
+  mostrarDialogVerDetalles: boolean = false;
+  estudianteDetalles: PagoEstudiante | null = null;
+  detallesCreditoDialog: DetalleCreditoDTO[] = [];
+  loadingDetalles: boolean = false;
+  ocultarAccionesPostulacion: boolean = false;
+
+  // Para modal de edición ligera de postulante
+  mostrarModalEdicionBasica: boolean = false;
+  guardandoEdicionBasica: boolean = false;
+  formEdicionBasica = {
+    primerNombre: '',
+    segundoNombre: '',
+    primerApellido: '',
+    segundoApellido: '',
+    documento: '',
+    fechaNacimiento: '',
+    idGenero: null as number | null
+  };
+
+  // Para modal de eliminación de postulante
+  mostrarDialogEliminarPostulacion: boolean = false;
+  eliminandoPostulacion: boolean = false;
+
+  // Para drawer de contacto manual (completar registro)
+  mostrarDrawerContactoManual: boolean = false;
+  contactoIdPersona: number | null = null;
+  contactoIdPostulacion: number | null = null;
+
+  // Para dialog de contacto
+  mostrarDialogContacto: boolean = false;
+  contactoResultadoTexto: string = '';
+  guardandoObservaciones: boolean = false;
 
   documento: string | null = null;
-  postulacion: PostulacionCompletaDTO | null = null;
-  postulacionByDocumento: PostulacionByDocumentoDTO | null = null;
+  postulacionByDocumento: PaginatedPostulacionesResponse | null = null;
   persona: PersonaDTO | null = null;
   requisitos: RequisitoExtendido[] = [];
   documentosPersonales: any[] = [];
   loading = true;
-  selectedRequisito: RequisitoExtendido | null = null;
-  documentosPendientes: DocumentoTemp[] = [];
-  uploading = false;
+  
+  // Datos de previsualización
   previewUrl: string | null = null;
   previewFileName: string | null = null;
   previewFileType: string | null = null;
-  booleanRequisitos: { [key: number]: boolean } = {};
 
-  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
-  
+  aprobandoPostulacion: boolean = false;
+  validandoConfiguracionAprobacion: boolean = false;
+  configuracionAcademicaValida: boolean | null = null;
+  mensajeBloqueoConfiguracionAprobacion: string = '';
+  detalleDiagnosticoConfiguracionAprobacion: string = '';
+
+  /**
+   * Devuelve los datos de contacto del postulante si existen
+   */
+  get datosContacto(): any[] {
+    if (
+      this.postulacionByDocumento &&
+      this.postulacionByDocumento.items &&
+      this.postulacionByDocumento.items[0]?.personasimple?.pcontacto
+    ) {
+      const pcontacto = this.postulacionByDocumento.items[0].personasimple.pcontacto;
+      return Array.isArray(pcontacto) ? pcontacto : [pcontacto];
+    }
+    return [];
+  }
+
+  /**
+   * Retorna true si existen datos de contacto válidos
+   */
+  get tieneDatosContacto(): boolean {
+    const pcontacto = this.postulacionByDocumento?.items?.[0]?.personasimple?.pcontacto;
+    if (!pcontacto) return false;
+
+    if (Array.isArray(pcontacto)) {
+      return pcontacto.some(c => c && (c.tipocontacto?.detalle?.trim() || c.detalle?.trim()));
+    }
+    return pcontacto.tipocontacto?.detalle?.trim() || pcontacto.detalle?.trim();
+  }
+
+  /**
+   * Retorna true si la postulación está en estado 'CONTACTO PERSONA' (o idTipoEstadoAprobacion === 8)
+   */
+  get esEstadoContactoPersona(): boolean {
+    const item: any = this.postulacionByDocumento?.items?.[0];
+    if (!item) return false;
+    const idEstado = item.tipoestadoaprobacion?.idTipoEstadoAprobacion ?? item.idTipoEstadoAprobacion;
+    const detalle = item.tipoestadoaprobacion?.detalle?.toUpperCase() || '';
+    return idEstado === 8 || detalle.includes('CONTACTO PERSONA') || detalle.includes('CONTACTO');
+  }
+
+  // ── Contacto ────────────────────────────────────────────────────────────
+  get contactoObservaciones(): string {
+    return this.postulacionByDocumento?.items?.[0]?.observacionesRevision ?? '';
+  }
+  get observacionesEsDefault(): boolean {
+    return this.contactoObservaciones === 'No se ha contactado con el alumno';
+  }
+  get mostrarTextareaResultado(): boolean {
+    return !this.observacionesEsDefault && this.contactoObservaciones.length > 0;
+  }
+
+  /**
+   * Retorna true si TODOS los requisitos obligatorios (ADJUNTO y BOOL):
+   * - están subidos/completados
+   * - están aprobados (estado === true para ADJUNTO, valorBool === true para BOOL)
+   * - ninguno está rechazado (estado === false para ADJUNTO, valorBool === false para BOOL)
+   */
+  get adjuntosObligatoriosAprobados(): boolean {
+    // ADJUNTO obligatorios
+    const adjuntosOk = this.requisitos
+      .filter(r => r.tipoDato === 'ADJUNTO' && r.esObligatorio)
+      .every(r => r.completado && r.documentoExistente?.estado === true);
+
+    // BOOL obligatorios
+    const boolOk = this.requisitos
+      .filter(r => r.tipoDato === 'BOOL' && r.esObligatorio)
+      .every(r => {
+        const doc = this.documentosPersonales.find(d => d.codigoRequisito === (r.idRequisitos || 0).toString());
+        return doc && doc.valorDato === true;
+      });
+
+    return adjuntosOk && boolOk;
+  }
+
+  get puedeIntentarAprobacion(): boolean {
+    return this.adjuntosObligatoriosAprobados;
+  }
+
+  get motivoBloqueoAprobacion(): string {
+    if (!this.adjuntosObligatoriosAprobados) {
+      return 'Faltan documentos u obligaciones por aprobar.';
+    }
+    return '';
+  }
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private postulacionService = inject(PostulacionService);
@@ -88,34 +213,262 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private personaService = inject(PersonaService);
-  private confirmationService = inject(ConfirmationService);
+  private creditoService = inject(CreditoService);
+  private mallaParaleloService = inject(MallaParaleloService);
+  private detalleMallaService = inject(DetalleMallaService);
+  private especieCicloService = inject(EspecieCicloService);
+  private mallaService = inject(MallaService);
+  private emailService = inject(EmailService);
+  private emailTemplatesService = inject(EmailTemplatesService);
+
+  private getIdMallaActual(): number | null {
+    const idMalla = this.postulacionByDocumento?.items?.[0]?.malla?.idMalla;
+    return typeof idMalla === 'number' && idMalla > 0 ? idMalla : null;
+  }
+
+  private getIdCicloActual(): number | null {
+    const item: any = this.postulacionByDocumento?.items?.[0];
+    const idCiclo =
+      item?.malla?.mallaCiclo?.idCiclo ??
+      item?.malla?.mallaCiclo?.ciclo?.idCiclo ??
+      item?.malla?.mallaCiclo?.ciclo?.id ??
+      item?.malla?.idCiclo ??
+      item?.idCiclo;
+
+    return typeof idCiclo === 'number' && idCiclo > 0 ? idCiclo : null;
+  }
+
+  private setEstadoBloqueoConfiguracion(mensaje: string, diagnostico: string = ''): void {
+    this.configuracionAcademicaValida = false;
+    this.mensajeBloqueoConfiguracionAprobacion = mensaje;
+    this.detalleDiagnosticoConfiguracionAprobacion = '';
+  }
+
+  private resolverIdCicloParaValidacion(
+    idMalla: number,
+    onResolved: (resultado: { idCiclo: number | null; fuenteCiclo: string; malla: MallaDTO | null }) => void
+  ): void {
+    const idCicloActual = this.getIdCicloActual();
+    if (idCicloActual) {
+      onResolved({ idCiclo: idCicloActual, fuenteCiclo: 'postulacion', malla: null });
+      return;
+    }
+
+    this.mallaService.getMallasByParams({ IdMalla: idMalla }).subscribe({
+      next: (mallas) => {
+        const malla = Array.isArray(mallas) ? mallas.find(m => m.idMalla === idMalla) ?? mallas[0] : null;
+        const idCicloMalla = malla?.idCiclo;
+        onResolved({
+          idCiclo: typeof idCicloMalla === 'number' && idCicloMalla > 0 ? idCicloMalla : null,
+          fuenteCiclo: 'malla-por-id',
+          malla: malla ?? null
+        });
+      },
+      error: () => onResolved({ idCiclo: null, fuenteCiclo: 'sin-datos', malla: null })
+    });
+  }
+
+  private validarConfiguracionPreviaAprobacion(onValid: () => void): void {
+    const idMalla = this.getIdMallaActual();
+    if (!idMalla) {
+      this.aprobandoPostulacion = false;
+      this.setEstadoBloqueoConfiguracion('No se pudo determinar la malla de la postulación para validar la aprobación.');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Configuración incompleta',
+        detail: `${this.mensajeBloqueoConfiguracionAprobacion} ${this.detalleDiagnosticoConfiguracionAprobacion}`.trim()
+      });
+      return;
+    }
+
+    this.resolverIdCicloParaValidacion(idMalla, ({ idCiclo, fuenteCiclo, malla }) => {
+      if (!idCiclo) {
+        this.aprobandoPostulacion = false;
+        this.setEstadoBloqueoConfiguracion('No se pudo determinar el ciclo de la malla seleccionada para validar la aprobación.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Configuración incompleta',
+          detail: `${this.mensajeBloqueoConfiguracionAprobacion} ${this.detalleDiagnosticoConfiguracionAprobacion}`.trim()
+        });
+        return;
+      }
+
+      forkJoin({
+        detallesMalla: this.detalleMallaService.getByMalla(idMalla, 1, 800),
+        especiesCiclo: this.especieCicloService.getByMalla(idMalla)
+      }).subscribe({
+        next: ({ detallesMalla, especiesCiclo }) => {
+          const tieneDetalleMalla = Array.isArray(detallesMalla) && detallesMalla.length > 0;
+          const tieneEspecieCiclo = Array.isArray(especiesCiclo) && especiesCiclo.length > 0;
+
+          if (!tieneDetalleMalla || !tieneEspecieCiclo) {
+            this.aprobandoPostulacion = false;
+
+            this.setEstadoBloqueoConfiguracion(
+              'No se han configurado asignaturas para esta malla o especies para esta malla.',
+              ''
+            );
+
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Aprobación bloqueada',
+              detail: `${this.mensajeBloqueoConfiguracionAprobacion} ${this.detalleDiagnosticoConfiguracionAprobacion}`.trim()
+            });
+            return;
+          }
+
+          onValid();
+        },
+        error: () => {
+          this.aprobandoPostulacion = false;
+          this.setEstadoBloqueoConfiguracion('No se pudo validar la configuración de Detalle Malla y Especie Ciclo.');
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error de validación',
+            detail: `${this.mensajeBloqueoConfiguracionAprobacion} ${this.detalleDiagnosticoConfiguracionAprobacion}`.trim()
+          });
+        }
+      });
+    });
+  }
+
+  private evaluarConfiguracionAprobacionVisual(): void {
+    const idMalla = this.getIdMallaActual();
+
+    if (!idMalla) {
+      this.setEstadoBloqueoConfiguracion('No se pudo identificar la malla de la postulación para validar la aprobación.');
+      return;
+    }
+
+    this.validandoConfiguracionAprobacion = true;
+    this.configuracionAcademicaValida = null;
+    this.mensajeBloqueoConfiguracionAprobacion = '';
+    this.detalleDiagnosticoConfiguracionAprobacion = '';
+
+    this.resolverIdCicloParaValidacion(idMalla, ({ idCiclo, fuenteCiclo, malla }) => {
+      if (!idCiclo) {
+        this.setEstadoBloqueoConfiguracion(
+          'No se pudo determinar el ciclo de la malla seleccionada para validar la aprobación.'
+        );
+        this.validandoConfiguracionAprobacion = false;
+        return;
+      }
+
+      forkJoin({
+        detallesMalla: this.detalleMallaService.getByMalla(idMalla, 1, 800),
+        especiesCiclo: this.especieCicloService.getByMalla(idMalla)
+      }).subscribe({
+        next: ({ detallesMalla, especiesCiclo }) => {
+          const tieneDetalleMalla = Array.isArray(detallesMalla) && detallesMalla.length > 0;
+          const tieneEspecieCiclo = Array.isArray(especiesCiclo) && especiesCiclo.length > 0;
+
+          this.configuracionAcademicaValida = tieneDetalleMalla && tieneEspecieCiclo;
+
+          if (!this.configuracionAcademicaValida) {
+            const faltantes: string[] = [];
+            if (!tieneDetalleMalla) faltantes.push('Asignaturas para la malla');
+            if (!tieneEspecieCiclo) faltantes.push('Valores de las especies para la malla');
+            this.mensajeBloqueoConfiguracionAprobacion = `Falta configuración requerida: ${faltantes.join(' y ')}.`;
+            this.detalleDiagnosticoConfiguracionAprobacion = '';
+          }
+
+          this.validandoConfiguracionAprobacion = false;
+        },
+        error: () => {
+          this.setEstadoBloqueoConfiguracion(
+            'No se pudo validar la configuración de Detalle Malla y Especie Ciclo.'
+          );
+          this.validandoConfiguracionAprobacion = false;
+        }
+      });
+    });
+  }
+
+  private ejecutarAprobacionPostulacion(currentUserId: number): void {
+    this.configuracionAcademicaValida = true;
+    this.mensajeBloqueoConfiguracionAprobacion = '';
+    this.postulacionService.cambiarEstadoPostulacion(
+      this.postulacionByDocumento!.items[0].idPostulacion!,
+      EstadoPostulacion.APROBADO,
+      'Postulación aprobada',
+      currentUserId,
+      this.selectedIdMallaParalelo || undefined
+    ).subscribe({
+      next: (response: any) => {
+        this.aprobandoPostulacion = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Postulación aprobada y matrícula generada correctamente'
+        });
+        this.ocultarAccionesPostulacion = true;
+        this.mostrarDialogAprobarPostulacion = false;
+        this.router.navigate(['/dashboard/postulaciones/manage-postulations']);
+        this.enviarEmailAprobacion();
+      },
+      error: (err) => {
+        console.error('Error al aprobar postulación:', err);
+        this.aprobandoPostulacion = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo aprobar la postulación'
+        });
+        this.mostrarDialogAprobarPostulacion = false;
+      }
+    });
+  }
+
+  private getEmailDestinatario(): string | null {
+    const pcontacto = this.postulacionByDocumento?.items?.[0]?.personasimple?.pcontacto;
+    if (!pcontacto) return null;
+    if (Array.isArray(pcontacto)) {
+      const emailContact = pcontacto.find((c: any) =>
+        c &&
+        c.tipocontacto?.detalle?.toUpperCase().includes('CORREO') &&
+        c.detalle?.trim()
+      );
+      return emailContact?.detalle?.trim() ?? null;
+    }
+    return pcontacto.detalle?.includes('@') ? pcontacto.detalle : null;
+  }
+
+  public getNombreEstudiante(): string {
+    const p = this.postulacionByDocumento?.items?.[0]?.personasimple;
+    if (!p) return 'Estimado/a estudiante';
+    return [p.primerNombre, p.segundoNombre, p.primerApellido, p.segundoApellido]
+      .filter(name => name != null && name.trim() !== 'null' && name.trim() !== '')
+      .join(' ');
+  }
+
+  private enviarEmailSilencioso(destinatario: string, asunto: string, cuerpo: string): void {
+    this.emailService.sendEmail({ destinatario, asunto, cuerpo, esHtml: true }).subscribe({
+      error: (err) => console.warn('No se pudo enviar el correo de notificación:', err)
+    });
+  }
 
   ngOnInit(): void {
     const documentoParam = this.route.snapshot.paramMap.get('id');
-    
+
     if (documentoParam) {
       this.documento = documentoParam;
       this.loadPostulacionDetails();
     }
   }
 
-
-
   loadPostulacionDetails(): void {
     if (!this.documento) return;
 
     this.loading = true;
-        this.loadPostulacionGeneral();
-
-    // Cargar postulación completa usando el servicio
-
+    this.loadPostulacionGeneral();
   }
 
   private loadPostulacionGeneral(): void {
-    // Cargar postulación para vista general
     this.postulacionService.getPostulacionByDocumento(this.documento!).subscribe({
       next: (postulacion) => {
         this.postulacionByDocumento = postulacion;
+        this.contactoResultadoTexto = postulacion.items?.[0]?.observacionesRevision ?? '';
+        this.evaluarConfiguracionAprobacionVisual();
         this.loadDataPerson();
         this.loadRequisitos();
       },
@@ -132,28 +485,24 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
   }
 
   loadRequisitos(): void {
-    console.log('Cargando requisitos para malla de la postulación:', this.postulacionByDocumento?.malla);
-    if (!this.postulacionByDocumento?.malla?.idMalla) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo determinar la malla para cargar requisitos'
-      });
+    if (!this.postulacionByDocumento?.items[0]?.malla?.idMalla) {
       this.loading = false;
       return;
     }
 
-    const idMalla = this.postulacionByDocumento.malla.idMalla;
+    const idMalla = this.postulacionByDocumento.items[0].malla.idMalla;
 
     this.requisitosService.getRequisitosByMalla(idMalla).subscribe({
       next: (requisitos) => {
-        this.requisitos = requisitos;
+        this.requisitos = requisitos || [];
+        if (this.documentosPersonales && this.documentosPersonales.length > 0) {
+          this.sincronizarRequisitosConDocumentos();
+        }
         this.loadDocumentosPersonalesByPersona();
         this.loading = false;
       },
       error: (err) => {
         console.error('Error al cargar requisitos:', err);
-        console.error('URL endpoint:', API_ENDPOINTS.postulaciones.requisitos.getByMalla(idMalla));
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -165,13 +514,28 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
   }
 
   loadDocumentosPersonalesByPersona(): void {
-    if (!this.persona) return;
-    this.postulacionService.getDocumentosPersonalesByPersona(this.persona.idPersona!).subscribe({
+    const idPersona = this.persona?.idPersona ??
+      (this.postulacionByDocumento?.items?.[0]?.personasimple as any)?.idPersona ??
+      this.postulacionByDocumento?.items?.[0]?.idPersona;
+
+    if (!idPersona) return;
+
+    this.postulacionService.getDocumentosPersonalesByPersona(idPersona).subscribe({
       next: (documentos) => {
-        this.documentosPersonales = documentos?.data || [];
+        let rawDocs: any[] = [];
+        if (documentos && documentos.isSuccess === false) {
+          rawDocs = [];
+        } else if (documentos?.data !== undefined) {
+          rawDocs = Array.isArray(documentos.data) ? documentos.data : (documentos.data ? Object.values(documentos.data) : []);
+        } else if (Array.isArray(documentos)) {
+          rawDocs = documentos;
+        } else if (documentos && typeof documentos === 'object') {
+          rawDocs = Object.values(documentos);
+        }
+        this.documentosPersonales = rawDocs;
         this.sincronizarRequisitosConDocumentos();
       },
-      error: (err) => {
+      error: () => {
         this.documentosPersonales = [];
         this.sincronizarRequisitosConDocumentos();
       }
@@ -179,23 +543,18 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
   }
 
   private sincronizarRequisitosConDocumentos(): void {
-    // Marcar en cada requisito si ya tiene documento subido
+    if (!this.requisitos || this.requisitos.length === 0) return;
+
     this.requisitos.forEach(requisito => {
+      const reqIdStr = requisito.idRequisitos != null ? String(requisito.idRequisitos).trim() : '';
       const documentoExistente = this.documentosPersonales.find(
-        doc => doc.codigoRequisito === requisito.idRequisitos?.toString()
+        doc => doc.codigoRequisito != null && String(doc.codigoRequisito).trim() === reqIdStr
       );
-      
-      // Añadir propiedad para indicar si está completado
       requisito.completado = !!documentoExistente;
       requisito.documentoExistente = documentoExistente;
     });
-    
   }
 
-
-
-
-  
   loadDataPerson(): void {
     if (!this.documento) return;
 
@@ -203,6 +562,7 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
       next: (personas) => {
         if (personas && personas.length > 0) {
           this.persona = personas[0];
+          this.loadDocumentosPersonalesByPersona();
         }
       },
       error: (err) => {
@@ -212,369 +572,344 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
   }
 
   volver(): void {
-    this.router.navigate(['/dashboard/manage-postulations']);
+    this.router.navigate(['/dashboard/postulaciones/manage-postulations']);
   }
 
-  // Métodos para manejar documentos
-  subirDocumento(requisito: RequisitoExtendido): void {
-    this.selectedRequisito = requisito;
-    this.fileInput.nativeElement.click();
+  // ── Auto-transiciones de estado de postulación ──────────────────────────
+
+  private getPostulacionId(): number | null {
+    return this.postulacionByDocumento?.items?.[0]?.idPostulacion ?? null;
   }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file && this.selectedRequisito) {
-      // Verificar si ya existe un documento para este requisito
-      const existingIndex = this.documentosPendientes.findIndex(
-        doc => doc.requisito.idRequisitos === this.selectedRequisito!.idRequisitos
-      );
-
-      const nuevoDoc: DocumentoTemp = {
-        requisito: this.selectedRequisito,
-        file: file,
-        idTipoDocumentoPersonal: 2,
-        observacion: this.selectedRequisito.detalle || '',
-        esRequisitoBool: false // Marcar como requisito ADJUNTO
-      };
-
-      if (existingIndex >= 0) {
-        // Reemplazar documento existente
-        this.documentosPendientes[existingIndex] = nuevoDoc;
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Actualizado',
-          detail: `Documento "${this.selectedRequisito.detalle}" actualizado. Presiona "Confirmar Datos" para subir.`
-        });
-      } else {
-        // Agregar nuevo documento
-        this.documentosPendientes.push(nuevoDoc);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Agregado',
-          detail: `Documento "${this.selectedRequisito.detalle}" agregado. Presiona "Confirmar Datos" para subir.`
-        });
-      }
-    }
-    // Reset the input
-    this.fileInput.nativeElement.value = '';
-    this.selectedRequisito = null;
+  private getEstadoActual(): string {
+    return (this.postulacionByDocumento?.items?.[0]?.tipoestadoaprobacion?.detalle || '').toUpperCase().trim();
   }
 
-  onBooleanChange(requisito: RequisitoExtendido, value: boolean): void {
-    if (requisito.idRequisitos) {
-      this.booleanRequisitos[requisito.idRequisitos] = value;
+  private esEstadoFinal(): boolean {
+    const estado = this.getEstadoActual();
+    return estado === 'APROBADO' || estado === 'RECHAZADO' || estado === 'FINALIZADO';
+  }
+
+  private getCurrentUser(): { id: number } | null {
+    return this.authService.getCurrentUser();
+  }
+
+  private actualizarEstadoLocal(nuevoEstado: string): void {
+    if (this.postulacionByDocumento?.items?.[0]?.tipoestadoaprobacion) {
+      this.postulacionByDocumento.items[0].tipoestadoaprobacion.detalle = nuevoEstado;
     }
   }
 
-  verDocumento(requisito: RequisitoExtendido): void {
-    const doc = this.getDocumentoPendiente(requisito);
-    if (doc && doc.file) {
-      // Limpiar URL anterior si existe
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl);
-      }
-      // Crear URL para previsualización
-      this.previewUrl = URL.createObjectURL(doc.file);
-      this.previewFileName = doc.file.name;
-      this.previewFileType = doc.file.type;
-    } else if (requisito.documentoExistente) {
-      // Intentar previsualización descargando como blob
-      if (requisito.documentoExistente.idAdjunto) {
-        // Limpiar URL anterior si existe
-        if (this.previewUrl && this.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(this.previewUrl);
-        }
-        // Descargar archivo como blob para previsualización usando el servicio
-        this.postulacionService.getAdjunto(requisito.documentoExistente.idAdjunto).subscribe({
-          next: (blob: Blob) => {
-            this.previewUrl = URL.createObjectURL(blob);
-            this.previewFileName = requisito.documentoExistente.observacion || 'Documento';
-            this.previewFileType = blob.type;
-          },
-          error: (err) => {
-            console.error('Error descargando documento:', err);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo cargar el documento para previsualización'
-            });
-          }
-        });
-      } else {
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Información',
-          detail: 'No hay ID de adjunto disponible'
-        });
-      }
-    } else {
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Información',
-        detail: 'No hay documento cargado para este requisito'
-      });
-    }
-  }
+  /** Al subir un documento: si está en ESPERA_DOCUMENTOS → DOCUMENTOS_REVISION */
+  private transicionADocumentosRevision(): void {
+    const idPostulacion = this.getPostulacionId();
+    const currentUser = this.getCurrentUser();
+    if (!idPostulacion || !currentUser) return;
+    if (this.esEstadoFinal()) return;
+    if (this.getEstadoActual() !== 'ESPERA DOCUMENTOS' && this.getEstadoActual() !== 'CONTACTO PERSONA') return;
 
-  confirmarDatos(): void {
-    if (!this.persona?.idPersona) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo obtener información de la persona'
-      });
-      return;
-    }
-
-    this.uploading = true;
-
-    // Preparar documentos con archivos (ADJUNTO) - filtrar solo los que tienen archivo
-    const documentosConArchivos = this.documentosPendientes
-      .filter(doc => !doc.esRequisitoBool && doc.file)
-      .map(doc => ({
-        documentoPersonal: {
-          idPersona: this.persona!.idPersona!,
-          idTipoDocumentoPersonal: doc.idTipoDocumentoPersonal,
-          codigoRequisito: (doc.requisito.idRequisitos || 0).toString(),
-          estado: true,
-          valorDato: true,
-          observacion: doc.observacion,
-          tieneArchivo: true
-        },
-        file: doc.file!
-      }));
-
-    // Preparar documentos sin archivos (BOOL) - de los documentos pendientes que son BOOL
-    const documentosBool: any[] = this.documentosPendientes
-      .filter(doc => doc.esRequisitoBool)
-      .map(doc => ({
-        documentoPersonal: {
-          idPersona: this.persona!.idPersona!,
-          idTipoDocumentoPersonal: doc.idTipoDocumentoPersonal,
-          idAdjunto: null,
-          codigoRequisito: (doc.requisito.idRequisitos || 0).toString(),
-          estado: doc.valorBool ? true : false,
-          valorDato: doc.valorBool || false,
-          observacion: doc.observacion
-        }
-      }));
-
-    // Combinar todos los documentos
-    const todosLosDocumentos = [...documentosConArchivos, ...documentosBool];
-
-    if (todosLosDocumentos.length === 0) {
-      this.uploading = false;
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'No hay documentos para procesar'
-      });
-      return;
-    }
-
-    // Enviar documentos con archivos si existen
-    if (documentosConArchivos.length > 0) {
-      this.postulacionService.createDocumentosPersonalesConArchivos(documentosConArchivos).subscribe({
-        next: (response) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Documentos con archivos subidos correctamente'
-          });
-          this.documentosPendientes = [];
-          this.procesarDocumentosBool(documentosBool);
-        },
-        error: (err) => {
-          console.error('Error subiendo documentos con archivos:', err);
-          this.uploading = false;
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al subir los documentos con archivos'
-          });
-        }
-      });
-    } else {
-      // Solo procesar documentos BOOL
-      this.procesarDocumentosBool(documentosBool);
-    }
-  }
-
-  private procesarDocumentosBool(documentosBool: any[]): void {
-    if (documentosBool.length === 0) {
-      this.finalizarConfirmacion();
-      return;
-    }
-
-    // Enviar documentos BOOL uno por uno
-    let completados = 0;
-    const total = documentosBool.length;
-    let errores = 0;
-
-    documentosBool.forEach(doc => {
-      this.postulacionService.createDocumentoPersonal(doc.documentoPersonal).subscribe({
-        next: (response: any) => {
-          completados++;
-          if (completados + errores === total) {
-            if (errores === 0) {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Documentos booleanos procesados correctamente'
-              });
-            } else {
-              this.messageService.add({
-                severity: 'warn',
-                summary: 'Advertencia',
-                detail: `${completados} documentos procesados, ${errores} errores`
-              });
-            }
-            this.finalizarConfirmacion();
-          }
-        },
-        error: (err: any) => {
-          console.error('Error procesando documento booleano:', err);
-          errores++;
-          if (completados + errores === total) {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: `Error al procesar documentos booleanos: ${errores} errores`
-            });
-            this.uploading = false;
-          }
-        }
-      });
+    this.postulacionService.cambiarEstadoPostulacion(
+      idPostulacion,
+      EstadoPostulacion.DOCUMENTOS_REVISION,
+      'Documentos subidos, pendientes de revisión',
+      currentUser.id
+    ).subscribe({
+      next: () => this.actualizarEstadoLocal('DOCUMENTOS REVISION'),
+      error: () => { }
     });
   }
 
-  private finalizarConfirmacion(): void {
-    this.uploading = false;
-    // Recargar documentos personales y requisitos para sincronizar
-    this.loadDocumentosPersonalesByPersona();
-    this.loadRequisitos();
+  /** Al aprobar un documento: si todos los obligatorios están OK → ESPERA_APROBACION */
+  private evaluarTransicionPostAprobacionDocumento(): void {
+    const idPostulacion = this.getPostulacionId();
+    const currentUser = this.getCurrentUser();
+    if (!idPostulacion || !currentUser) return;
+    if (this.esEstadoFinal()) return;
+    if (!this.adjuntosObligatoriosAprobados) return;
+
+    this.postulacionService.cambiarEstadoPostulacion(
+      idPostulacion,
+      EstadoPostulacion.ESPERA_APROBACION,
+      'Todos los documentos obligatorios aprobados',
+      currentUser.id
+    ).subscribe({
+      next: () => this.actualizarEstadoLocal('ESPERA APROBACIÓN'),
+      error: () => { }
+    });
   }
 
-  getDocumentoPendiente(requisito: RequisitoExtendido): DocumentoTemp | undefined {
-    return this.documentosPendientes.find(doc => doc.requisito.idRequisitos === requisito.idRequisitos);
+  /** Al rechazar un documento: si está en DOCUMENTOS_REVISION → ESPERA_DOCUMENTOS */
+  private transicionAEstadoEsperaDocumentos(): void {
+    const idPostulacion = this.getPostulacionId();
+    const currentUser = this.getCurrentUser();
+    if (!idPostulacion || !currentUser) return;
+    if (this.esEstadoFinal()) return;
+    if (this.getEstadoActual() !== 'DOCUMENTOS REVISION') return;
+
+    this.postulacionService.cambiarEstadoPostulacion(
+      idPostulacion,
+      EstadoPostulacion.ESPERA_DOCUMENTOS,
+      'Documento rechazado, se requieren correcciones',
+      currentUser.id
+    ).subscribe({
+      next: () => this.actualizarEstadoLocal('ESPERA DOCUMENTOS'),
+      error: () => { }
+    });
   }
 
-  eliminarDocumentoPendiente(requisito: RequisitoExtendido): void {
-    const index = this.documentosPendientes.findIndex(
-      doc => doc.requisito.idRequisitos === requisito.idRequisitos
-    );
-    if (index >= 0) {
-      const docToRemove = this.documentosPendientes[index];
-      this.documentosPendientes.splice(index, 1);
-      
-      // Limpiar previsualización si era este documento
-      if (docToRemove.file && this.previewFileName === docToRemove.file.name) {
-        if (this.previewUrl) {
-          URL.revokeObjectURL(this.previewUrl);
+  // ── Contacto ──────────────────────────────────────────────────────────────
+  abrirDialogContacto(): void {
+    const idPostulacion = this.postulacionByDocumento?.items?.[0]?.idPostulacion;
+    if (!idPostulacion) return;
+
+    const nombre = this.getNombreEstudiante();
+    const fecha = new Date().toLocaleDateString('es-EC');
+    const obsActual = this.postulacionByDocumento!.items[0].observacionesRevision;
+    if (obsActual && obsActual !== 'No se ha contactado con el alumno') {
+      this.contactoResultadoTexto = obsActual;
+    } else {
+      this.contactoResultadoTexto = `Se contactó con ${nombre} a la fecha ${fecha} y se le dio toda la información. Queda a la espera de completar sus datos.`;
+    }
+
+    this.mostrarDialogContacto = true;
+  }
+
+  abrirCompletarRegistro(): void {
+    const idPostulacion = this.postulacionByDocumento?.items?.[0]?.idPostulacion;
+    const documento = this.postulacionByDocumento?.items?.[0]?.personasimple?.documento;
+    if (!idPostulacion || !documento) return;
+
+    this.personaService.getPersonaByDocumento(documento).subscribe({
+      next: (personas) => {
+        const persona = Array.isArray(personas) ? personas[0] : personas;
+        if (persona?.idPersona) {
+          this.contactoIdPersona = persona.idPersona;
+          this.contactoIdPostulacion = idPostulacion;
+          this.mostrarDrawerContactoManual = true;
         }
-        this.previewUrl = null;
-        this.previewFileName = null;
-      }
-      
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Eliminado',
-        detail: `Documento "${requisito.detalle}" eliminado de la lista`
-      });
-    }
-  }
-
-  // Métodos para aprobar/rechazar documentos individuales
-  aceptarDocumento(requisito: RequisitoExtendido): void {
-    if (!requisito.documentoExistente) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'No hay documento para aprobar'
-      });
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('IdDocumentosPersonales', requisito.documentoExistente.idDocumentosPersonales?.toString() || '0');
-    formData.append('IdPersona', requisito.documentoExistente.idPersona?.toString() || '0');
-    formData.append('IdTipoDocumentoPersonal', requisito.documentoExistente.idTipoDocumentoPersonal?.toString() || '0');
-    formData.append('CodigoRequisito', requisito.documentoExistente.codigoRequisito || '');
-    formData.append('Estado', 'true');
-    formData.append('ValorDato', 'true');
-    formData.append('Observacion', requisito.documentoExistente.observacion || 'Documento aprobado');
-
-    this.postulacionService.updateDocumentoPersonal(formData).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Documento aprobado correctamente'
-        });
-        this.loadDocumentosPersonalesByPersona();
       },
-      error: (err) => {
-        console.error('Error al aprobar documento:', err);
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo aprobar el documento'
+          detail: 'No se pudieron recuperar los datos de la persona'
         });
       }
     });
   }
 
-  rechazarDocumento(requisito: RequisitoExtendido): void {
-    if (!requisito.documentoExistente) {
+  onContactoManualCompleted(): void {
+    this.mostrarDrawerContactoManual = false;
+    this.contactoIdPersona = null;
+    this.contactoIdPostulacion = null;
+    this.loadPostulacionGeneral();
+  }
+
+  abrirEdicionPostulante(): void {
+    const p = this.postulacionByDocumento?.items?.[0]?.personasimple;
+    if (!p) return;
+
+    this.formEdicionBasica = {
+      primerNombre: p.primerNombre || '',
+      segundoNombre: p.segundoNombre || '',
+      primerApellido: p.primerApellido || '',
+      segundoApellido: p.segundoApellido || '',
+      documento: p.documento || '',
+      fechaNacimiento: p.pinfo?.fechaNacimiento ? p.pinfo.fechaNacimiento.substring(0, 10) : '',
+      idGenero: null
+    };
+    this.mostrarModalEdicionBasica = true;
+  }
+
+  cancelarEdicionBasica(): void {
+    this.mostrarModalEdicionBasica = false;
+  }
+
+  guardarEdicionBasica(): void {
+    const idPostulacion = this.getPostulacionId();
+    if (!idPostulacion) return;
+
+    if (!this.formEdicionBasica.primerNombre?.trim() || !this.formEdicionBasica.primerApellido?.trim() || !this.formEdicionBasica.documento?.trim()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'No hay documento para rechazar'
+        summary: 'Campos requeridos',
+        detail: 'El primer nombre, primer apellido y documento son obligatorios.'
       });
       return;
     }
 
-    const formData = new FormData();
-    formData.append('IdDocumentosPersonales', requisito.documentoExistente.idDocumentosPersonales?.toString() || '0');
-    formData.append('IdPersona', requisito.documentoExistente.idPersona?.toString() || '0');
-    formData.append('IdTipoDocumentoPersonal', requisito.documentoExistente.idTipoDocumentoPersonal?.toString() || '0');
-    formData.append('CodigoRequisito', requisito.documentoExistente.codigoRequisito || '');
-    formData.append('Estado', 'false');
-    formData.append('ValorDato', 'false');
-    formData.append('Observacion', requisito.documentoExistente.observacion || 'Documento rechazado');
-
-    this.postulacionService.updateDocumentoPersonal(formData).subscribe({
+    this.guardandoEdicionBasica = true;
+    this.postulacionService.actualizarDatosBasicosPostulante(idPostulacion, {
+      primerNombre: this.formEdicionBasica.primerNombre.trim(),
+      segundoNombre: this.formEdicionBasica.segundoNombre?.trim() || undefined,
+      primerApellido: this.formEdicionBasica.primerApellido.trim(),
+      segundoApellido: this.formEdicionBasica.segundoApellido?.trim() || undefined,
+      documento: this.formEdicionBasica.documento.trim(),
+      fechaNacimiento: this.formEdicionBasica.fechaNacimiento || undefined,
+      idGenero: this.formEdicionBasica.idGenero || undefined
+    }).subscribe({
       next: () => {
+        this.guardandoEdicionBasica = false;
+        this.mostrarModalEdicionBasica = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Documento rechazado'
+          detail: 'Datos del postulante actualizados correctamente'
         });
-        this.loadDocumentosPersonalesByPersona();
+
+        // Actualizar datos locales
+        const p = this.postulacionByDocumento?.items?.[0]?.personasimple;
+        if (p) {
+          p.primerNombre = this.formEdicionBasica.primerNombre.trim();
+          p.segundoNombre = this.formEdicionBasica.segundoNombre?.trim() || '';
+          p.primerApellido = this.formEdicionBasica.primerApellido.trim();
+          p.segundoApellido = this.formEdicionBasica.segundoApellido?.trim() || '';
+          if (!p.pinfo) p.pinfo = {} as any;
+          if (p.pinfo) {
+            p.pinfo.fechaNacimiento = this.formEdicionBasica.fechaNacimiento;
+          }
+        }
       },
-      error: (err) => {
-        console.error('Error al rechazar documento:', err);
+      error: (err: any) => {
+        this.guardandoEdicionBasica = false;
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo rechazar el documento'
+          detail: err?.message || 'No se pudieron actualizar los datos del postulante'
         });
       }
     });
   }
 
-  // Métodos para acciones de postulación
+  abrirDialogEliminarPostulacion(): void {
+    this.mostrarDialogEliminarPostulacion = true;
+  }
+
+  cancelarDialogEliminarPostulacion(): void {
+    this.mostrarDialogEliminarPostulacion = false;
+  }
+
+  confirmarEliminarPostulacion(): void {
+    const idPostulacion = this.getPostulacionId();
+    if (!idPostulacion) return;
+
+    this.eliminandoPostulacion = true;
+    this.postulacionService.eliminarPostulacion(idPostulacion).subscribe({
+      next: () => {
+        this.eliminandoPostulacion = false;
+        this.mostrarDialogEliminarPostulacion = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Postulante eliminado',
+          detail: 'La postulación y toda la información asociada han sido eliminadas correctamente'
+        });
+        setTimeout(() => {
+          this.router.navigate(['/dashboard/postulaciones/manage-postulations']);
+        }, 1000);
+      },
+      error: (err) => {
+        this.eliminandoPostulacion = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.message || 'No se pudo eliminar la postulación'
+        });
+      }
+    });
+  }
+
+  confirmarContacto(): void {
+    if (!this.postulacionByDocumento) return;
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    const textoContacto = this.contactoResultadoTexto?.trim() || 'Se contactó al postulante.';
+
+    this.postulacionService.cambiarEstadoPostulacion(
+      this.postulacionByDocumento.items[0].idPostulacion!,
+      EstadoPostulacion.CONTACTO_PERSONA,
+      textoContacto,
+      currentUser.id
+    ).subscribe({
+      next: () => {
+        this.actualizarEstadoLocal('CONTACTO PERSONA');
+        if (this.postulacionByDocumento?.items?.[0]) {
+          this.postulacionByDocumento.items[0].observacionesRevision = textoContacto;
+        }
+        this.mostrarDialogContacto = false;
+        this.messageService.add({
+          severity: 'success', summary: 'Contacto registrado',
+          detail: 'Se registró el contacto y las observaciones correctamente.'
+        });
+        this.loadPostulacionGeneral();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error', summary: 'Error',
+          detail: 'No se pudo registrar el contacto'
+        });
+        this.mostrarDialogContacto = false;
+      }
+    });
+  }
+
+  cancelarDialogContacto(): void {
+    this.mostrarDialogContacto = false;
+  }
+
+  getCuposDisponibles(mallaParalelo: MallaParaleloDTO): number {
+    const cupoMaximo = mallaParalelo.cupoMaximo ?? 0;
+    const matriculados = mallaParalelo.alumnosMatriculados ?? 0;
+    return Math.max(0, cupoMaximo - matriculados);
+  }
+
+  recargarParalelos(): void {
+    const idMalla = this.postulacionByDocumento?.items[0]?.malla?.idMalla;
+    if (idMalla) {
+      this.loadingParalelos = true;
+      this.mallaParaleloService.getByMalla(idMalla).subscribe({
+        next: (data) => {
+          this.mallaParalelos = data.filter(mp => mp.esActivo);
+          const primerParaleloConCupo = this.mallaParalelos.find(mp => this.getCuposDisponibles(mp) > 0);
+          this.selectedIdMallaParalelo = primerParaleloConCupo?.idMallaParalelo ?? null;
+          this.loadingParalelos = false;
+        },
+        error: () => {
+          this.loadingParalelos = false;
+        }
+      });
+    }
+  }
+
+  abrirConfiguracionCursos(): void {
+    window.open('/#/dashboard/configurar-cursos-postulacion', '_blank');
+  }
+
   aprobarPostulacion(): void {
-    console.log(this.postulacionByDocumento)
+    this.selectedIdMallaParalelo = null;
+    this.mallaParalelos = [];
+    this.recargarParalelos();
+    this.mostrarDialogAprobarPostulacion = true;
+  }
+
+  confirmarAprobarPostulacion(): void {
     if (!this.postulacionByDocumento) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
         detail: 'No hay postulación seleccionada'
       });
+      this.mostrarDialogAprobarPostulacion = false;
       return;
     }
-
+    if (!this.selectedIdMallaParalelo) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Debe seleccionar un paralelo para matricular al estudiante'
+      });
+      return;
+    }
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       this.messageService.add({
@@ -582,60 +917,152 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
         summary: 'Error',
         detail: 'Usuario no autenticado'
       });
+      this.mostrarDialogAprobarPostulacion = false;
       return;
     }
 
-    this.postulacionService.cambiarEstadoPostulacion(
-      this.postulacionByDocumento.idPostulacion!,
-      EstadoPostulacion.APROBADO,
-      'Postulación aprobada',
-      currentUser.id
-    ).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Postulación aprobada correctamente'
+    this.aprobandoPostulacion = true;
+    this.validarConfiguracionPreviaAprobacion(() => {
+      this.ejecutarAprobacionPostulacion(currentUser.id);
+    });
+  }
+
+  private enviarEmailAprobacion(): void {
+    const emailDest = this.getEmailDestinatario();
+    if (emailDest) {
+      const nombre = this.getNombreEstudiante();
+      const cedula = this.postulacionByDocumento?.items?.[0]?.personasimple?.documento || '';
+      const malla = this.postulacionByDocumento?.items?.[0]?.malla?.detalle || '';
+      const ciclo = this.postulacionByDocumento?.items?.[0]?.malla?.mallaCiclo?.ciclo?.detalle || '';
+      const emailData: EmailTemplateData = { nombreEstudiante: nombre, cedula, malla, ciclo };
+      const template = this.emailTemplatesService.getPostulacionAprobadaTemplate(emailData);
+      this.enviarEmailSilencioso(emailDest, template.subject, template.body);
+    }
+  }
+
+  cancelarDialogAprobarPostulacion(): void {
+    this.mostrarDialogAprobarPostulacion = false;
+    this.selectedIdMallaParalelo = null;
+    this.mallaParalelos = [];
+  }
+
+  abrirDetallesTrasAprobacion(idMatricula: number): void {
+    this.loadingDetalles = true;
+    this.mostrarDialogVerDetalles = true;
+
+    const p = this.postulacionByDocumento?.items[0];
+    const pagoBase: PagoEstudiante = {
+      idMatricula,
+      cedula: p?.personasimple?.documento || '',
+      nombreEstudiante: [
+        p?.personasimple?.primerNombre,
+        p?.personasimple?.segundoNombre,
+        p?.personasimple?.primerApellido,
+        p?.personasimple?.segundoApellido
+      ].filter(Boolean).join(' '),
+      modalidad: p?.malla?.detalle || '',
+      detalleCiclo: p?.malla?.mallaCiclo?.ciclo?.detalle || '',
+      totalDeuda: 0,
+      totalPagado: 0,
+      especies: []
+    };
+
+    this.creditoService.getCreditosConDetallesByMatricula(idMatricula).subscribe({
+      next: (creditos: CreditoConDetallesDTO[]) => {
+        const especies: Especie[] = creditos.map((credito: CreditoConDetallesDTO) => {
+          const detalleEspecie = credito.detalleEspecie || 'Especie';
+          const esPension = detalleEspecie.toUpperCase().includes('PENSION') ||
+            detalleEspecie.toUpperCase().includes('PENSIÓN');
+          const montoOriginal = credito.montoOriginal ?? credito.montoFinal ?? 0;
+          const montoFinal = credito.montoFinal ?? 0;
+          const montoBeneficio = credito.montoBeneficio ?? 0;
+          const esPendienteDiferir = credito.estado === 'PENDIENTE_DIFERIR';
+
+          let valorPagado = 0;
+          if (!esPendienteDiferir && credito.detallesCredito && credito.detallesCredito.length > 0) {
+            valorPagado = credito.detallesCredito.reduce((s, d) => {
+              if (d.estado?.toUpperCase() === 'PENDIENTE_APROBACION') {
+                return s + (d.valorOriginal ?? 0);
+              }
+              return s + ((d.valorOriginal ?? 0) - (d.saldoCuota ?? 0));
+            }, 0);
+          }
+
+          const primeraFecha = credito.detallesCredito?.[0]?.fechaLimite ?? null;
+
+          const todasCuotasLiquidadas = !esPendienteDiferir &&
+            (credito.detallesCredito?.length ?? 0) > 0 &&
+            (credito.detallesCredito ?? []).every(
+              d => d.pagado === true || d.estado?.toUpperCase() === 'PENDIENTE_APROBACION'
+            );
+
+          return {
+            idEspecie: credito.idCredito ?? 0,
+            idCredito: credito.idCredito ?? 0,
+            nombre: detalleEspecie,
+            tipo: (esPension ? 'pension' : 'matricula') as 'matricula' | 'pension',
+            estado: credito.estado ?? 'ACTIVO',
+            ciclo: pagoBase.detalleCiclo || 'Sin ciclo',
+            valor: montoOriginal,
+            montoFinal: montoFinal,
+            montoBeneficio: montoBeneficio,
+            valorPagado: valorPagado,
+            pagado: todasCuotasLiquidadas,
+            fechaLimite: primeraFecha ?? (esPendienteDiferir ? 'Por definir al diferir' : 'Sin fecha'),
+            detallesCredito: (credito.detallesCredito ?? []).map(d => ({
+              idDetalleCredito: d.idDetalleCredito ?? 0,
+              numeroCuota: d.numeroCuota ?? 0,
+              valorOriginal: d.valorOriginal ?? 0,
+              saldoCuota: d.saldoCuota ?? 0,
+              fechaLimite: d.fechaLimite ?? null,
+              estado: d.estado ?? 'PENDIENTE',
+              pagado: d.pagado ?? false
+            })),
+            esPensionNoDiferida: esPendienteDiferir
+          } as Especie;
         });
-        // Navigate to payments page
-        this.router.navigate(['/dashboard/pagos']);
+
+        const totalDeuda = creditos.reduce((s, c) => s + (c.montoOriginal ?? c.montoFinal ?? 0), 0);
+
+        let totalPagado = 0;
+        let tienePagosEnRevision = false;
+        creditos.forEach(c => {
+          if (c.estado === 'PENDIENTE_DIFERIR' || !c.detallesCredito || c.detallesCredito.length === 0) return;
+          c.detallesCredito.forEach(d => {
+            if (d.estado?.toUpperCase() === 'PENDIENTE_APROBACION') {
+              totalPagado += (d.valorOriginal ?? 0);
+              tienePagosEnRevision = true;
+            } else {
+              totalPagado += (d.valorOriginal ?? 0) - (d.saldoCuota ?? 0);
+            }
+          });
+        });
+
+        this.estudianteDetalles = { ...pagoBase, totalDeuda, totalPagado, tienePagosEnRevision, especies };
+        this.loadingDetalles = false;
       },
-      error: (err) => {
-        console.error('Error al aprobar postulación:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo aprobar la postulación'
-        });
+      error: () => {
+        this.estudianteDetalles = pagoBase;
+        this.loadingDetalles = false;
       }
     });
   }
 
   rechazarPostulacion(): void {
-    this.confirmationService.confirm({
-      message: '¿Está seguro de que desea rechazar esta postulación? Esta acción no se puede deshacer.',
-      header: 'Confirmar Rechazo',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí, rechazar',
-      rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-secondary',
-      accept: () => {
-        this.ejecutarRechazoPostulacion();
-      }
-    });
+    this.motivoRechazoPostulacion = '';
+    this.mostrarDialogRechazarPostulacion = true;
   }
 
-  private ejecutarRechazoPostulacion(): void {
+  confirmarRechazarPostulacion(): void {
     if (!this.postulacionByDocumento) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
         detail: 'No hay postulación seleccionada'
       });
+      this.mostrarDialogRechazarPostulacion = false;
       return;
     }
-
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       this.messageService.add({
@@ -643,13 +1070,14 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
         summary: 'Error',
         detail: 'Usuario no autenticado'
       });
+      this.mostrarDialogRechazarPostulacion = false;
       return;
     }
-
+    const razonRechazo = this.motivoRechazoPostulacion?.trim() || 'Postulación rechazada';
     this.postulacionService.cambiarEstadoPostulacion(
-      this.postulacionByDocumento.idPostulacion!,
+      this.postulacionByDocumento.items[0].idPostulacion!,
       EstadoPostulacion.RECHAZADO,
-      'Postulación rechazada',
+      razonRechazo,
       currentUser.id
     ).subscribe({
       next: () => {
@@ -658,9 +1086,30 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
           summary: 'Éxito',
           detail: 'Postulación rechazada correctamente'
         });
+        this.ocultarAccionesPostulacion = true;
+        const emailDest = this.getEmailDestinatario();
+        if (emailDest) {
+          const nombre = this.getNombreEstudiante();
+          const cedula = this.postulacionByDocumento?.items?.[0]?.personasimple?.documento || '';
+          const malla = this.postulacionByDocumento?.items?.[0]?.malla?.detalle || '';
+          const ciclo = this.postulacionByDocumento?.items?.[0]?.malla?.mallaCiclo?.ciclo?.detalle || '';
+
+          const emailData: EmailTemplateData = {
+            nombreEstudiante: nombre,
+            cedula: cedula,
+            malla: malla,
+            ciclo: ciclo,
+            motivoRechazo: this.motivoRechazoPostulacion?.trim() || undefined
+          };
+
+          const template = this.emailTemplatesService.getPostulacionRechazadaTemplate(emailData);
+          this.enviarEmailSilencioso(emailDest, template.subject, template.body);
+        }
+        this.motivoRechazoPostulacion = '';
         setTimeout(() => {
           this.volver();
         }, 2000);
+        this.mostrarDialogRechazarPostulacion = false;
       },
       error: (err) => {
         console.error('Error al rechazar postulación:', err);
@@ -669,198 +1118,62 @@ export class GetPostulacionByidComponent implements OnInit, OnDestroy {
           summary: 'Error',
           detail: 'No se pudo rechazar la postulación'
         });
+        this.mostrarDialogRechazarPostulacion = false;
       }
     });
   }
 
-  esperaDocumentos(): void {
-    if (!this.postulacion) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No hay postulación seleccionada'
-      });
-      return;
-    }
-
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Usuario no autenticado'
-      });
-      return;
-    }
-
-    this.postulacionService.cambiarEstadoPostulacion(
-      this.postulacion.idPostulacion!,
-      EstadoPostulacion.ESPERA_DOCUMENTOS,
-      'Postulación en espera de documentos',
-      currentUser.id
-    ).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Actualizado',
-          detail: 'Postulación en espera de documentos'
-        });
-        setTimeout(() => {
-          this.volver();
-        }, 2000);
-      },
-      error: (err) => {
-        console.error('Error al actualizar estado:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar el estado'
-        });
-      }
-    });
+  cancelarDialogRechazarPostulacion(): void {
+    this.mostrarDialogRechazarPostulacion = false;
+    this.motivoRechazoPostulacion = '';
   }
-  
-  ngOnDestroy(): void {
-    // Limpiar URL de previsualización al destruir el componente
-    if (this.previewUrl) {
+
+  onCerrarDetallesPago(): void {
+    this.mostrarDialogVerDetalles = false;
+    this.ocultarAccionesPostulacion = true;
+    this.router.navigate(['/dashboard/postulaciones/manage-postulations']);
+  }
+
+  mostrarDrawerPreviewMobile = false;
+
+  // Manejadores de eventos de subcomponentes modulares
+  onViewDocument(event: { url: string, fileName: string, fileType: string }): void {
+    if (this.previewUrl && this.previewUrl.startsWith('blob:') && this.previewUrl !== event.url) {
       URL.revokeObjectURL(this.previewUrl);
     }
-  }
+    this.previewUrl = event.url;
+    this.previewFileName = event.fileName;
+    this.previewFileType = event.fileType;
 
-  // Método para calcular la edad
-  calcularEdad(fechaNacimiento: string | undefined): string {
-    if (!fechaNacimiento) return '';
-
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-
-    return edad + ' años';
-  }
-
-  // Métodos auxiliares para el template
-  esTipoPrevisualizable(nombreArchivo: string | null, mimeType?: string | null): boolean {
-    if (mimeType) {
-      const tiposPreviewables = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'text/plain'];
-      return tiposPreviewables.includes(mimeType);
-    }
-    if (!nombreArchivo) return false;
-    const extension = nombreArchivo.toLowerCase().split('.').pop();
-    const tiposPreviewables = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
-    return tiposPreviewables.includes(extension || '');
-  }
-
-  obtenerTipoArchivo(nombreArchivo: string | null, mimeType?: string | null): string {
-    if (mimeType) {
-      switch (mimeType) {
-        case 'application/pdf':
-          return 'Documento PDF';
-        case 'image/jpeg':
-        case 'image/jpg':
-          return 'Imagen JPEG';
-        case 'image/png':
-          return 'Imagen PNG';
-        case 'image/gif':
-          return 'Imagen GIF';
-        case 'text/plain':
-          return 'Archivo de texto';
-        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-          return 'Documento Word (DOCX)';
-        case 'application/msword':
-          return 'Documento Word (DOC)';
-        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-          return 'Hoja de cálculo Excel';
-        case 'application/vnd.ms-powerpoint':
-        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-          return 'Presentación PowerPoint';
-        default:
-          return `Archivo ${mimeType}`;
-      }
-    }
-    if (!nombreArchivo) return 'Desconocido';
-    const extension = nombreArchivo.toLowerCase().split('.').pop();
-    switch (extension) {
-      case 'pdf':
-        return 'Documento PDF';
-      case 'docx':
-        return 'Documento Word (DOCX)';
-      case 'doc':
-        return 'Documento Word (DOC)';
-      case 'jpg':
-      case 'jpeg':
-        return 'Imagen JPEG';
-      case 'png':
-        return 'Imagen PNG';
-      case 'gif':
-        return 'Imagen GIF';
-      case 'txt':
-        return 'Archivo de texto';
-      case 'xlsx':
-        return 'Hoja de cálculo Excel';
-      case 'pptx':
-        return 'Presentación PowerPoint';
-      default:
-        return `Archivo .${extension?.toUpperCase()}`;
+    if (window.innerWidth <= 1024) {
+      this.mostrarDrawerPreviewMobile = true;
     }
   }
 
-  // Métodos para manejar requisitos de tipo BOOL
-  marcarRequisitoCumple(requisito: RequisitoExtendido, cumple: boolean): void {
-    // Verificar si ya existe un documento pendiente para este requisito
-    const existingIndex = this.documentosPendientes.findIndex(
-      doc => doc.requisito.idRequisitos === requisito.idRequisitos
-    );
+  onRequirementsChanged(event: { type: 'upload' | 'approve' | 'reject' | 'delete' | 'bool' }): void {
+    // Recargar documentos para sincronizar
+    this.loadDocumentosPersonalesByPersona();
 
-    const documentoPendiente: DocumentoTemp = {
-      requisito: requisito,
-      idTipoDocumentoPersonal: 1,
-      observacion: cumple ? 'Cumple con el requisito' : 'No cumple - Asesor se comunicará',
-      esRequisitoBool: true,
-      valorBool: cumple
-    };
-
-    if (existingIndex >= 0) {
-      // Reemplazar selección existente
-      this.documentosPendientes[existingIndex] = documentoPendiente;
-    } else {
-      // Agregar nueva selección
-      this.documentosPendientes.push(documentoPendiente);
+    // Transiciones automáticas de estado
+    if (event.type === 'upload') {
+      this.transicionADocumentosRevision();
+    } else if (event.type === 'approve') {
+      this.evaluarTransitionDespuesDeAprobacion();
+    } else if (event.type === 'reject') {
+      this.transicionAEstadoEsperaDocumentos();
     }
-
-    this.messageService.add({
-      severity: cumple ? 'success' : 'info',
-      summary: 'Selección Guardada',
-      detail: cumple 
-        ? `Marcaste "${requisito.detalle}" como cumplido. Presiona "Confirmar Datos" para enviar.`
-        : `Marcaste "${requisito.detalle}" como no cumplido. Un asesor se comunicará contigo. Presiona "Confirmar Datos" para enviar.`,
-      life: 4000
-    });
   }
 
-  // Verificar si un requisito BOOL tiene selección pendiente
-  getSeleccionBoolPendiente(requisito: RequisitoExtendido): DocumentoTemp | undefined {
-    return this.documentosPendientes.find(
-      doc => doc.requisito.idRequisitos === requisito.idRequisitos && doc.esRequisitoBool
-    );
+  private evaluarTransitionDespuesDeAprobacion(): void {
+    // Esperar a que se actualicen localmente los requisitos y documentos cargados por loadDocumentosPersonalesByPersona
+    setTimeout(() => {
+      this.evaluarTransicionPostAprobacionDocumento();
+    }, 300);
   }
 
-  // Eliminar selección BOOL pendiente
-  eliminarSeleccionBoolPendiente(requisito: RequisitoExtendido): void {
-    const index = this.documentosPendientes.findIndex(
-      doc => doc.requisito.idRequisitos === requisito.idRequisitos && doc.esRequisitoBool
-    );
-    if (index >= 0) {
-      this.documentosPendientes.splice(index, 1);
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Selección Eliminada',
-        detail: `Selección para "${requisito.detalle}" eliminada`
-      });
+  ngOnDestroy(): void {
+    if (this.previewUrl && this.previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.previewUrl);
     }
   }
 }

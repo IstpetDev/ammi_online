@@ -51,7 +51,7 @@ public class GenerarMatriculaRepository : IGenerarMatricula
     public async Task<GenerarMatriculaResultado> GenerarMatriculaCompletaAsync(
         int idPersona,
         int idMalla,
-        int idParalelo,
+        int idMallaParalelo,
         Usuario? nuevoUsuario,
         RolUsuario? rolUsuario,
         CancellationToken cancellationToken)
@@ -64,6 +64,36 @@ public class GenerarMatriculaRepository : IGenerarMatricula
                 UsuarioCreado = false,
                 MatriculaCreada = false
             };
+
+            // A. Validar que MallaParalelo existe y está activo
+            var mallaParalelo = await _context.MallaParalelo
+                .FirstOrDefaultAsync(mp => mp.IdMallaParalelo == idMallaParalelo, cancellationToken);
+
+            if (mallaParalelo == null || !mallaParalelo.EsActivo)
+            {
+                throw new InvalidOperationException("El paralelo no está disponible para matrícula (no existe o está inactivo).");
+            }
+
+            // B. Validar cupo disponible
+            if (mallaParalelo.CupoMaximo.HasValue)
+            {
+                var matriculados = await _context.Matricula
+                    .CountAsync(m => m.IdMallaParalelo == idMallaParalelo, cancellationToken);
+
+                if (matriculados >= mallaParalelo.CupoMaximo.Value)
+                {
+                    throw new InvalidOperationException("El paralelo ha alcanzado su cupo máximo.");
+                }
+            }
+
+            // C. Validar que el alumno no esté matriculado en la misma Malla
+            var yaMatriculado = await _context.Matricula
+                .AnyAsync(m => m.IdUsuarioAlumno == idPersona && m.IdMallaParaleloNavigation.IdMalla == idMalla, cancellationToken);
+
+            if (yaMatriculado)
+            {
+                throw new InvalidOperationException("El alumno ya se encuentra matriculado en esta malla académica.");
+            }
 
             // 1. Crear usuario si es nuevo
             if (nuevoUsuario != null)
@@ -89,8 +119,9 @@ public class GenerarMatriculaRepository : IGenerarMatricula
             // 3. Crear Matricula (ajusta el nombre de la propiedad según tu entidad)
             var matricula = new Matricula
             {
-                IdUsuarioAlumno = idPersona, // O IdPersona, según corresponda
-                IdParalelo = idParalelo
+                IdUsuarioAlumno = idPersona,
+                IdMallaParalelo = idMallaParalelo,
+                IdEstadoMatricula = 1 // Estado: Activa
             };
 
             await _context.Matricula.AddAsync(matricula, cancellationToken);
@@ -134,23 +165,53 @@ public class GenerarMatriculaRepository : IGenerarMatricula
                 throw new InvalidOperationException($"No se encontró ningún ciclo asociado a la Malla ID {idMalla}. Verifique la columna 'id_ciclo' en la tabla 'malla'.");
             }
 
-            // 6. Obtener todas las EspecieCiclo del ciclo, incluyendo la especie para conocer si es diferible
-            var especiesCiclo = await _context.EspecieCiclo
+            // 6. Obtener todas las EspecieCiclo activas de la malla, sin duplicados por IdEspecie
+            var todasEspeciesCiclo = await _context.EspecieCiclo
                 .Include(ec => ec.IdEspecieNavigation)
-                .Where(ec => ec.IdCiclo == cicloActivo.IdCiclo)
+                .Where(ec => ec.IdMalla == idMalla 
+                          && ec.IdEspecieNavigation.Activo 
+                          && (ec.IdEspecieNavigation.EsMatricula || ec.IdEspecieNavigation.EsPension))
                 .ToListAsync(cancellationToken);
+
+            // Deduplicar por IdEspecie (precaución mientras no haya unique constraint en DB)
+            var especiesCiclo = todasEspeciesCiclo
+                .GroupBy(ec => ec.IdEspecie)
+                .Select(g => g.First())
+                .ToList();
+
+            if (!especiesCiclo.Any())
+                throw new InvalidOperationException(
+                    $"La malla ID {idMalla} no tiene especies activas configuradas. " +
+                    "Configure al menos una especie de tipo Matrícula y una de tipo Pensión.");
+
+            if (!especiesCiclo.Any(ec => ec.IdEspecieNavigation.EsMatricula))
+                throw new InvalidOperationException(
+                    $"La malla ID {idMalla} no tiene una especie de tipo Matrícula activa. " +
+                    "No se pueden generar los créditos de matrícula.");
+
+            if (!especiesCiclo.Any(ec => ec.IdEspecieNavigation.EsPension))
+                throw new InvalidOperationException(
+                    $"La malla ID {idMalla} no tiene una especie de tipo Pensión activa. " +
+                    "No se pueden generar los créditos de pensión.");
 
             // 7. Crear Créditos por cada EspecieCiclo
             foreach (var especieCiclo in especiesCiclo)
             {
+                // Verificar duplicado por IdEspecie (no solo por IdEspecieCiclo) para evitar
+                // créditos repetidos si existen múltiples EspecieCiclo con la misma especie
                 var existeCredito = await _context.Credito
-                    .AnyAsync(c => c.IdMatricula == matricula.IdMatricula
-                                && c.IdEspecieCiclo == especieCiclo.IdEspecieCiclo, cancellationToken);
+                    .Join(_context.EspecieCiclo,
+                          c => c.IdEspecieCiclo,
+                          ec => ec.IdEspecieCiclo,
+                          (c, ec) => new { c.IdMatricula, ec.IdEspecie })
+                    .AnyAsync(x => x.IdMatricula == matricula.IdMatricula
+                                && x.IdEspecie == especieCiclo.IdEspecie,
+                              cancellationToken);
 
                 if (!existeCredito)
                 {
                     var especie = especieCiclo.IdEspecieNavigation;
-                    var esDiferible = especie?.EsDiferible ?? false;
+                    var esDiferible = (especie?.EsPension ?? false) && !(especie?.EsMatricula ?? false);
                     var valorEspecie = especieCiclo.ValorEspecie;
 
                     // Crear el crédito
@@ -161,7 +222,8 @@ public class GenerarMatriculaRepository : IGenerarMatricula
                         MontoOriginal = valorEspecie,
                         MontoBeneficio = null,
                         MontoFinal = valorEspecie,
-                        SaldoPendiente = esDiferible ? 0 : valorEspecie,
+                        SaldoPendiente = valorEspecie,
+                        // Si es diferible, el saldo pendiente es 0 porque la deuda se genera al diferir
                         Estado = esDiferible ? "PENDIENTE_DIFERIR" : "ACTIVO",
                         FechaGeneracion = DateOnly.FromDateTime(DateTime.Now),
                         CreatedAt = DateTime.Now,
@@ -184,8 +246,8 @@ public class GenerarMatriculaRepository : IGenerarMatricula
 
                     credito.MontoBeneficio = montoBeneficio;
                     credito.MontoFinal = valorEspecie - montoBeneficio;
-                    credito.SaldoPendiente = esDiferible ? 0 : credito.MontoFinal.Value;
-
+                    credito.SaldoPendiente = credito.MontoFinal.Value;
+                    
                     _context.Credito.Update(credito);
                     await _context.SaveChangesAsync(cancellationToken);
 
@@ -209,6 +271,72 @@ public class GenerarMatriculaRepository : IGenerarMatricula
                     }
                     // Si es diferible, no se crea detalle (se generará cuando el estudiante solicite el diferimiento)
                 }
+            }
+
+            // 9. Aplicar saldo a favor automático si existe
+            var saldoFavor = await _context.SaldoFavorAlumno
+                .FirstOrDefaultAsync(sf => sf.IdPersona == idPersona, cancellationToken);
+
+            if (saldoFavor != null && (saldoFavor.Saldo ?? 0) > 0)
+            {
+                // Obtener todos los detalles de crédito activos recién creados para esta matrícula
+                var detallesRecienCreados = await _context.DetalleCredito
+                    .Include(dc => dc.IdCreditoNavigation)
+                    .Where(dc => dc.IdCreditoNavigation.IdMatricula == matricula.IdMatricula && !dc.Pagado)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var dc in detallesRecienCreados)
+                {
+                    if ((saldoFavor.Saldo ?? 0) <= 0) break;
+
+                    var montoAAplicar = Math.Min(saldoFavor.Saldo ?? 0, dc.SaldoCuota ?? 0);
+                    if (montoAAplicar > 0)
+                    {
+                        // 1. Descontar del saldo a favor
+                        saldoFavor.Saldo -= montoAAplicar;
+                        saldoFavor.UpdatedAt = DateTime.Now;
+                        _context.SaldoFavorAlumno.Update(saldoFavor);
+
+                        // 2. Descontar del detalle del crédito (cuota)
+                        dc.SaldoCuota -= montoAAplicar;
+                        if (dc.SaldoCuota <= 0)
+                        {
+                            dc.SaldoCuota = 0;
+                            dc.Pagado = true;
+                            dc.Estado = "PAGADA";
+                        }
+                        else
+                        {
+                            dc.Estado = "PARCIAL";
+                        }
+                        _context.DetalleCredito.Update(dc);
+
+                        // 3. Descontar del crédito principal
+                        var cred = dc.IdCreditoNavigation;
+                        cred.SaldoPendiente -= montoAAplicar;
+                        if (cred.SaldoPendiente <= 0)
+                        {
+                            cred.SaldoPendiente = 0;
+                            cred.Estado = "CANCELADO";
+                        }
+                        cred.UpdatedAt = DateTime.Now;
+                        _context.Credito.Update(cred);
+
+                        // 4. Registrar movimiento
+                        var movimiento = new SaldoFavorMovimiento
+                        {
+                            IdSaldoFavor = saldoFavor.IdSaldoFavor,
+                            Monto = -montoAAplicar,
+                            Concepto = $"Aplicado automáticamente a cuota #{dc.NumeroCuota} - Matrícula #{matricula.IdMatricula}",
+                            IdCredito = dc.IdCredito,
+                            IdDetalleCredito = dc.IdDetalleCredito,
+                            FechaMovimiento = DateTime.Now
+                        };
+                        _context.SaldoFavorMovimiento.Add(movimiento);
+                    }
+                }
+                
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -245,6 +373,104 @@ public class GenerarMatriculaRepository : IGenerarMatricula
     {
         return await _context.Matricula
             .AnyAsync(m => m.IdUsuarioAlumno == idUsuarioAlumno, cancellationToken);
+    }
+
+    public async Task<CambiarParaleloResultado> CambiarParaleloAsync(
+        int idMatricula,
+        int idMallaParaleloNuevo,
+        CancellationToken cancellationToken)
+    {
+        // Cargar matrícula con su paralelo actual y todos sus detalles+notas
+        var matricula = await _context.Matricula
+            .Include(m => m.IdMallaParaleloNavigation)
+            .Include(m => m.DetalleMatricula)
+                .ThenInclude(dm => dm.NotasAlumno)
+            .FirstOrDefaultAsync(m => m.IdMatricula == idMatricula, cancellationToken);
+
+        if (matricula == null)
+            throw new InvalidOperationException("Matrícula no encontrada.");
+
+        if (matricula.IdMallaParalelo == idMallaParaleloNuevo)
+            throw new InvalidOperationException("El alumno ya se encuentra en ese paralelo.");
+
+        var idMalla = matricula.IdMallaParaleloNavigation.IdMalla;
+
+        // Cargar el nuevo paralelo con sus distributivos activos y alumnos actuales
+        var nuevoParalelo = await _context.MallaParalelo
+            .Include(mp => mp.Distributivo.Where(d => d.Activo == true))
+            .Include(mp => mp.Matricula)
+            .FirstOrDefaultAsync(mp => mp.IdMallaParalelo == idMallaParaleloNuevo, cancellationToken);
+
+        if (nuevoParalelo == null)
+            throw new InvalidOperationException("El paralelo destino no existe.");
+
+        // Validación 1: misma malla
+        if (nuevoParalelo.IdMalla != idMalla)
+            throw new InvalidOperationException("El paralelo destino pertenece a una malla diferente.");
+
+        // Validación 2: paralelo activo
+        if (!nuevoParalelo.EsActivo)
+            throw new InvalidOperationException("El paralelo destino no está activo.");
+
+        // Validación 3: distributivos completos (uno activo por cada DetalleMalla de la malla)
+        var totalMaterias = await _context.DetalleMalla
+            .AsNoTracking()
+            .CountAsync(dm => dm.IdMalla == idMalla, cancellationToken);
+
+        var distributivosCubiertos = nuevoParalelo.Distributivo
+            .Select(d => d.IdDetalleMalla)
+            .Distinct()
+            .Count();
+
+        if (distributivosCubiertos < totalMaterias)
+            throw new InvalidOperationException(
+                $"El paralelo destino no tiene todos los distributivos configurados. " +
+                $"Materias requeridas: {totalMaterias}, cubiertas: {distributivosCubiertos}.");
+
+        // Advertencia de cupo (no bloquea)
+        string? advertencia = null;
+        if (nuevoParalelo.CupoMaximo.HasValue)
+        {
+            var alumnosActuales = nuevoParalelo.Matricula.Count;
+            if (alumnosActuales >= nuevoParalelo.CupoMaximo.Value)
+                advertencia = $"El paralelo destino ha alcanzado su cupo máximo ({nuevoParalelo.CupoMaximo.Value} alumnos). El cambio se realizó igualmente.";
+        }
+
+        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            // Borrar notas si existen
+            bool notasBorradas = false;
+            foreach (var detalle in matricula.DetalleMatricula)
+            {
+                if (detalle.NotasAlumno.Any())
+                {
+                    _context.NotasAlumno.RemoveRange(detalle.NotasAlumno);
+                    notasBorradas = true;
+                }
+
+                detalle.NotaFinal = null;
+                detalle.ExamenRemedial = null;
+                detalle.Aprobado = null;
+            }
+
+            // Cambiar paralelo
+            matricula.IdMallaParalelo = idMallaParaleloNuevo;
+
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new CambiarParaleloResultado
+            {
+                NotasBorradas = notasBorradas,
+                Advertencia = advertencia
+            };
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task EliminarRolUsuarioAsync(int idPersona, int idRol, CancellationToken cancellationToken)
@@ -315,7 +541,8 @@ public class GenerarMatriculaRepository : IGenerarMatricula
             IdBeneficio = x.eb.IdBeneficio,
             IdEstudianteBeneficio = x.eb.IdEstudianteBeneficio,
             ValorAplicado = Math.Round(x.descuento * factorTope, 2),
-            FechaAplicacion = DateTime.Now
+            FechaAplicacion = DateTime.Now,
+            Activo = true
         }).ToList();
 
         await _context.CreditoBeneficio.AddRangeAsync(registros, cancellationToken);

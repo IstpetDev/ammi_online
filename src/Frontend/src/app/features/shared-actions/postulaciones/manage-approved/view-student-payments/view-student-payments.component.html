@@ -1,0 +1,20 @@
+﻿<div class="payments-container">
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="loading">
+    <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    <span>Cargando estado financiero y cuotas del estudiante...</span>
+  </div>
+
+  <div class="payments-wrapper" *ngIf="!loading && estudianteDetalles">
+    <app-ver-detalles
+      [estudianteSeleccionado]="estudianteDetalles"
+      [detallesCreditoAPI]="detallesCreditoDialog"
+      (recargarEstudiante)="onRecargar()">
+    </app-ver-detalles>
+  </div>
+
+  <div class="empty-payments" *ngIf="!loading && !estudianteDetalles">
+    <i class="pi pi-credit-card"></i>
+    <p>No se encontraron registros de pagos o créditos para esta matrícula.</p>
+  </div>
+</div>

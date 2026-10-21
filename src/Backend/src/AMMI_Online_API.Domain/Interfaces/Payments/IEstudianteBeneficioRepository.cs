@@ -9,4 +9,9 @@ public interface IEstudianteBeneficioRepository
     Task<IEnumerable<EstudianteBeneficio>> GetActivosByAlumnoCicloAsync(int idPersona, int idCiclo, CancellationToken cancellationToken);
     Task<EstudianteBeneficio> AddAsync(EstudianteBeneficio entity, CancellationToken cancellationToken);
     Task<EstudianteBeneficio> UpdateAsync(EstudianteBeneficio entity, CancellationToken cancellationToken);
+    Task<EstudianteBeneficio> AsignarBeneficioConAplicacionAsync(
+    EstudianteBeneficio entity,
+    Beneficio beneficio,
+    CancellationToken cancellationToken);
+    Task<bool> DesactivarBeneficioConReversionAsync(EstudianteBeneficio entity, CancellationToken cancellationToken);
 }

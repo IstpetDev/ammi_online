@@ -9,15 +9,15 @@ public partial class EspecieCiclo
 {
     public int IdEspecieCiclo { get; set; }
 
-    public int IdCiclo { get; set; }
-
     public int IdEspecie { get; set; }
+
+    public int IdMalla { get; set; }
 
     public decimal ValorEspecie { get; set; }
 
     public virtual ICollection<Credito> Credito { get; set; } = new List<Credito>();
 
-    public virtual Ciclo IdCicloNavigation { get; set; }
-
     public virtual Especie IdEspecieNavigation { get; set; }
+
+    public virtual Malla IdMallaNavigation { get; set; }
 }

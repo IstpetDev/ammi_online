@@ -6,7 +6,8 @@ namespace AMMI_Online_API.Application.Features.Payments.Queries
 {
     public record GetPagosPendientesQuery : IRequest<Response<IEnumerable<PagoDTO>>>
     {
-        public int? IdMatricula { get; init; }
-        public string? Documento { get; init; }
+        public int? IdMatricula { get; set; }
+        public string? DocumentoCliente { get; set; }
+        public string? DocumentoAlumno { get; set; }
     }
 }

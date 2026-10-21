@@ -16,22 +16,18 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             => await Mediator.Send(query, cancellationToken);
 
         [HttpGet("by-provincia/{idProvincia}")]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<CantonDTO>>> GetCantonesByProvincia(int idProvincia, CancellationToken cancellationToken)
             => await Mediator.Send(new GetCantonesByProvinciaQuery(idProvincia), cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<int>> CreateCanton([FromBody] CreateCantonCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<bool>> UpdateCanton([FromBody] UpdateCantonCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeleteCanton(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteCantonCommand(id), cancellationToken);
     }

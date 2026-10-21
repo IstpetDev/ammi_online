@@ -8,7 +8,6 @@ public record GetAllMallasQuery(
     int? IdMalla,
     string? Detalle,
     int? IdCursos,
-    int? IdTipoOferta,
     int? IdCiclo,
     int PageNumber = 1,
     int PageSize = 10
@@ -16,3 +15,4 @@ public record GetAllMallasQuery(
 public record GetMallaByIdQuery(int IdMalla) : IRequest<MallaDTO?>;
 public record GetMallasByCicloIdQuery(int IdCiclo) : IRequest<IEnumerable<MallaDTO>>;
 public record GetMallaByTipoOfertaWithActiveCicloQuery(int IdTipoOferta) : IRequest<IEnumerable<MallaDTO>>;
+public record GetConfiguracionCursosQuery(CursoConfigRequestDTO Request) : IRequest<IEnumerable<CursoConfigStatusDTO>>;

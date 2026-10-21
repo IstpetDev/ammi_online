@@ -20,7 +20,7 @@ public class FotoPerfilController : ApiController
         => await Mediator.Send(new GetFotoPerfilByPersonaIdQuery(idPersona), cancellationToken);
 
     [HttpPut("{idDocumentosPersonales}")]
-    [AllowAnonymous]
+    
     public async Task<Response<FotoPerfilDTO>> UpdateFoto(int idDocumentosPersonales, IFormFile archivo, CancellationToken cancellationToken)
         => await Mediator.Send(new UpdateFotoPerfilCommand(idDocumentosPersonales, archivo), cancellationToken);
 

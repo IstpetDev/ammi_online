@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Catalogs;
 using AMMI_Online_API.Application.Features.Catalogs.Commands;
 using AMMI_Online_API.Application.Features.Catalogs.Queries;
@@ -35,13 +35,16 @@ public class GetCicloHandler : IRequestHandler<GetCicloQuery, Response<IEnumerab
             IdPadre = c.IdPadre,
             IdPeriodo = c.IdPeriodo,
             IdRegimen = c.IdRegimen,
+            IdTipoOferta = c.IdTipoOferta,
             Detalle = c.Detalle,
             FechaInicioEstimada = c.FechaInicioEstimada,
             FechaFinEstimada = c.FechaFinEstimada,
             EsActivo = c.EsActivo,
             NombrePeriodo = c.IdPeriodoNavigation?.Detalle,
             NombreRegimen = c.IdRegimenNavigation?.Detalle,
-            NombreCicloPadre = c.IdPadreNavigation?.Detalle
+            NombreCicloPadre = c.IdPadreNavigation?.Detalle,
+            NombreTipoOferta = c.IdTipoOfertaNavigation?.Detalle,
+            CantidadMallas = c.Malla.Count
         });
         return Response<IEnumerable<CicloDTO>>.Success(result, "Consulta realizada correctamente");
     }
@@ -61,6 +64,7 @@ public class CreateCicloHandler : IRequestHandler<CreateCicloCommand, Response<i
             IdPadre = request.IdPadre,
             IdPeriodo = request.IdPeriodo,
             IdRegimen = request.IdRegimen,
+            IdTipoOferta = request.IdTipoOferta,
             Detalle = request.Detalle,
             FechaInicioEstimada = request.FechaInicioEstimada,
             FechaFinEstimada = request.FechaFinEstimada,
@@ -86,6 +90,7 @@ public class UpdateCicloHandler : IRequestHandler<UpdateCicloCommand, Response<b
         entity.IdPadre = request.IdPadre;
         entity.IdPeriodo = request.IdPeriodo;
         entity.IdRegimen = request.IdRegimen;
+        entity.IdTipoOferta = request.IdTipoOferta;
         entity.Detalle = request.Detalle;
         entity.FechaInicioEstimada = request.FechaInicioEstimada;
         entity.FechaFinEstimada = request.FechaFinEstimada;

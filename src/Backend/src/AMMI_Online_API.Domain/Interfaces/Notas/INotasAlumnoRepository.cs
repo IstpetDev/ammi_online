@@ -30,7 +30,8 @@ public interface INotasAlumnoRepository
     Task<bool> ExisteNotaAsync(int idDetalleMatricula, int idPlantillaEstructura, CancellationToken ct);
     Task<NotasAlumno?> GetNotaByDetalleMatriculaAsync(int idPlantillaEstructura, int idDetalleMatricula, CancellationToken ct);
     
-    // Consultas por paralelo
-    Task<IEnumerable<NotasAlumno>> GetByParaleloAndEstructuraAsync(int idParalelo, int idPlantillaEstructura, CancellationToken ct);
-    Task<IEnumerable<NotasAlumno>> GetByParaleloAndDetalleMallaAsync(int idParalelo, int idDetalleMalla, CancellationToken ct);
+    // Consultas por MallaParalelo
+    Task<IEnumerable<NotasAlumno>> GetByMallaParaleloAndEstructuraAsync(int idMallaParalelo, int idPlantillaEstructura, CancellationToken ct);
+    Task<IEnumerable<NotasAlumno>> GetByMallaParaleloAndDetalleMallaAsync(int idMallaParalelo, int idDetalleMalla, CancellationToken ct);
+    Task<IEnumerable<NotasAlumno>> GetByParaleloAsync(int idMallaParalelo, int? idDetalleMatricula, int? idDetalleMalla, int? idMatricula, CancellationToken ct);
 }

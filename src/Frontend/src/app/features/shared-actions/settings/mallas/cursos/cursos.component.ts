@@ -6,18 +6,19 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
+import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { CursoDTO, EspecialidadDTO } from '../../../../../data/models/Entities';
 import { CursoService } from '../../../../../core/services/infrastructure/curso.service';
 import { EspecialidadService } from '../../../../../core/services/infrastructure/especialidad.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-cursos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, InputNumberModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, InputNumberModule, SelectModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './cursos.component.html',
   styleUrls: ['./cursos.component.css'],
   providers: [MessageService]
@@ -39,6 +40,7 @@ export class CursosComponent implements OnInit {
     private messageService: MessageService
   ) {
     this.cursoForm = this.fb.group({
+      // backend model uses `idCursos` (plural) per CursoDTO
       idCursos: [null],
       detalle: ['', Validators.required],
       idEspecialidad: [null, Validators.required]
@@ -87,9 +89,16 @@ export class CursosComponent implements OnInit {
 
   saveCurso(): void {
     if (this.cursoForm.valid) {
-      const curso: CursoDTO = this.cursoForm.value;
+      const formValue = this.cursoForm.value;
+      // When creating, backend accepts the standard CursoDTO (uses idCursos for responses)
       if (this.isEditing) {
-        this.cursoService.update(curso).subscribe({
+        // Backend expects `idCurso` (singular) in the PUT payload — map it from `idCursos` control
+        const updatePayload: any = {
+          idCurso: formValue.idCursos ?? formValue.idCurso ?? 0,
+          idEspecialidad: formValue.idEspecialidad,
+          detalle: formValue.detalle
+        };
+        this.cursoService.update(updatePayload).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Curso actualizado correctamente' });
             this.loadCursos();
@@ -100,7 +109,12 @@ export class CursosComponent implements OnInit {
           }
         });
       } else {
-        this.cursoService.create(curso).subscribe({
+        const createPayload: CursoDTO = {
+          idCursos: formValue.idCursos,
+          idEspecialidad: formValue.idEspecialidad,
+          detalle: formValue.detalle
+        };
+        this.cursoService.create(createPayload).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Curso creado correctamente' });
             this.loadCursos();
@@ -129,7 +143,7 @@ export class CursosComponent implements OnInit {
           this.cursoToDelete = null;
         },
         error: (error) => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar curso' });
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: error.error?.message || 'Error al eliminar curso' });
         }
       });
     }

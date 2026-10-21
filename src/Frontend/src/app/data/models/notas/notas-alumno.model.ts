@@ -12,6 +12,7 @@ export interface NotasAlumnoDTO {
   // Campos adicionales del backend
   idMatricula?: number;
   nombreMateria?: string;
+  examenRemedial?: number | null;
 }
 
 /**

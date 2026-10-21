@@ -14,7 +14,7 @@ public interface IGenerarMatricula
     Task<GenerarMatriculaResultado> GenerarMatriculaCompletaAsync(
         int idPersona,
         int idMalla,
-        int idParalelo,
+        int idMallaParalelo,
         Usuario? nuevoUsuario,
         RolUsuario? rolUsuario,
         CancellationToken cancellationToken);
@@ -23,7 +23,13 @@ public interface IGenerarMatricula
     Task<bool> ExisteUsuarioPorIdPersonaAsync(int idPersona, CancellationToken cancellationToken);
     Task<bool> ExisteMatriculaParaUsuarioAsync(int idUsuarioAlumno, CancellationToken cancellationToken);
     Task EliminarRolUsuarioAsync(int idPersona, int idRol, CancellationToken cancellationToken);
-    
+    Task<CambiarParaleloResultado> CambiarParaleloAsync(int idMatricula, int idMallaParaleloNuevo, CancellationToken cancellationToken);
+}
+
+public class CambiarParaleloResultado
+{
+    public bool NotasBorradas { get; set; }
+    public string? Advertencia { get; set; }
 }
 
 public class GenerarMatriculaResultado

@@ -1,0 +1,135 @@
+.acciones-section {
+  flex-shrink: 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.acciones-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+}
+
+.acciones-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.acciones-grid button {
+  width: 100%;
+  justify-content: center;
+  min-height: 2.5rem;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+  font-size: 0.85rem;
+}
+
+/* Base para todos los botones de acción nativos */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.45rem;
+  font-weight: 600;
+  font-size: 0.825rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  line-height: 1;
+}
+
+.btn-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Botón Contactar (Soft Sky / Royal Blue) */
+.btn-contact-brand {
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+}
+.btn-contact-brand:hover {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Botón Completar Registro (Amarillo/Negro oficial del sistema) */
+.btn-complete-brand {
+  background: var(--brand-yellow-dark);
+  border: 1px solid var(--brand-yellow-dark);
+  color: var(--brand-black);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+}
+.btn-complete-brand:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--brand-black);
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Rechazar (Soft Rose / Soft Crimson) */
+.btn-reject-brand {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.btn-reject-brand:hover:not(:disabled) {
+  background: #f43f5e;
+  border-color: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(244, 63, 94, 0.25);
+}
+
+/* Aprobar Postulación (Favorable Emerald Principal) */
+.btn-approve-postulacion {
+  background: #10b981;
+  border: 1px solid #059669;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+}
+
+.btn-approve-postulacion:hover {
+  background: #059669;
+  border-color: #047857;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+}
+
+.btn-faltan-docs {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: not-allowed;
+  box-shadow: none;
+}

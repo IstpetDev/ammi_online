@@ -6,8 +6,8 @@ public interface IMallaRepository
 {
     Task<Malla?> GetByIdAsync(int id, CancellationToken cancellationToken);
     Task<IEnumerable<Malla>> GetAllAsync(CancellationToken cancellationToken);
-    Task<IEnumerable<Malla>> GetAllPagedAsync(int? idMalla, string? detalle, int? idCursos, int? idTipoOferta, int? idCiclo, int pageNumber, int pageSize, CancellationToken cancellationToken);
-    Task<int> CountAllAsync(int? idMalla, string? detalle, int? idCursos, int? idTipoOferta, int? idCiclo, CancellationToken cancellationToken);
+    Task<IEnumerable<Malla>> GetAllPagedAsync(int? idMalla, string? detalle, int? idCursos, int? idCiclo, int pageNumber, int pageSize, CancellationToken cancellationToken);
+    Task<int> CountAllAsync(int? idMalla, string? detalle, int? idCursos, int? idCiclo, CancellationToken cancellationToken);
     Task<Malla> AddAsync(Malla malla, CancellationToken cancellationToken);
     Task<Malla> UpdateAsync(Malla malla, CancellationToken cancellationToken);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken);
@@ -15,4 +15,5 @@ public interface IMallaRepository
     Task<IEnumerable<Malla>> GetByTipoOfertaWithActiveCicloAsync(int idTipoOferta, CancellationToken cancellationToken);
     Task<IEnumerable<Malla>> GetByCicloIdAsync(int idCiclo, CancellationToken cancellationToken);
     Task<Malla?> GetByIdWithRelationsAsync(int idMalla, CancellationToken cancellationToken);
+    Task<IEnumerable<Malla>> GetMallasWithRelationsForConfiguracionAsync(int idCiclo, CancellationToken cancellationToken);
 }
