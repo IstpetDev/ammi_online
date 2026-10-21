@@ -1,9 +1,9 @@
 # Responsables de revision. La ultima regla que coincide con un archivo es la que vale.
+# Con varios responsables en una linea, basta que apruebe cualquiera de ellos.
 
 # Por defecto: el equipo de desarrollo de la organizacion (estandar en todos los proyectos).
 *                           @IstpetDev/hijos-del-ing-henry
 
-# Lo que controla el CI, el despliegue y la propia lista de responsables:
-# solo el responsable de codeowners. Quien cambie estos archivos decide que corre en produccion.
-/.github/                   @JosephBano
-/.gitleaks.toml             @JosephBano
+# CI, despliegue y esta lista: responsable JosephBano; cualquier miembro del equipo tambien puede aprobar.
+/.github/                   @JosephBano @IstpetDev/hijos-del-ing-henry
+/.gitleaks.toml             @JosephBano @IstpetDev/hijos-del-ing-henry
