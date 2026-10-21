@@ -1,0 +1,103 @@
+# Despliegue a produccion (AMMI Online). Primera version: SOLO MANUAL.
+# Tras un primer despliegue correcto y verificado se puede anadir el disparo al fusionar en main:
+#   push:
+#     branches: [main]
+# Requiere el environment "production" (ramas: main) con sus secretos y variables.
+name: Despliegue
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    name: Construir paquete
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.22.3'
+          cache: npm
+          cache-dependency-path: src/Frontend/package-lock.json
+      - name: Publicar API
+        run: dotnet publish src/Backend/src/AMMI_Online_API.API -c Release -o paquete/api
+      - name: Compilar frontend
+        working-directory: src/Frontend
+        run: |
+          npm ci --legacy-peer-deps --no-audit --no-fund
+          # Ruta base SIN CONFIRMAR: ajustar si el proxy publica la app en otra ruta.
+          npm run build -- --configuration production --base-href /appAmmiOnline/
+      - name: Armar y comprimir
+        run: |
+          mkdir -p paquete/app
+          cp -r src/Frontend/dist/Ammi_Online/browser/. paquete/app/
+          (cd paquete && zip -qr ../release.zip api app)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: release.zip
+          retention-days: 7
+
+  desplegar:
+    name: Desplegar en AMMI Online
+    needs: construir
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # federacion de identidad con Tailscale
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+    steps:
+      # Se toma el script de la rama desplegada.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/despliegue
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+      - uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+      - name: Preparar SSH
+        env:
+          CLAVE: ${{ secrets.DEPLOY_SSH_KEY }}
+          CLAVE_SERVIDOR: ${{ vars.DEPLOY_HOST_KEY }}   # clave PUBLICA del servidor ("ssh-ed25519 AAAA...")
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s %s\n' "$DEPLOY_HOST" "$CLAVE_SERVIDOR" > ~/.ssh/known_hosts
+      - name: Subir paquete y script
+        run: |
+          opts="-i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes"
+          scp $opts release.zip "svc-deploy@${DEPLOY_HOST}:C:/despliegue/release.zip"
+          scp $opts .github/despliegue/deploy-ammionline.ps1 "svc-deploy@${DEPLOY_HOST}:C:/despliegue/deploy-ammionline.ps1"
+      - name: Desplegar
+        run: |
+          ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "svc-deploy@${DEPLOY_HOST}" \
+            'powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Zip C:\despliegue\release.zip'
+      - name: Borrar clave
+        if: always()
+        run: rm -f ~/.ssh/deploy
