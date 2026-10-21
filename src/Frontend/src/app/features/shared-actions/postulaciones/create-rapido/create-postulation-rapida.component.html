@@ -1,0 +1,165 @@
+<app-shared-drawer [visible]="visible" (visibleChange)="visibleChange.emit($event)" (close)="closeDrawer()"
+  title="Postulación Rápida" position="right" [showFooter]="false" size="lg">
+
+  <form [formGroup]="postulacionForm" (ngSubmit)="onSubmit()" class="form-rapido-directo">
+
+    <!-- Datos Personales Mínimos -->
+    <div class="form-grid">
+      <!-- Tipo de Documento -->
+      <div class="form-group">
+        <label for="idTipoDocumento">Tipo de Documento <span class="required">*</span></label>
+        <select id="idTipoDocumento" formControlName="idTipoDocumento" class="form-control">
+          <option [ngValue]="null" disabled>Seleccione un tipo</option>
+          <option *ngFor="let tipo of tiposDocumento" [value]="tipo.idTipoDocumento">
+            {{ tipo.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Documento -->
+      <div class="form-group">
+        <label for="documento">Número de Documento <span class="required">*</span></label>
+        <input type="text" id="documento" formControlName="documento" class="form-control"
+          [placeholder]="getDocumentoPlaceholder()" [attr.maxlength]="getDocumentoMaxLength()"
+          (keypress)="onlyNumbers($event)" />
+        <small
+          *ngIf="postulacionForm.get('documento')?.touched && postulacionForm.get('documento')?.hasError('required')"
+          class="error-message">
+          El número de documento es obligatorio.
+        </small>
+        <small
+          *ngIf="postulacionForm.get('documento')?.touched && postulacionForm.get('documento')?.hasError('cedulaInvalida')"
+          class="error-message">
+          La cédula ingresada no es válida.
+        </small>
+        <small
+          *ngIf="postulacionForm.get('documento')?.touched && postulacionForm.get('documento')?.hasError('documentoDuplicado')"
+          class="error-message">
+          Este número de documento ya está registrado.
+        </small>
+      </div>
+
+      <!-- Primer Nombre -->
+      <div class="form-group">
+        <label for="primerNombre">Primer Nombre <span class="required">*</span></label>
+        <input type="text" id="primerNombre" formControlName="primerNombre" class="form-control"
+          placeholder="Ej. Juan" (keypress)="onlyLetters($event)" />
+        <small
+          *ngIf="postulacionForm.get('primerNombre')?.touched && postulacionForm.get('primerNombre')?.hasError('required')"
+          class="error-message">
+          El primer nombre es obligatorio.
+        </small>
+      </div>
+
+      <!-- Segundo Nombre -->
+      <div class="form-group">
+        <label for="segundoNombre">Segundo Nombre</label>
+        <input type="text" id="segundoNombre" formControlName="segundoNombre" class="form-control"
+          placeholder="Ej. Carlos (Opcional)" (keypress)="onlyLetters($event)" />
+      </div>
+
+      <!-- Primer Apellido -->
+      <div class="form-group">
+        <label for="primerApellido">Primer Apellido <span class="required">*</span></label>
+        <input type="text" id="primerApellido" formControlName="primerApellido" class="form-control"
+          placeholder="Ej. Pérez" (keypress)="onlyLetters($event)" />
+        <small
+          *ngIf="postulacionForm.get('primerApellido')?.touched && postulacionForm.get('primerApellido')?.hasError('required')"
+          class="error-message">
+          El primer apellido es obligatorio.
+        </small>
+      </div>
+
+      <!-- Segundo Apellido -->
+      <div class="form-group">
+        <label for="segundoApellido">Segundo Apellido</label>
+        <input type="text" id="segundoApellido" formControlName="segundoApellido" class="form-control"
+          placeholder="Ej. Gómez (Opcional)" (keypress)="onlyLetters($event)" />
+      </div>
+
+      <!-- Fecha de Nacimiento -->
+      <div class="form-group">
+        <label for="fechaNacimiento">Fecha de Nacimiento <span class="required">*</span></label>
+        <input type="date" id="fechaNacimiento" formControlName="fechaNacimiento" class="form-control" />
+        <small
+          *ngIf="postulacionForm.get('fechaNacimiento')?.touched && postulacionForm.get('fechaNacimiento')?.hasError('required')"
+          class="error-message">
+          La fecha de nacimiento es obligatoria.
+        </small>
+      </div>
+    </div>
+
+    <!-- Datos de Contacto Obligatorios -->
+    <div class="form-grid contact-grid">
+      <div class="form-group" *ngFor="let tipo of tiposDatoContactoObligatorios">
+        <label [for]="getContactControlName(tipo.idTipoDatoContacto)">
+          {{ tipo.detalle }} <span class="required">*</span>
+        </label>
+        <div class="input-with-icon">
+          <i [class]="getContactIcon(tipo.detalle)"></i>
+          <input type="text" [id]="getContactControlName(tipo.idTipoDatoContacto)"
+            [formControlName]="getContactControlName(tipo.idTipoDatoContacto)" class="form-control"
+            [placeholder]="'Ingrese su ' + tipo.detalle"
+            (keypress)="onContactKeypress($event, tipo.detalle)" />
+        </div>
+        <small
+          *ngIf="postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.touched && postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.hasError('required')"
+          class="error-message">
+          Este campo de contacto es obligatorio.
+        </small>
+        <small
+          *ngIf="postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.touched && postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.hasError('email')"
+          class="error-message">
+          Ingrese un correo electrónico válido.
+        </small>
+        <small
+          *ngIf="postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.touched && postulacionForm.get(getContactControlName(tipo.idTipoDatoContacto))?.hasError('emailDuplicado')"
+          class="error-message">
+          Este correo ya está registrado en el sistema.
+        </small>
+      </div>
+    </div>
+
+    <!-- Observaciones del Postulante -->
+    <div class="form-group full-width">
+      <div class="label-with-counter">
+        <label for="observacionesPostulante">¡Queremos conocerte!</label>
+        <span class="char-counter">{{ postulacionForm.get('observacionesPostulante')?.value?.length || 0 }}/500</span>
+      </div>
+      <textarea id="observacionesPostulante" formControlName="observacionesPostulante"
+        class="form-control textarea-rapido" rows="3" maxlength="500"
+        placeholder="Cuéntanos brevemente sobre ti. Ej: 'Tengo 25 años, quiero sacar mi licencia B para trabajar y puedo estudiar por las tardes.'"></textarea>
+    </div>
+
+    <div class="hp-field" aria-hidden="true">
+      <label for="website">Website</label>
+      <input type="text" id="website" formControlName="website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="drawer-actions-fixed">
+
+
+      <div class="right-actions">
+        <button type="button" class="btn-cancel" (click)="closeDrawer()" [disabled]="isSubmitting">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting || isVerifyingEmail">
+          <i [class]="isSubmitting ? 'pi pi-spin pi-spinner' : 'pi pi-send'"></i>
+          <span>{{ isSubmitting ? 'Enviando...' : 'Enviar Postulación' }}</span>
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</app-shared-drawer>
+
+<!-- Modal de Verificación de Email -->
+<app-email-verification-modal [isOpen]="showVerificationModal" [email]="emailToVerify"
+  [nombrePostulante]="postulacionForm.get('primerNombre')?.value || ''" (onVerified)="onEmailVerified()"
+  (onClose)="showVerificationModal = false">
+</app-email-verification-modal>
+
+<!-- Componente Toast Global -->
+<app-shared-toast></app-shared-toast>

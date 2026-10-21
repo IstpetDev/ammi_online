@@ -1,0 +1,301 @@
+/* === DESIGN SYSTEM: Settings Tables & Forms (Benefits) === */
+
+.seasons-container { padding: 0; }
+
+/* Header */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--brand-yellow-dark);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seasons-header-title h1,
+.seasons-header-title h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: unset;
+}
+
+.seasons-header-title p {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Card table */
+.seasons-content-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* Table overrides */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-ground) !important;
+  color: var(--text-color) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--brand-yellow-dark) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+:host ::ng-deep .p-datatable .p-paginator {
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+  padding: 0.75rem 1.25rem;
+}
+
+/* Primary action button */
+:host ::ng-deep .btn-nuevo.p-button {
+  background-color: var(--brand-yellow-dark) !important;
+  border-color: var(--brand-yellow-dark) !important;
+  color: var(--brand-black) !important;
+  font-weight: 600;
+}
+
+:host ::ng-deep .btn-nuevo.p-button:hover {
+  filter: brightness(0.92);
+}
+
+/* Row buttons */
+:host ::ng-deep .btn-edit.p-button {
+  color: var(--brand-yellow-dark) !important;
+}
+
+:host ::ng-deep .btn-delete.p-button {
+  color: var(--red-500) !important;
+}
+
+/* Column helpers */
+.col-primary {
+  font-weight: 600;
+}
+
+.col-valor {
+  font-weight: 700;
+  color: var(--brand-yellow-dark);
+}
+
+/* Badge tipo valor */
+.badge-tipo {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-tipo.porcentaje {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-tipo.fijo {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+/* Bool icons */
+.icon-yes {
+  color: #16a34a;
+  font-size: 1.1rem;
+}
+
+.icon-no {
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+/* Actions cell */
+.seasons-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ======== Dialog ======== */
+.seasons-dialog-content {
+  padding: 0.5rem 0;
+}
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seasons-form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.seasons-form-row.two-col > .seasons-form-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.seasons-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.seasons-form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.required {
+  color: var(--red-500);
+}
+
+.seasons-form-control {
+  width: 100%;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: var(--surface-card);
+  color: var(--text-color);
+  transition: border-color 0.15s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+}
+
+:host ::ng-deep .seasons-form-group .p-inputnumber {
+  width: 100%;
+}
+
+:host ::ng-deep .seasons-form-group .p-select {
+  width: 100%;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  background: var(--surface-card);
+}
+
+:host ::ng-deep .seasons-form-group .p-select .p-select-label {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-color);
+}
+
+:host ::ng-deep .seasons-form-group .p-select:not(.p-disabled).p-focus {
+  border-color: var(--brand-yellow-dark);
+  box-shadow: none;
+}
+
+:host ::ng-deep .seasons-form-group .p-select .p-select-trigger {
+  color: var(--text-color-secondary);
+}
+
+:host ::ng-deep .seasons-form-group .p-inputnumber .p-inputtext {
+  width: 100%;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: var(--surface-card);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .seasons-form-group .p-inputnumber .p-inputtext:focus {
+  border-color: var(--brand-yellow-dark);
+  box-shadow: none;
+}
+
+.form-hint {
+  color: var(--red-500);
+  font-size: 0.78rem;
+  margin-top: 0.1rem;
+}
+
+.form-hint-info {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  font-style: italic;
+  margin-top: 0.1rem;
+}
+
+/* Checkbox group */
+.checkbox-group {
+  justify-content: flex-start;
+}
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+}
+
+:host ::ng-deep .checkbox-wrap .p-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+:host ::ng-deep .checkbox-wrap .p-checkbox .p-checkbox-box {
+  border-color: var(--surface-border);
+}
+
+:host ::ng-deep .checkbox-wrap .p-checkbox.p-highlight .p-checkbox-box {
+  background: var(--brand-yellow-dark);
+  border-color: var(--brand-yellow-dark);
+}
+
+.checkbox-label {
+  font-size: 0.88rem;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+/* Form actions */
+.seasons-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+@media (max-width: 768px) {
+  .seasons-form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}

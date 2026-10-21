@@ -1,24 +1,22 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MallasListComponent } from './mallas-list/mallas-list.component';
 import { CursosComponent } from './cursos/cursos.component';
 import { TipoOfertaComponent } from './tipo-oferta/tipo-oferta.component';
 import { MateriasComponent } from './materias/materias.component';
 import { EspecialidadesComponent } from './especialidades/especialidades.component';
 import { RequisitosComponent } from './requisitos/requisitos.component';
-import { MallaRequisitosComponent } from './malla-requisitos/malla-requisitos.component';
-import { DetalleMallaComponent } from './detalle-malla/detalle-malla.component';
+import { BeneficiosComponent } from './beneficios/beneficios.component';
 
 @Component({
   selector: 'app-mallas',
   standalone: true,
-  imports: [CommonModule, RouterLink, MallasListComponent, CursosComponent, TipoOfertaComponent, MateriasComponent, EspecialidadesComponent, RequisitosComponent, MallaRequisitosComponent, DetalleMallaComponent],
+  imports: [CommonModule, RouterLink, CursosComponent, TipoOfertaComponent, MateriasComponent, EspecialidadesComponent, RequisitosComponent, BeneficiosComponent],
   templateUrl: './mallas.component.html',
   styleUrls: ['./mallas.component.css']
 })
 export class MallasComponent implements OnInit {
-  activeTab: string = 'mallas';
+  activeTab: string = 'cursos';
 
   @Output() backClicked = new EventEmitter<void>();
 

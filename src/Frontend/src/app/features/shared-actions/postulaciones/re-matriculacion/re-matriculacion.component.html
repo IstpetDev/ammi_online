@@ -1,0 +1,630 @@
+<app-shared-toast></app-shared-toast>
+
+<!-- ── Dialog Apertura de Ciclo ───────────────────────────────────────────── -->
+<p-dialog
+  header="Apertura de Ciclo"
+  [(visible)]="showAperturaCicloDialog"
+  [modal]="true"
+  [style]="{ width: '860px', maxWidth: '96vw' }"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="apertura-ciclo-dialog"
+>
+  <app-apertura-ciclo />
+</p-dialog>
+
+<div class="menu-container">
+
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-sync"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Re-matriculación</h1>
+          <p class="page-subtitle">Diagnóstico y ejecución del proceso de re-matriculación por alumno o en lote</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          pTooltip="Clonar mallas de un ciclo anterior al nuevo ciclo"
+          tooltipPosition="left"
+          (click)="showAperturaCicloDialog = true"
+        >
+          <i class="pi pi-copy"></i>
+          <span>Apertura de Ciclo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="flex gap-2 mb-4 border-b border-gray-200 p-1 bg-gray-50 rounded-lg max-w-md">
+    <button 
+      class="flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+      [ngClass]="activeTab === 'masiva' ? 'bg-white text-primary-600 shadow-sm border border-gray-200' : 'text-gray-600 hover:text-gray-900'"
+      (click)="activeTab = 'masiva'"
+    >
+      <i class="pi pi-users"></i>
+      <span>En Lote (Masiva)</span>
+    </button>
+    <button 
+      class="flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+      [ngClass]="activeTab === 'individual' ? 'bg-white text-primary-600 shadow-sm border border-gray-200' : 'text-gray-600 hover:text-gray-900'"
+      (click)="activeTab = 'individual'"
+    >
+      <i class="pi pi-user"></i>
+      <span>Individual</span>
+    </button>
+  </div>
+
+  <div class="card">
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- TAB MASIVA                                                        -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <div *ngIf="activeTab === 'masiva'">
+      <div class="form-section">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
+          <div class="form-item">
+            <label>Período Origen</label>
+            <app-custom-select
+              [items]="periodosLectivos"
+              labelField="detalle"
+              valueField="idPeriodoLectivo"
+              [(selectedValue)]="idPeriodoOrigen"
+              placeholder="Seleccione el período"
+              [disabled]="procesandoMasivo || loadingAlumnos"
+              (selectedValueChange)="onPeriodoOrigenChange()"
+            />
+          </div>
+
+          <div class="form-item">
+            <label>Ciclo Origen</label>
+            <app-custom-select
+              [items]="ciclosOrigenFiltrados"
+              labelField="detalle"
+              valueField="idCiclo"
+              [(selectedValue)]="idCicloOrigen"
+              placeholder="Seleccione el origen"
+              [disabled]="!idPeriodoOrigen || procesandoMasivo || loadingAlumnos"
+              (selectedValueChange)="onCicloOrigenChange()"
+            />
+          </div>
+
+          <div class="form-item">
+            <label>Malla / Nivel Origen</label>
+            <app-custom-select
+              [items]="mallasOrigen"
+              labelField="detalle"
+              valueField="idMalla"
+              [(selectedValue)]="idMallaOrigen"
+              placeholder="Todos los niveles"
+              [disabled]="!idCicloOrigen || procesandoMasivo || loadingAlumnos"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
+          <div class="form-item">
+            <label>Período Destino</label>
+            <app-custom-select
+              [items]="periodosLectivos"
+              labelField="detalle"
+              valueField="idPeriodoLectivo"
+              [(selectedValue)]="idPeriodoDestino"
+              placeholder="Seleccione el período"
+              [disabled]="procesandoMasivo || loadingAlumnos"
+              (selectedValueChange)="onPeriodoDestinoChange()"
+            />
+          </div>
+
+          <div class="form-item">
+            <label>Ciclo Destino</label>
+            <app-custom-select
+              [items]="ciclosDestinoFiltrados"
+              labelField="detalle"
+              valueField="idCiclo"
+              [(selectedValue)]="idCicloDestino"
+              placeholder="Seleccione el destino"
+              [disabled]="!idPeriodoDestino || procesandoMasivo || loadingAlumnos"
+            />
+          </div>
+
+          <div class="flex gap-2 w-full">
+            <button
+              type="button"
+              class="btn btn-primary w-full"
+              [disabled]="!idCicloOrigen || !idCicloDestino || procesandoMasivo || loadingAlumnos"
+              (click)="cargarAlumnos()"
+            >
+              <i class="pi pi-spin pi-spinner" *ngIf="loadingAlumnos"></i>
+              <i class="pi pi-search" *ngIf="!loadingAlumnos"></i>
+              <span>Cargar alumnos</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Opciones de Cierre Automático en Lote -->
+        <div class="flex flex-wrap gap-4 items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl mb-4" *ngIf="alumnosBulk.length > 0">
+          <div class="flex items-center gap-4">
+            <label class="checkbox-label flex items-center gap-2 cursor-pointer font-medium text-sm text-gray-700">
+              <input type="checkbox" [(ngModel)]="cerrarMatriculaAnterior" class="rounded text-primary-600 focus:ring-primary-500" [disabled]="procesandoMasivo" />
+              <span>Cerrar matrícula anterior automáticamente</span>
+            </label>
+
+            <div class="form-item estado-cierre min-w-[240px]" *ngIf="cerrarMatriculaAnterior">
+              <app-custom-select
+                [items]="estadosCompletado"
+                labelField="detalle"
+                valueField="idEstadoMatricula"
+                [(selectedValue)]="idEstadoMatriculaCompletado"
+                placeholder="Seleccione estado de cierre"
+                [disabled]="procesandoMasivo"
+              />
+            </div>
+          </div>
+
+          <div class="flex gap-2" *ngIf="!procesandoMasivo">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="getSelectedEligibleCount() === 0"
+              (click)="ejecutarMasivo()"
+            >
+              <i class="pi pi-play"></i>
+              <span>Procesar re-matriculación masiva</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de progreso del procesado masivo -->
+      <div *ngIf="procesandoMasivo" class="p-4 bg-blue-50 border border-blue-200 rounded-lg my-4">
+        <div class="flex justify-between font-semibold text-sm mb-2 text-blue-800">
+          <span>Procesando alumnos en lote...</span>
+          <span>{{ progresoBulk }} de {{ totalBulk }} ({{ (progresoBulk / totalBulk) * 100 | number:'1.0-0' }}%)</span>
+        </div>
+        <div class="w-full bg-blue-200 rounded-full h-2.5">
+          <div class="bg-blue-600 h-2.5 rounded-full" [style.width.%]="(progresoBulk / totalBulk) * 100"></div>
+        </div>
+      </div>
+
+      <!-- LOADING MASIVO -->
+      <div *ngIf="loadingAlumnos" class="loading-container">
+        <p-progressSpinner strokeWidth="4" />
+        <p class="font-semibold text-gray-700">Cargando matrículas y analizando diagnósticos académicos...</p>
+        <div *ngIf="totalDiagnostico > 0" class="w-full max-w-md bg-blue-100 rounded-full h-2 mt-2 overflow-hidden relative">
+          <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-200" [style.width.%]="(progresoDiagnostico / totalDiagnostico) * 100"></div>
+        </div>
+        <span *ngIf="totalDiagnostico > 0" class="text-xs text-blue-700 mt-1 block text-center font-medium">{{ progresoDiagnostico }} de {{ totalDiagnostico }} alumnos diagnosticados</span>
+      </div>
+
+      <!-- Buscador local y listado de alumnos -->
+      <div *ngIf="alumnosBulk.length > 0 && !loadingAlumnos" class="mt-4">
+        <div class="flex flex-wrap gap-4 items-center justify-between mb-3 px-1">
+          <div class="relative w-full max-w-sm">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input 
+              type="text" 
+              pInputText 
+              [(ngModel)]="filtroBusqueda" 
+              placeholder="Buscar por nombre o documento..." 
+              class="w-full pl-9 py-2 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" 
+              [disabled]="procesandoMasivo"
+            />
+          </div>
+          <div class="text-xs text-gray-500 font-medium bg-gray-100 py-1 px-2.5 rounded-full border border-gray-200">
+            Mostrando {{ alumnosFiltradosBulk.length }} de {{ alumnosBulk.length }} alumnos
+          </div>
+        </div>
+
+        <div class="overflow-hidden border border-gray-200 rounded-lg">
+          <p-table
+            [value]="alumnosFiltradosBulk"
+            styleClass="p-datatable-sm p-datatable-gridlines"
+            [rowHover]="true"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 50px; text-align: center">
+                  <input 
+                    type="checkbox" 
+                    [checked]="todosSeleccionados" 
+                    (change)="toggleSeleccionarTodos($event)"
+                    [disabled]="procesandoMasivo"
+                  />
+                </th>
+                <th>Alumno</th>
+                <th>Identificación</th>
+                <th>Malla Origen</th>
+                <th>Diagnóstico / Estado</th>
+                <th>Paralelo Destino</th>
+                <th style="width: 120px; text-align: center">Acción</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-item>
+              <tr [ngClass]="{ 
+                'row-sin-cupo': !item.puedeReMatricular && !item.yaMatriculado,
+                'row-ya-matriculado': item.yaMatriculado,
+                'row-avanzar': item.puedeReMatricular && item.diagnostico.motivo === MotivoReMatricula.AVANZAR && !item.procesado,
+                'row-repetir': item.puedeReMatricular && item.diagnostico.motivo === MotivoReMatricula.REPETIR && !item.procesado,
+                'row-exito': item.exito && item.procesado,
+                'row-error': !item.exito && item.procesado
+              }">
+                <td style="text-align: center">
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="item.seleccionado" 
+                    [disabled]="!item.puedeReMatricular || item.procesado"
+                  />
+                </td>
+                <td>
+                  <div class="font-bold text-gray-800">{{ item.matricula.primerApellido }} {{ item.matricula.segundoApellido }} {{ item.matricula.primerNombre }}</div>
+                </td>
+                <td class="font-mono text-xs text-gray-600">{{ item.matricula.numeroDocumento }}</td>
+                <td class="text-sm">{{ item.matricula.detalleMalla }}</td>
+                <td>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-1">
+                      <p-tag
+                        [value]="getMotivoLabel(item.diagnostico.motivo)"
+                        [severity]="getMotivoSeverity(item.diagnostico.motivo)"
+                        [icon]="getMotivoIcon(item.diagnostico.motivo)"
+                      />
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">{{ item.diagnostico.mensajeDiagnostico }}</span>
+                  </div>
+                </td>
+                <td>
+                  <!-- Si puede rematricularse, muestra dropdown para elegir el paralelo de destino -->
+                  <select 
+                    *ngIf="item.puedeReMatricular && !item.procesado" 
+                    [(ngModel)]="item.paraleloSeleccionado"
+                    class="p-1 text-xs border border-gray-300 rounded bg-white w-full font-medium"
+                  >
+                    <option *ngFor="let p of item.diagnostico.paralelosDisponibles" [value]="p.idMallaParalelo">
+                      {{ p.detalleParalelo || ('Paralelo ' + p.idMallaParalelo) }} (Disponibles: {{ p.cupoDisponible }})
+                    </option>
+                  </select>
+                  <!-- Si ya está matriculado o no puede, mostrar leyenda descriptiva -->
+                  <span *ngIf="item.yaMatriculado" class="text-xs text-blue-700 font-bold flex items-center gap-1">
+                    <i class="pi pi-check"></i> Ya Matriculado
+                  </span>
+                  <span *ngIf="!item.puedeReMatricular && !item.yaMatriculado" class="text-xs text-gray-400 italic">No aplicable</span>
+                  <span *ngIf="item.procesado && item.exito" class="text-xs text-green-700 font-semibold">Asignado</span>
+                </td>
+                <td style="text-align: center">
+                  <span *ngIf="!item.procesado" class="text-xs text-gray-400 font-medium">Pendiente</span>
+                  <span *ngIf="item.procesado && item.exito" class="text-green-600 font-bold text-sm">
+                    <i class="pi pi-check-circle"></i> Listo
+                  </span>
+                  <span 
+                    *ngIf="item.procesado && !item.exito" 
+                    class="text-red-600 font-bold text-sm" 
+                    [pTooltip]="item.mensajeError" 
+                    tooltipPosition="left"
+                  >
+                    <i class="pi pi-times-circle"></i> Error
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="7" class="empty-message py-8">
+                  <i class="pi pi-ban empty-icon text-gray-400 text-3xl"></i>
+                  <p class="text-gray-500">Haga clic en "Cargar alumnos" después de seleccionar los ciclos.</p>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- TAB INDIVIDUAL                                                    -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <div *ngIf="activeTab === 'individual'">
+      <div class="form-section">
+        <div class="form-grid">
+          <div class="form-item">
+            <label>Número de documento del alumno</label>
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="numeroDocumento"
+              placeholder="Ej: 1234567890"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-item">
+            <label>Período destino</label>
+            <app-custom-select
+              [items]="periodosLectivos"
+              labelField="detalle"
+              valueField="idPeriodoLectivo"
+              [(selectedValue)]="idPeriodoDestinoInd"
+              placeholder="Seleccione el período"
+              (selectedValueChange)="onPeriodoDestinoIndChange()"
+            />
+          </div>
+
+          <div class="form-item">
+            <label>Ciclo destino</label>
+            <app-custom-select
+              [items]="ciclosDestinoIndFiltrados"
+              labelField="detalle"
+              valueField="idCiclo"
+              [(selectedValue)]="idCicloDestino"
+              placeholder="Seleccione el ciclo"
+              [disabled]="!idPeriodoDestinoInd"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="loading"
+              (click)="diagnosticar()"
+            >
+              <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+              <i class="pi pi-search" *ngIf="!loading"></i>
+              <span>Ver diagnóstico</span>
+            </button>
+            <button
+              type="button"
+              *ngIf="diagnostico || resultado"
+              class="btn btn-secondary"
+              (click)="nueva()"
+            >
+              <i class="pi pi-refresh"></i>
+              <span>Nueva consulta</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hint de mallas del ciclo seleccionado -->
+        <ng-container *ngIf="cicloSeleccionado">
+          <div *ngIf="cicloSeleccionado.cantidadMallas === 0" class="ciclo-mallas-hint hint-warn">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Este ciclo no tiene mallas configuradas. Ejecute <strong>Apertura de Ciclo</strong> antes de continuar.</span>
+            <button
+              type="button"
+              class="btn btn-secondary text-xs"
+              style="padding: 0.35rem 0.75rem; font-size: 0.75rem;"
+              (click)="showAperturaCicloDialog = true"
+            >
+              <i class="pi pi-copy"></i>
+              <span>Apertura de Ciclo</span>
+            </button>
+          </div>
+          <div *ngIf="cicloSeleccionado.cantidadMallas! > 0" class="ciclo-mallas-hint hint-ok">
+            <i class="pi pi-check-circle"></i>
+            <span>
+              {{ cicloSeleccionado.cantidadMallas }} malla{{ cicloSeleccionado.cantidadMallas === 1 ? '' : 's' }} configurada{{ cicloSeleccionado.cantidadMallas === 1 ? '' : 's' }} en este ciclo.
+            </span>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- ── LOADING ─────────────────────────────────────────────────────── -->
+      <div *ngIf="loading" class="loading-container">
+        <p-progressSpinner strokeWidth="4" />
+        <p>Consultando diagnóstico...</p>
+      </div>
+
+      <!-- ── DIAGNÓSTICO ────────────────────────────────────────────────── -->
+      <ng-container *ngIf="diagnostico && !loading">
+        <p-divider />
+
+        <div class="diagnostico-section">
+
+          <!-- Info general de la matrícula -->
+          <div class="info-grid">
+            <div class="info-card" *ngIf="diagnostico.idMatriculaActual">
+              <span class="info-label">Matrícula actual</span>
+              <span class="info-value id-badge">#{{ diagnostico.idMatriculaActual }}</span>
+            </div>
+            <div class="info-card" *ngIf="diagnostico.detalleMallaOrigen">
+              <span class="info-label">Malla origen</span>
+              <span class="info-value">{{ diagnostico.detalleMallaOrigen }}</span>
+            </div>
+            <div class="info-card" *ngIf="diagnostico.detalleMallaDestino">
+              <span class="info-label">Malla destino</span>
+              <span class="info-value">{{ diagnostico.detalleMallaDestino }}</span>
+            </div>
+          </div>
+
+          <!-- Estado del diagnóstico -->
+          <div class="motivo-row">
+            <p-tag
+              [value]="getMotivoLabel(diagnostico.motivo)"
+              [severity]="getMotivoSeverity(diagnostico.motivo)"
+              [icon]="getMotivoIcon(diagnostico.motivo)"
+            />
+            <span class="mensaje-diagnostico">{{ diagnostico.mensajeDiagnostico }}</span>
+          </div>
+
+          <!-- Alerta si NO puede re-matricularse -->
+          <div
+            *ngIf="!diagnostico.puedeReMatricular"
+            class="alert-bloqueado"
+            [ngClass]="'alert-' + getMotivoSeverity(diagnostico.motivo)"
+          >
+            <i [ngClass]="getMotivoIcon(diagnostico.motivo)"></i>
+            <div>
+              <strong>No es posible ejecutar la re-matriculación</strong>
+              <p>{{ diagnostico.mensajeDiagnostico }}</p>
+              <p *ngIf="diagnostico.motivo === MotivoReMatricula.MALLA_DESTINO_NO_ENCONTRADA" class="alert-hint">
+                Ejecute primero el proceso de <strong>Apertura de Ciclo</strong> para clonar las mallas al ciclo destino.
+              </p>
+            </div>
+            <button
+              type="button"
+              *ngIf="diagnostico.motivo === MotivoReMatricula.MALLA_DESTINO_NO_ENCONTRADA"
+              class="btn btn-secondary"
+              (click)="showAperturaCicloDialog = true"
+            >
+              <i class="pi pi-copy"></i>
+              <span>Apertura de Ciclo</span>
+            </button>
+          </div>
+
+          <!-- Paralelos disponibles -->
+          <ng-container *ngIf="diagnostico.puedeReMatricular">
+
+            <div class="paralelos-header">
+              <i class="pi pi-list-check"></i>
+              <span>Seleccione el paralelo destino</span>
+            </div>
+
+            <p-table
+              [value]="diagnostico.paralelosDisponibles"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+              [rowHover]="true"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 60px; text-align: center">Sel.</th>
+                  <th>Paralelo</th>
+                  <th style="text-align: center; min-width: 100px">Cupo máx.</th>
+                  <th style="text-align: center; min-width: 110px">Matriculados</th>
+                  <th style="text-align: center; min-width: 100px">Disponible</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-paralelo>
+                <tr
+                  [ngClass]="{ 'row-sin-cupo': paralelo.cupoDisponible <= 0, 'row-seleccionada': idMallaParalelo === paralelo.idMallaParalelo }"
+                  (click)="paralelo.cupoDisponible > 0 ? idMallaParalelo = paralelo.idMallaParalelo : null"
+                  [style.cursor]="paralelo.cupoDisponible > 0 ? 'pointer' : 'not-allowed'"
+                >
+                  <td style="text-align: center">
+                    <p-radioButton
+                      [(ngModel)]="idMallaParalelo"
+                      [value]="paralelo.idMallaParalelo"
+                      [disabled]="paralelo.cupoDisponible <= 0"
+                    />
+                  </td>
+                  <td>
+                    <div class="paralelo-cell">
+                      <i class="pi pi-users paralelo-icon"></i>
+                      <span>{{ paralelo.detalleParalelo || ('Paralelo ' + paralelo.idMallaParalelo) }}</span>
+                      <span *ngIf="paralelo.cupoDisponible <= 0" class="badge-lleno">Sin cupo</span>
+                    </div>
+                  </td>
+                  <td style="text-align: center">{{ getCupoLabel(paralelo) }}</td>
+                  <td style="text-align: center">{{ paralelo.matriculados }}</td>
+                  <td style="text-align: center">
+                    <span
+                      class="cupo-badge"
+                      [ngClass]="paralelo.cupoDisponible <= 0 ? 'cupo-vacio' : 'cupo-disponible'"
+                    >
+                      {{ getDisponibleLabel(paralelo) }}
+                    </span>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="empty-message">
+                    <i class="pi pi-ban empty-icon"></i>
+                    <p>No hay paralelos disponibles para este ciclo.</p>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+
+            <!-- Opciones de cierre -->
+            <div class="opciones-cierre">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="cerrarMatriculaAnterior" />
+                <span>Cerrar matrícula anterior automáticamente</span>
+              </label>
+
+              <div class="form-item estado-cierre" *ngIf="cerrarMatriculaAnterior">
+                <label>Estado de cierre</label>
+                <app-custom-select
+                  [items]="estadosCompletado"
+                  labelField="detalle"
+                  valueField="idEstadoMatricula"
+                  [(selectedValue)]="idEstadoMatriculaCompletado"
+                  placeholder="Seleccione estado de cierre"
+                />
+              </div>
+            </div>
+
+            <div class="confirmar-row">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="!idMallaParalelo || loadingConfirmar"
+                (click)="confirmar()"
+              >
+                <i class="pi pi-spin pi-spinner" *ngIf="loadingConfirmar"></i>
+                <i class="pi pi-check" *ngIf="!loadingConfirmar"></i>
+                <span>Confirmar re-matriculación</span>
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+
+      <!-- ── RESULTADO EXITOSO ───────────────────────────────────────────── -->
+      <ng-container *ngIf="resultado && !loading">
+        <p-divider />
+        <div class="resultado-section">
+          <div class="resultado-header">
+            <i class="pi pi-check-circle resultado-icon"></i>
+            <div>
+              <h3>Re-matriculación completada</h3>
+              <p>El proceso se ejecutó correctamente.</p>
+            </div>
+          </div>
+
+          <div class="resultado-grid">
+            <div class="resultado-item">
+              <span class="resultado-label">Nueva matrícula</span>
+              <span class="resultado-value id-badge">#{{ resultado.idMatriculaNueva }}</span>
+            </div>
+            <div class="resultado-item">
+              <span class="resultado-label">Matrícula anterior cerrada</span>
+              <p-tag
+                [value]="resultado.matriculaAnteriorCerrada ? 'Sí' : 'No'"
+                [severity]="resultado.matriculaAnteriorCerrada ? 'success' : 'secondary'"
+              />
+            </div>
+          </div>
+
+          <div class="resumen-box">
+            <pre>{{ resultado.resumen }}</pre>
+          </div>
+
+          <div class="confirmar-row">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="nueva()"
+            >
+              <i class="pi pi-plus"></i>
+              <span>Nueva re-matriculación</span>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+</div>
+

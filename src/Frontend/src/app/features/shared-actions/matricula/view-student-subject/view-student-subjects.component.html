@@ -1,0 +1,24 @@
+<!-- view-student-subjects.component.html -->
+  <header class="card-header">
+    <div class="header-left">
+      <i class="pi pi-book header-icon" aria-hidden="true"></i>
+      <h2>Materias</h2>
+    </div>
+  </header>
+
+  <div *ngIf="loading" class="loading">Cargando materias...</div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="!loading && !error && subjects.length > 0" class="list-wrap">
+    <ul class="subjects-list">
+      <li *ngFor="let subject of subjects" class="subject-item" role="listitem">
+        <div class="subject-left">
+          <span class="icon-circle"><i class="pi pi-book"></i></span>
+          <span class="subject-name">{{ subject.nombreMateria }}</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div *ngIf="!loading && !error && subjects.length === 0" class="empty">No hay materias disponibles para esta malla.</div>

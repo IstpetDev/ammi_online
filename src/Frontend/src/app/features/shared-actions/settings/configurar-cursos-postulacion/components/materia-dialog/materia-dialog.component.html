@@ -1,0 +1,17 @@
+<app-shared-modal [(visible)]="visible" (visibleChange)="visibleChange.emit($event)" title="Nueva Materia"
+  customWidth="420px" [showFooter]="true" cancelText="Cancelar" confirmText="Guardar Materia"
+  [confirmDisabled]="!formDetalle.trim() || guardando" (confirm)="guardar()" (cancel)="close()">
+  <div class="ccp-dialog-body">
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Nombre de la Materia *</label>
+      <input type="text" class="form-control ccp-input" [ngModel]="formDetalle"
+        (ngModelChange)="formDetalle = $event ? $event.toUpperCase() : ''" placeholder="Ej: MATEMÁTICAS AVANZADAS"
+        style="text-transform: uppercase;" (keyup.enter)="guardar()">
+    </div>
+    <div class="ccp-dialog-field">
+      <label class="ccp-field-label">Horas Requeridas</label>
+      <input type="number" class="form-control ccp-input" [(ngModel)]="formHoras" placeholder="Ej: 80" min="1" step="1"
+        (keyup.enter)="guardar()">
+    </div>
+  </div>
+</app-shared-modal>

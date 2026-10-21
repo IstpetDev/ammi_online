@@ -1,19 +1,16 @@
 <div class="seasons-container">
-  <div class="seasons-header">
-    <div class="seasons-header-content">
-      <div class="seasons-header-title">
-        <h1>Gestión de Cursos</h1>
-        <p>Aquí se gestionarán los cursos relacionados con especialidades.</p>
-      </div>
-      <div class="seasons-header-actions">
-        <p-button label="Agregar Curso" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="p-button-primary p-button-lg"></p-button>
-      </div>
+  <!-- Header -->
+  <div class="settings-header">
+    <div class="seasons-header-title">
+      <h1>Gestión de Cursos</h1>
+      <p>Aquí se gestionarán los cursos relacionados con especialidades.</p>
     </div>
+    <p-button label="Nuevo Curso" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="btn-nuevo"></p-button>
   </div>
 
   <div class="seasons-content-card">
     <p-table [value]="cursos" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cursos">
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cursos">
       <ng-template pTemplate="header">
         <tr>
           <th>Detalle</th>
@@ -23,17 +20,24 @@
       </ng-template>
       <ng-template pTemplate="body" let-curso>
         <tr>
-          <td>{{ curso.detalle }}</td>
+          <td class="col-primary">{{ curso.detalle }}</td>
           <td>{{ getEspecialidadName(curso.idEspecialidad!) }}</td>
-          <td class="seasons-actions-cell">
-            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(curso)" pTooltip="Editar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
-            <p-button icon="pi pi-trash" (onClick)="confirmDelete(curso)" pTooltip="Eliminar" tooltipPosition="top" styleClass="p-button-rounded p-button-text p-button-sm"></p-button>
+          <td class="seasons-actions-cell" style="justify-content:center">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(curso)" pTooltip="Editar" tooltipPosition="top"
+              styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(curso)" pTooltip="Eliminar" tooltipPosition="top"
+              styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="3">No hay cursos registrados.</td>
+          <td colspan="3">
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-color-secondary)">
+              <i class="pi pi-inbox" style="font-size:2rem; display:block; margin-bottom:0.5rem"></i>
+              No hay cursos registrados aún.
+            </div>
+          </td>
         </tr>
       </ng-template>
     </p-table>
@@ -41,43 +45,36 @@
 </div>
 
 <!-- Dialog para crear/editar curso -->
-<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '600px'}" [header]="isEditing ? 'Editar Curso' : 'Crear Curso'"
-          (onHide)="hideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
-  <div class="seasons-dialog-content">
-    <form [formGroup]="cursoForm" (ngSubmit)="saveCurso()" class="seasons-form-grid">
-      <div class="seasons-form-row">
-        <div class="seasons-form-group">
-          <label for="detalle" class="seasons-form-label">Detalle</label>
-          <input pInputText id="detalle" formControlName="detalle" class="seasons-form-control" />
-        </div>
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '480px'}"
+  [header]="isEditing ? 'Editar Curso' : 'Nuevo Curso'" (onHide)="hideDialog()" [draggable]="false" [resizable]="false">
+  <form [formGroup]="cursoForm">
+    <div class="p-fluid formgrid grid" style="padding-top: 0.5rem;">
+
+      <div class="field col-12">
+        <label class="font-semibold block mb-2" style="min-width: 100%;">Detalle <span class="text-red-400">*</span></label>
+        <input pInputText formControlName="detalle" placeholder="Nombre del curso" />
       </div>
-      <div class="seasons-form-row">
-        <div class="seasons-form-group">
-          <label for="idEspecialidad" class="seasons-form-label">Especialidad</label>
-          <select id="idEspecialidad" formControlName="idEspecialidad" class="seasons-form-control">
-            <option value="">Seleccione una especialidad</option>
-            <option *ngFor="let especialidad of especialidades" [value]="especialidad.idEspecialidad">{{ especialidad.detalle }}</option>
-          </select>
-        </div>
+
+      <div class="field col-12">
+        <label class="font-semibold block mb-2">Especialidad <span class="text-red-400">*</span></label>
+        <p-select formControlName="idEspecialidad" [options]="especialidades" optionLabel="detalle"
+          optionValue="idEspecialidad" placeholder="Seleccione una especialidad" appendTo="body"
+          styleClass="w-full"></p-select>
       </div>
-      <div class="seasons-form-actions">
-        <p-button label="Cancelar" icon="pi pi-times" type="button" (onClick)="displayDialog = false" class="p-button-secondary p-button-outlined"></p-button>
-        <p-button label="Guardar" icon="pi pi-check" type="submit" [disabled]="!cursoForm.valid" class="p-button-primary"></p-button>
-      </div>
-    </form>
-  </div>
+
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="saveCurso()" [disabled]="!cursoForm.valid"></p-button>
+  </ng-template>
 </p-dialog>
 
 <!-- Modal de confirmación para eliminar -->
-<app-confirmation-modal
-  [visible]="showConfirmDelete"
-  title="Confirmar Eliminación"
-  message="¿Está seguro de que desea eliminar este curso?"
-  acceptLabel="Eliminar"
-  rejectLabel="Cancelar"
-  (accept)="deleteCurso()"
-  (reject)="cancelDelete()"
-  (hide)="cancelDelete()">
+<app-confirmation-modal [visible]="showConfirmDelete" title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar este curso?" acceptLabel="Eliminar" rejectLabel="Cancelar"
+  (accept)="deleteCurso()" (reject)="cancelDelete()" (hide)="cancelDelete()">
 </app-confirmation-modal>
 
-<p-toast></p-toast>
+<app-shared-toast></app-shared-toast>

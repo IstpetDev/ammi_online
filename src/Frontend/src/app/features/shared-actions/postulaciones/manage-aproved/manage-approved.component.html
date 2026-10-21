@@ -1,122 +1,223 @@
-<div class="postulations-container">
+<div class="mp-container">
 
+  <!-- Loading State -->
+  @if (loading) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando datos...</span>
+  </div>
+  }
 
-  <!-- Filtros -->
-  <div class="filters-section">
-    <div class="filter-group">
-      <label for="nombre">Buscar por Nombre o Documento:</label>
-      <input type="text" id="nombre" [(ngModel)]="filtroNombre" placeholder="Escriba el nombre o documento..." class="form-control">
+  @if (!loading) {
+  <!-- Filtros Principales -->
+  <div class="mp-filters">
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Período Lectivo:</label>
+      <app-custom-select [items]="periodos" labelField="detalle" valueField="idPeriodoLectivo"
+        [(selectedValue)]="filtroPeriodoId" (selectedValueChange)="onPeriodoChange()" placeholder="Seleccione período"
+        [searchable]="false">
+      </app-custom-select>
     </div>
-    <div class="filter-group button-group">
-      <button type="button" (click)="limpiarFiltros()" class="btn-clear">Limpiar Filtros</button>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Ciclo:</label>
+      <app-custom-select [items]="ciclos" labelField="detalle" valueField="idCiclo" [(selectedValue)]="filtroCicloId"
+        (selectedValueChange)="onCicloChange()" placeholder="Todos los ciclos" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Curso:</label>
+      <app-custom-select [items]="mallas" labelField="detalle" valueField="idMalla" [(selectedValue)]="filtroCursoId"
+        (selectedValueChange)="onFiltroChange()" placeholder="Todos los cursos" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group mp-filter-search">
+      <label class="mp-filter-label">Buscar estudiante:</label>
+      <div class="mp-search-wrapper">
+        <svg class="mp-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text"
+               [ngModel]="filtroNombre"
+               (ngModelChange)="onSearchInput($event)"
+               placeholder="Nombre o documento..."
+               class="mp-search-input" />
+        @if (filtroNombre) {
+          <button type="button" class="mp-search-clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="mp-filter-actions">
+      <button class="mp-btn-clear" type="button" (click)="limpiarFiltros()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-btn-icon">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
     </div>
   </div>
 
-  <div class="content-card">
-    <p-table [value]="matriculasFiltradas" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} matrículas">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Nombre Completo</th>
-          <th>Documento</th>
-          <th>Paralelo</th>
-          <th>Finalizada</th>
-          <th>Tipo Oferta</th>
-          <th>Ciclo</th>
-          <th>Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-matricula>
-        <tr>
-          <td>{{ matricula.primerNombre }} {{ matricula.segundoNombre }} {{ matricula.primerApellido }} {{ matricula.segundoApellido }}</td>
-          <td>{{ matricula.numeroDocumento }}</td>
-          <td>{{ matricula.detalleParalelo }}</td>
-          <td>{{ matricula.esFinalizada ? 'Sí' : 'No' }}</td>
-          <td>{{ matricula.detalleTipoOferta }}</td>
-          <td>{{ matricula.detalleCiclo }}</td>
-          <td>
-            <p-button
-              label="Editar"
-              icon="pi pi-pencil"
-              severity="info"
-              size="small"
-              (onClick)="editarMatricula(matricula)">
-            </p-button>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="7">No hay matrículas registradas.</td>
-        </tr>
-      </ng-template>
-      </p-table>
-    </div>
+  <!-- Loading matriculas -->
+  @if (loadingMatriculas) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando matrículas...</span>
+  </div>
+  }
 
-  <!-- Diálogo de edición -->
-  <p-dialog
-    [(visible)]="showEditDialog"
-    [modal]="true"
-    [closable]="true"
-    [closeOnEscape]="true"
-    header="Editar Matrícula"
-    [style]="{ width: '500px' }"
-    (onHide)="cancelarEdicion()">
+  <!-- Estado vacio: sin resultados -->
+  @if (matriculas.length === 0 && !loadingMatriculas) {
+  <app-shared-empty-state icon="pi pi-inbox" title="No se encontraron matrículas"
+    description="No hay matrículas registradas para los filtros seleccionados." actionText="Ir a Postulaciones"
+    actionIcon="pi pi-external-link" (action)="navigateToPostulaciones()" minHeight="max(360px, calc(100vh - 400px))">
+  </app-shared-empty-state>
+  }
 
-    <div class="p-fluid" *ngIf="editingMatricula">
-      <!-- Información del estudiante (solo lectura) -->
-      <div class="field mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Estudiante</label>
-        <div class="p-3 bg-gray-50 rounded border">
-          {{ editingMatricula.primerNombre }} {{ editingMatricula.segundoNombre }} {{ editingMatricula.primerApellido }} {{ editingMatricula.segundoApellido }}
-          ({{ editingMatricula.numeroDocumento }})
-        </div>
-      </div>
+  <!-- Contenido cuando hay matriculas -->
+  @if (matriculas.length > 0 && !loadingMatriculas) {
+  <app-shared-table [columns]="tableColumns" [data]="matriculas" [loading]="loadingMatriculas"
+    [totalRecords]="totalRecords" [rowsPerPage]="pageSize" [page]="currentPage" [paginator]="true"
+    (pageChange)="onLazyLoad($event)">
 
-      <!-- Paralelo -->
-      <div class="field mb-4">
-        <label for="paralelo" class="block text-sm font-medium text-gray-700 mb-2">Paralelo</label>
-        <input
-          pInputText
-          id="paralelo"
-          [(ngModel)]="editForm.detalleParalelo"
-          placeholder="Ingrese el paralelo"
-          class="w-full">
-      </div>
-
-      <!-- Finalizada -->
-      <div class="field mb-4">
-        <div class="flex items-center">
-          <p-checkbox
-            [ngModel]="editForm.esFinalizada"
-            (ngModelChange)="editForm.esFinalizada = $event"
-            inputId="finalizada"
-            label="Matrícula finalizada">
-          </p-checkbox>
-        </div>
-        <small class="text-gray-500 block mt-1">
-          Marque si la matrícula ya está completada
-        </small>
-      </div>
-    </div>
-
-    <ng-template pTemplate="footer">
-      <p-button
-        label="Cancelar"
-        icon="pi pi-times"
-        severity="secondary"
-        (onClick)="cancelarEdicion()">
-      </p-button>
-      <p-button
-        label="Guardar"
-        icon="pi pi-check"
-        severity="success"
-        [loading]="saving"
-        (onClick)="guardarEdicion()">
-      </p-button>
+    <ng-template stColTemplate="documento" let-row="row">
+      <span class="mp-cell-doc">{{ row.numeroDocumento }}</span>
     </ng-template>
-  </p-dialog>
 
-  <!-- Toast para mensajes -->
-  <p-toast></p-toast>
+    <ng-template stColTemplate="nombreCompleto" let-row="row">
+      <div class="mp-user-cell">
+        <div class="user-avatar-small profile-avatar">
+          @let foto = estudiantesFotos[row.idUsuarioAlumno];
+          @if (foto && foto.url && !foto.isPdf) {
+            <img [src]="foto.url" alt="Avatar" class="mp-avatar-img" />
+          } @else if (foto && foto.url && foto.isPdf) {
+            <i class="pi pi-file-pdf" style="color: #ef4444; font-size: 1rem;" title="PDF"></i>
+          } @else {
+            <i class="pi pi-user" style="color: var(--text-color-secondary); font-size: 0.95rem;"></i>
+          }
+        </div>
+        <div class="mp-user-info">
+          <span class="mp-cell-name">{{ row.primerNombre }} {{ row.segundoNombre }} {{ row.primerApellido }} {{ row.segundoApellido }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template stColTemplate="curso" let-row="row">
+      <span class="mp-cell-course">{{ row.detalleMalla }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="paralelo" let-row="row">
+      <span class="mp-badge-paralelo">{{ row.detalleParalelo }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="estado" let-row="row">
+      <span class="mp-status-pill" [class.mp-status-approved]="getEstadoLabel(row) === 'Matricula Aprobada'" [class.mp-status-progress]="getEstadoLabel(row) !== 'Matricula Aprobada'">
+        <i class="pi" [class.pi-check-circle]="getEstadoLabel(row) === 'Matricula Aprobada'" [class.pi-clock]="getEstadoLabel(row) !== 'Matricula Aprobada'"></i>
+        {{ getEstadoLabel(row) }}
+      </span>
+    </ng-template>
+
+    <ng-template stColTemplate="tipoOferta" let-row="row">
+      <span class="mp-cell-text">{{ row.detalleTipoOferta }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="ciclo" let-row="row">
+      <span class="mp-cell-text">{{ row.detalleCiclo }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="acciones" let-row="row">
+      <div class="mp-actions">
+        <button class="mp-btn-manage" (click)="openStudentPanel(row)" title="Gestionar estudiante">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>Gestionar</span>
+        </button>
+      </div>
+    </ng-template>
+
+  </app-shared-table>
+  }
+  }
+
+  <!-- ══ EDIT MATRICULA DRAWER ══ -->
+  <app-shared-drawer [(visible)]="showEditDialog" title="Editar Matrícula" mode="modal" size="md"
+    [showCloseButton]="true" [closeOnOverlayClick]="false" [showFooter]="true" cancelText="Cancelar"
+    confirmText="Guardar" [confirmDisabled]="!editForm.idMallaParalelo || saving" (confirm)="guardarEdicion()"
+    (cancel)="cancelarEdicion()">
+
+    @if (editingMatricula) {
+    <div class="mp-modal-info-card">
+      <div class="mp-modal-info-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-modal-info-icon">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        <h4 class="mp-modal-info-name">{{ editingMatricula.primerNombre }} {{ editingMatricula.segundoNombre }} {{
+          editingMatricula.primerApellido }} {{ editingMatricula.segundoApellido }}</h4>
+      </div>
+      <div class="mp-modal-info-details">
+        <div class="mp-modal-info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-info-row-icon">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="9" y1="21" x2="9" y2="9" />
+          </svg>
+          <span><strong>Documento:</strong> {{ editingMatricula.numeroDocumento }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-form">
+      <div class="mp-modal-field">
+        <label class="mp-modal-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-label-icon">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          Paralelo: <span class="mp-required">*</span>
+        </label>
+        @if (loadingParalelosEdicion) {
+        <div style="font-size:0.9rem; color:#888; padding:0.4rem 0;">
+          <svg class="mp-spinner-big" style="width:16px;height:16px;display:inline;margin-right:0.4rem;"
+            viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+              stroke-dasharray="31.4 31.4" />
+          </svg>
+          Cargando paralelos...
+        </div>
+        }
+        @if (!loadingParalelosEdicion) {
+        <app-custom-select [items]="mallaParalelosEdicion" labelField="detalle" valueField="idMallaParalelo"
+          [(selectedValue)]="editForm.idMallaParalelo" placeholder="Seleccione un paralelo" [searchable]="false">
+        </app-custom-select>
+        }
+      </div>
+    </div>
+    }
+  </app-shared-drawer>
+
+  <!-- ══ STUDENT PANEL DRAWER ══ -->
+  <app-student-panel-dialog [(visible)]="showStudentPanel" [matricula]="selectedMatriculaForPanel"
+    (onSaved)="recargarMatriculas()">
+  </app-student-panel-dialog>
+
+  <!-- Toast -->
+  <app-shared-toast></app-shared-toast>
 </div>

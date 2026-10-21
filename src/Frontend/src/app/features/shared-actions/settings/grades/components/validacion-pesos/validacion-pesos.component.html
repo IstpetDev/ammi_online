@@ -1,9 +1,9 @@
-<div *ngIf="validacion" class="my-4">
-  <p-message [severity]="validacion.esValido ? 'success' : 'error'" 
+<div *ngIf="validacion && !validacion.esValido" class="my-4">
+  <p-message severity="error" 
              [text]="validacion.mensaje"
              styleClass="w-full block"></p-message>
 
-  <div *ngIf="!validacion.esValido && validacion.nodosInvalidos.length" class="mt-2 ml-4">
+  <div *ngIf="validacion.nodosInvalidos.length" class="mt-2 ml-4">
     <small class="block text-red-600 font-semibold mb-1">Detalle de problemas:</small>
     <ul class="list-disc list-inside ml-2">
       <li *ngFor="let nodo of validacion.nodosInvalidos" class="text-sm text-red-600">

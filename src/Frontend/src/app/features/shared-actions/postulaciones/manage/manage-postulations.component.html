@@ -1,74 +1,359 @@
-<div class="postulations-container">
-  <div class="postulations-header">
-    <h2>Gestionar Postulaciones</h2>
-    <p>Administre y visualice todas las postulaciones registradas en el sistema</p>
+<div class="mp-container">
+
+  <div class="mp-filters">
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Período Lectivo:</label>
+      <app-custom-select [items]="periodos" labelField="detalle" valueField="idPeriodoLectivo"
+        [(selectedValue)]="filtroPeriodoId" (selectedValueChange)="onPeriodoChange()" placeholder="Seleccione período"
+        [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Ciclo:</label>
+      <app-custom-select [items]="ciclos" labelField="detalle" valueField="idCiclo" [(selectedValue)]="filtroCicloId"
+        (selectedValueChange)="onCicloChange()" placeholder="Todos los ciclos" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Curso:</label>
+      <app-custom-select [items]="cursos" labelField="detalle" valueField="idMalla" [(selectedValue)]="filtroCursoId"
+        (selectedValueChange)="onFiltroChange()" placeholder="Todos los cursos" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group">
+      <label class="mp-filter-label">Estado:</label>
+      <app-custom-select [items]="estados" labelField="detalle" valueField="idTipoEstadoAprobacion" [(selectedValue)]="filtroEstadoId"
+        (selectedValueChange)="onFiltroChange()" placeholder="Todos los estados" [searchable]="false">
+      </app-custom-select>
+    </div>
+    <div class="mp-filter-group mp-filter-search">
+      <label class="mp-filter-label">Buscar persona:</label>
+      <div class="mp-search-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mp-search-icon">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          class="mp-search-input"
+          [(ngModel)]="filtroSearch"
+          (input)="onSearchInput()"
+          placeholder="Buscar por nombre, apellido o cédula..."
+          aria-label="Buscar persona por nombre, apellido o cédula"
+        />
+        @if (filtroSearch) {
+          <button type="button" class="mp-search-clear-btn" (click)="limpiarSearch()" title="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="mp-filter-actions">
+      <button class="mp-btn-clear" type="button" (click)="limpiarFiltros()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-btn-icon">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="filters-section">
-    <div class="filter-group">
-      <label for="nombre">Buscar por Nombre:</label>
-      <input type="text" id="nombre" [(ngModel)]="filtroNombre" placeholder="Escriba el nombre..." class="form-control">
-    </div>
-    <div class="filter-group">
-      <label for="oferta">Oferta Académica:</label>
-      <select id="oferta" [(ngModel)]="filtroOferta" class="form-control">
-        <option [ngValue]="null">Todas</option>
-        <option *ngFor="let oferta of tiposOferta" [ngValue]="oferta">{{ oferta.detalle }}</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label for="ciclo">Ciclo:</label>
-      <select id="ciclo" [(ngModel)]="filtroCiclo" class="form-control">
-        <option [ngValue]="null">Todos</option>
-        <option *ngFor="let ciclo of ciclos" [ngValue]="ciclo">{{ ciclo.detalle }}</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label for="estado">Estado:</label>
-      <select id="estado" [(ngModel)]="filtroEstado" class="form-control">
-        <option [ngValue]="null">Todos</option>
-        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado.detalle }}</option>
-      </select>
-    </div>
-    <div class="filter-group button-group">
-      <button type="button" (click)="limpiarFiltros()" class="btn-clear">Limpiar Filtros</button>
-    </div>
-  </div>
+  @if (postulaciones.length > 0 && !loading) {
+  <app-shared-table [columns]="tableColumns" [data]="postulaciones" [loading]="loading" [totalRecords]="totalRecords"
+    [rowsPerPage]="10" [page]="1" [paginator]="true" (pageChange)="onLazyLoad($event)">
 
-  <div class="content-card">
-    <p-table [value]="postulacionesFiltradas" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} postulaciones">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Nombre Completo</th>
-          <th>Documento</th>
-          <th>Edad</th>
-          <th>Ciclo</th>
-          <th>Oferta Académica</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-postulacion>
-        <tr>
-          <td>{{ postulacion.NombreCompleto }}</td>
-          <td>{{ postulacion.Documento }}</td>
-          <td>{{ postulacion.Edad }}</td>
-          <td>{{ postulacion.Ciclo }}</td>
-          <td>{{ postulacion.OfertaAcademica }}</td>
-          <td>{{ postulacion.Estado }}</td>
-          <td class="actions-cell">
-            <p-button icon="pi pi-eye" (onClick)="verDetalles(postulacion)" pTooltip="Ver detalles" tooltipPosition="top" styleClass="p-button-rounded p-button-info p-button-sm"></p-button>
-            <p-button icon="pi pi-pencil" (onClick)="editarPostulacion(postulacion)" pTooltip="Editar postulacion" tooltipPosition="top" styleClass="p-button-rounded p-button-warning p-button-sm"></p-button>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="8">No hay postulaciones registradas.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+    <ng-template stColTemplate="documento" let-row="row">
+      <span class="mp-cell-doc">{{ row.documento }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="nombreCompleto" let-row="row">
+      <span class="mp-cell-name">{{ row.primerNombre }} {{ row.segundoNombre }} {{ row.primerApellido }} {{
+        row.segundoApellido }}</span>
+    </ng-template>
+
+    <ng-template stColTemplate="cicloActivoDetalle" let-row="row">
+      @if (row.cicloActivoDetalle === 'Ciclo lectivo por definir') {
+        <span class="mp-pending-info" title="Ciclo lectivo aún no configurado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mp-pending-icon">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          Ciclo por definir
+        </span>
+      } @else {
+        <span>{{ row.cicloActivoDetalle }}</span>
+      }
+    </ng-template>
+
+    <ng-template stColTemplate="mallaDetalle" let-row="row">
+      @if (row.mallaDetalle === 'Curso por definir') {
+        <span class="mp-pending-info" title="Curso aún no configurado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mp-pending-icon">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          Curso por definir
+        </span>
+      } @else {
+        <span>{{ row.mallaDetalle }}</span>
+      }
+    </ng-template>
+
+    <ng-template stColTemplate="requisitosPendientes" let-row="row">
+      <div class="mp-req-cell">
+        @if (row.totalRequisitosObligatorios === 0) {
+          <span class="mp-req-none" title="Sin requisitos obligatorios configurados">—</span>
+        } @else if (row.totalRequisitosPendientes === 0) {
+          <div class="mp-req-complete-chip" title="Todos los requisitos obligatorios están aprobados">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mp-req-check-icon">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span class="mp-req-chip-txt">Al día ({{ row.totalSubidosAprobados }}/{{ row.totalRequisitosObligatorios }})</span>
+          </div>
+        } @else {
+          <div class="mp-req-status-block">
+            <!-- Badges resumen -->
+            <div class="mp-req-badges-row">
+              @if (row.totalSubidosAprobados > 0) {
+                <span class="mp-req-badge mp-req-badge--approved" title="Requisitos aprobados">
+                  <span class="mp-req-badge-dot"></span>
+                  {{ row.totalSubidosAprobados }} aprobados
+                </span>
+              }
+              @if (row.totalSubidosSinRevisar > 0) {
+                <span class="mp-req-badge mp-req-badge--review" title="Requisitos por revisar / validar">
+                  <span class="mp-req-badge-dot"></span>
+                  {{ row.totalSubidosSinRevisar }} por revisar
+                </span>
+              }
+              @if ((row.totalRequisitosObligatorios - row.totalSubidosAprobados - row.totalSubidosSinRevisar - row.totalSubidosRechazados) > 0) {
+                <span class="mp-req-badge mp-req-badge--missing" title="Requisitos pendientes de subir">
+                  <span class="mp-req-badge-dot"></span>
+                  {{ row.totalRequisitosObligatorios - row.totalSubidosAprobados - row.totalSubidosSinRevisar - row.totalSubidosRechazados }} por subir
+                </span>
+              }
+              @if (row.totalSubidosRechazados > 0) {
+                <span class="mp-req-badge mp-req-badge--rejected" title="Requisitos rechazados">
+                  <span class="mp-req-badge-dot"></span>
+                  {{ row.totalSubidosRechazados }} rechazados
+                </span>
+              }
+            </div>
+
+            <!-- Lista de requisitos pendientes con estados -->
+            @if (row.requisitosPendientesNombres && row.requisitosPendientesNombres.length > 0) {
+              <div class="mp-req-items-list">
+                @for (req of row.requisitosPendientesNombres; track req) {
+                  <div class="mp-req-item-pill" [title]="req">
+                    <span class="mp-req-status-indicator"
+                      [class.indicator-review]="req.includes('(Por revisar)') || req.includes('(Por validar)')"
+                      [class.indicator-missing]="req.includes('(Falta subir)')"
+                      [class.indicator-rejected]="req.includes('(Rechazado)')"></span>
+                    <span class="mp-req-item-name">{{ req }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template stColTemplate="estadoDetalle" let-row="row">
+      @if (row.estadoDetalle === 'APROBADO') {
+        @if (row.matriculaPagada || row.estadoPagoMatricula === 'PAGADO') {
+          <span class="mp-status-pill status-aprobado" title="Postulación aprobada y valor de matrícula cancelado">
+            Matriculado
+          </span>
+        } @else if (row.estadoPagoMatricula === 'PAGO_POR_VALIDAR') {
+          <span class="mp-status-pill status-pago-validar" title="Postulación aprobada - Comprobante de pago registrado pendiente de validación por Secretaría/Tesorería">
+            Pago por Validar
+          </span>
+        } @else if (row.estadoPagoMatricula === 'VALOR_FALTANTE') {
+          <span class="mp-status-pill status-valor-faltante" [title]="'Postulación aprobada - Pago parcial realizado (Saldo pendiente: $' + (row.saldoPendienteMatricula | number:'1.2-2') + ')'">
+            Faltante Matrícula
+          </span>
+        } @else {
+          <span class="mp-status-pill status-aprobado-sin-pago" title="Postulación aprobada - Aún no registra pago de matrícula">
+            Sin Pago
+          </span>
+        }
+      } @else {
+        <span class="mp-status-pill" [ngClass]="{
+          'status-rechazado': row.estadoDetalle === 'RECHAZADO',
+          'status-revision': row.estadoDetalle === 'EN REVISION' || row.estadoDetalle === 'ESPERA APROBACIÓN' || row.estadoDetalle === 'DOCUMENTOS REVISION',
+          'status-espera': row.estadoDetalle === 'ESPERA DOCUMENTOS' || row.estadoDetalle === 'CONTACTO PERSONA'
+        }">
+          {{ row.estadoDetalle }}
+        </span>
+      }
+    </ng-template>
+
+    <ng-template stColTemplate="acciones" let-row="row">
+      <div class="mp-actions">
+        <span class="mp-btn-badge-wrapper">
+          <button class="mp-btn-icon-only" [class.mp-btn-success]="row.estadoRequisitos === 'TODOS_APROBADOS'" (click)="verDetalles(row)" [title]="'Ver detalles de postulación'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          @if (row.estadoRequisitos === 'TODOS_APROBADOS') {
+            <span class="mp-badge-dot mp-badge-dot-green" title="Todos los requisitos obligatorios aprobados"></span>
+          } @else if (row.estadoRequisitos === 'PENDIENTE_REVISION' || row.totalSubidosSinRevisar > 0) {
+            <span class="mp-badge-dot mp-badge-dot-red" [title]="'Documentos subidos sin revisar (' + row.totalSubidosSinRevisar + ')'"></span>
+          } @else if (row.estadoRequisitos === 'REVISADOS_SIN_APROBAR') {
+            <span class="mp-badge-dot mp-badge-dot-orange" title="Documentos revisados pero sin aprobar/rechazar o incompletos"></span>
+          } @else if (row.tieneRequisitosPendientes) {
+            <span class="mp-badge-dot mp-badge-dot-red" title="Requisitos pendientes"></span>
+          }
+        </span>
+        @if (row.estadoDetalle === 'APROBADO' && !row.matriculaPagada) {
+          <button class="mp-btn-icon-only mp-btn-pagos" (click)="irAPagos(row)" title="Ver y gestionar pagos del postulante">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
+        }
+        @if (row.estadoDetalle !== 'APROBADO' && row.estadoDetalle !== 'RECHAZADO' && row.estadoDetalle !==
+        'FINALIZADO') {
+        <button class="mp-btn-icon-only mp-btn-secondary" (click)="abrirModalCambiarCiclo(row)" title="Cambiar ciclo / Malla">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+        </button>
+        }
+      </div>
+    </ng-template>
+  </app-shared-table>
+  }
+
+  @if (postulaciones.length === 0 && !loading) {
+  <app-shared-empty-state icon="pi pi-inbox" title="No hay postulaciones registradas"
+    description="Aún no existen postulaciones para los filtros seleccionados. Puede crear una nueva postulación manual o configurar los cursos disponibles para que los postulantes puedan aplicar."
+    minHeight="max(360px, calc(100vh - 400px))">
+    <button type="button" class="mp-empty-btn mp-empty-btn-primary" (click)="crearNuevaPostulacion()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="mp-empty-btn-icon">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Crear nueva postulación
+    </button>
+    <button type="button" class="mp-empty-btn mp-empty-btn-secondary" (click)="gestionarCursos()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="mp-empty-btn-icon">
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+      Gestionar cursos disponibles
+    </button>
+  </app-shared-empty-state>
+  }
+
+  @if (loading && postulaciones.length === 0) {
+  <div class="mp-loading-initial">
+    <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="31.4 31.4" />
+    </svg>
+    <span>Cargando postulaciones...</span>
   </div>
+  }
+
+  <app-shared-drawer [(visible)]="mostrarModalCambioCiclo" [title]="'Cambiar Ciclo de Postulación'" [mode]="'modal'"
+    [size]="'md'" [showCloseButton]="true" [closeOnOverlayClick]="false" [showFooter]="true" cancelText="Cancelar"
+    confirmText="Cambiar Ciclo" [confirmDisabled]="!cicloSeleccionadoId || !mallaSeleccionadaId"
+    (confirm)="confirmarCambioCiclo()" (cancel)="cerrarModalCambioCiclo()">
+
+    <div drawer-title></div>
+
+    @if (postulacionSeleccionada) {
+    <div class="mp-modal-info-card">
+      <div class="mp-modal-info-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="mp-modal-info-icon">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        <h4 class="mp-modal-info-name">{{ postulacionSeleccionada.primerNombre }} {{
+          postulacionSeleccionada.segundoNombre }} {{ postulacionSeleccionada.primerApellido }} {{
+          postulacionSeleccionada.segundoApellido }}</h4>
+      </div>
+      <div class="mp-modal-info-details">
+        <div class="mp-modal-info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-info-row-icon">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="9" y1="21" x2="9" y2="9" />
+          </svg>
+          <span><strong>Documento:</strong> {{ postulacionSeleccionada.documento }}</span>
+        </div>
+        <div class="mp-modal-info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-info-row-icon">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c3 3 9 3 12 0v-5" />
+          </svg>
+          <span><strong>Ciclo Actual:</strong> {{ postulacionSeleccionada.cicloActivoDetalle }}</span>
+        </div>
+        <div class="mp-modal-info-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-info-row-icon">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          <span><strong>Oferta Académica:</strong> {{ postulacionSeleccionada.mallaDetalle }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-form">
+      <div class="mp-modal-field">
+        <label class="mp-modal-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-label-icon">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Nuevo Ciclo: <span class="mp-required">*</span>
+        </label>
+        <app-custom-select [items]="ciclosActivos" labelField="detalle" valueField="idCiclo"
+          [(selectedValue)]="cicloSeleccionadoId" (selectedValueChange)="onCicloSeleccionadoChange()"
+          placeholder="Seleccione un ciclo activo" [searchable]="false">
+        </app-custom-select>
+      </div>
+
+      <div class="mp-modal-field">
+        <label class="mp-modal-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="mp-modal-label-icon">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          Nueva Malla: <span class="mp-required">*</span>
+        </label>
+        <app-custom-select [items]="mallasDisponibles" labelField="detalle" valueField="idMalla"
+          [(selectedValue)]="mallaSeleccionadaId"
+          [placeholder]="cicloSeleccionadoId ? 'Seleccione una malla disponible' : 'Seleccione primero un ciclo'"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
+    </div>
+    }
+  </app-shared-drawer>
+
+  <app-shared-toast></app-shared-toast>
 </div>

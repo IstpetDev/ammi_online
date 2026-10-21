@@ -1,0 +1,587 @@
+<div class="costos-extras-container">
+
+  <!-- VISTA SWITCHER TABS -->
+  <div class="view-switcher-bar">
+    <div class="view-tabs">
+      <button type="button" class="tab-btn" [class.active]="vistaActual === 'asignaciones'" (click)="vistaActual = 'asignaciones'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Asignaciones a Estudiantes</span>
+        <span class="count-badge">{{ creditosExtras.length }}</span>
+      </button>
+
+      @if (esAdmin) {
+      <button type="button" class="tab-btn" [class.active]="vistaActual === 'catalogo'" (click)="vistaActual = 'catalogo'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Catálogo de Costos Extras</span>
+        <span class="count-badge count-secondary">{{ catalogoExtras.length }}</span>
+      </button>
+      }
+    </div>
+
+    <div class="view-actions">
+      @if (vistaActual === 'asignaciones' && puedeAsignar) {
+      <button type="button" class="btn-primary-action btn-masivo-gradient" (click)="abrirModalMasivo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Asignación Masiva</span>
+      </button>
+      <button type="button" class="btn-secondary-action" (click)="abrirModalAsignar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Asignar a Estudiante</span>
+      </button>
+      }
+      @if (vistaActual === 'catalogo' && esAdmin) {
+      <button type="button" class="btn-primary-action" (click)="abrirModalNuevoCatalogo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Nuevo Arancel / Costo</span>
+      </button>
+      }
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: ASIGNACIONES A ESTUDIANTES -->
+  @if (vistaActual === 'asignaciones') {
+  <div class="asignaciones-section">
+
+    <!-- FILTROS Y BÚSQUEDA -->
+    <div class="filters-card">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" [(ngModel)]="busquedaTexto" placeholder="Buscar por alumno, cédula, arancel, curso..." class="search-input" />
+      </div>
+
+      <div class="filter-pills">
+        <button type="button" class="pill-btn" [class.active]="filtroEstado === 'TODOS'" (click)="filtroEstado = 'TODOS'">Todos</button>
+        <button type="button" class="pill-btn pill-warn" [class.active]="filtroEstado === 'PENDIENTE'" (click)="filtroEstado = 'PENDIENTE'">Pendientes</button>
+        <button type="button" class="pill-btn pill-success" [class.active]="filtroEstado === 'PAGADO'" (click)="filtroEstado = 'PAGADO'">Pagados</button>
+      </div>
+
+      <button type="button" class="btn-reload" (click)="cargarCreditosExtras()" [disabled]="loading" title="Recargar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading" class="reload-icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+
+    <!-- TABLA DE ASIGNACIONES -->
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Estudiante</th>
+            <th>Curso / Paralelo</th>
+            <th>Arancel / Rubro</th>
+            <th class="text-right">Monto</th>
+            <th class="text-right">Saldo</th>
+            <th class="text-center">Fecha Límite</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center" *ngIf="puedeAsignar">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+          <tr>
+            <td colspan="8" class="text-center py-6">
+              <div class="loading-state">
+                <svg class="spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                <span>Cargando costos extras...</span>
+              </div>
+            </td>
+          </tr>
+          } @else if (creditosFiltrados.length === 0) {
+          <tr>
+            <td colspan="8" class="text-center py-6">
+              <div class="empty-state-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--surface-400)" stroke-width="1.5" class="empty-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p>No se encontraron costos extras registrados con los filtros aplicados.</p>
+              </div>
+            </td>
+          </tr>
+          } @else {
+            @for (item of creditosFiltrados; track item.idCredito) {
+            <tr class="table-row">
+              <td>
+                <div class="student-cell">
+                  <span class="student-name">{{ item.alumnoNombre || 'Estudiante #' + item.idMatricula }}</span>
+                  <span class="student-doc">Doc: {{ item.documento || '-' }} &bull; Matrícula #{{ item.idMatricula }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="course-cell">
+                  <span class="course-name">{{ item.curso || '-' }}</span>
+                  @if (item.paralelo) {
+                  <span class="paralelo-badge">Paralelo {{ item.paralelo }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="arancel-badge">{{ item.especieDetalle }}</span>
+              </td>
+              <td class="text-right font-bold">
+                ${{ item.montoOriginal | number:'1.2-2' }}
+              </td>
+              <td class="text-right">
+                <span [class.text-danger]="item.saldoPendiente > 0" [class.text-success]="item.saldoPendiente === 0" class="font-bold">
+                  ${{ item.saldoPendiente | number:'1.2-2' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="date-text">{{ item.fechaLimite ? (item.fechaLimite | date:'dd/MM/yyyy') : 'Sin fecha' }}</span>
+              </td>
+              <td class="text-center">
+                <span class="status-badge" [class.badge-success]="item.pagado" [class.badge-warn]="!item.pagado && item.estado !== 'CANCELADO'" [class.badge-danger]="item.estado === 'CANCELADO'">
+                  {{ item.pagado ? 'PAGADO' : item.estado }}
+                </span>
+              </td>
+              <td class="text-center" *ngIf="puedeAsignar">
+                @if (!item.tienePagos && !item.pagado) {
+                <button type="button" class="btn-action-icon btn-action-danger" (click)="confirmarAnular(item)" title="Anular costo extra">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-icon"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+                } @else {
+                <span class="text-muted text-xs" title="Tiene pagos registrados y no se puede anular">-</span>
+                }
+              </td>
+            </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  }
+
+  <!-- SECCIÓN 2: CATÁLOGO DE COSTOS EXTRAS (SOLO ADMIN) -->
+  @if (vistaActual === 'catalogo' && esAdmin) {
+  <div class="catalogo-section">
+    <div class="catalogo-header-card">
+      <div>
+        <h3 class="catalogo-title">Catálogo de Aranceles y Costos Adicionales</h3>
+        <p class="catalogo-sub">Gestiona los rubros extras disponibles para ser asignados a los estudiantes (ej. Exámenes de Ubicación, Homologaciones, Derechos de Grado, Certificados).</p>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Concepto / Arancel</th>
+            <th class="text-center" style="width: 140px;">Estado</th>
+            <th class="text-center" style="width: 120px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (catalogoExtras.length === 0) {
+          <tr>
+            <td colspan="4" class="text-center py-6">
+              <div class="empty-state-box">
+                <p>No hay rubros adicionales configurados en el catálogo.</p>
+              </div>
+            </td>
+          </tr>
+          } @else {
+            @for (esp of catalogoExtras; track esp.idEspecie) {
+            <tr class="table-row">
+              <td class="font-bold text-muted">#{{ esp.idEspecie }}</td>
+              <td>
+                <span class="arancel-name">{{ esp.detalle }}</span>
+              </td>
+              <td class="text-center">
+                <span class="status-badge" [class.badge-success]="esp.activo !== false" [class.badge-danger]="esp.activo === false">
+                  {{ esp.activo !== false ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="actions-flex">
+                  <button type="button" class="btn-action-icon" (click)="editarEspecieCatalogo(esp)" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-icon"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button type="button" class="btn-action-icon" [class.btn-action-danger]="esp.activo !== false" (click)="toggleEstadoEspecie(esp)" [title]="esp.activo !== false ? 'Desactivar' : 'Activar'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-icon"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  }
+
+</div>
+
+<!-- MODAL: ASIGNAR COSTO EXTRA A ALUMNO -->
+<app-shared-modal
+  [(visible)]="mostrarModalAsignar"
+  [title]="'Asignar Costo Extra a Estudiante'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'560px'"
+  (cancel)="cerrarModalAsignar()">
+
+  <div class="modal-form">
+
+    <!-- PASO 1: SELECCIONAR ESTUDIANTE -->
+    <div class="form-group">
+      <label class="form-label">Estudiante / Matrícula <span class="req">*</span></label>
+
+      @if (!matriculaSeleccionada) {
+        <div class="student-search-box">
+          <div class="search-input-group">
+            <input
+              type="text"
+              [(ngModel)]="busquedaAlumno"
+              placeholder="Buscar por cédula o nombre del alumno..."
+              class="form-control"
+              (keyup.enter)="buscarEstudiante()" />
+            <button type="button" class="btn-search-student" (click)="buscarEstudiante()" [disabled]="buscandoAlumno">
+              @if (buscandoAlumno) {
+              <svg class="spinner-xs" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+              } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              }
+              Buscar
+            </button>
+          </div>
+
+          @if (alumnosEncontrados.length > 0) {
+          <div class="search-results-list">
+            @for (al of alumnosEncontrados; track al.idMatricula) {
+            <div class="student-result-item" (click)="seleccionarMatricula(al)">
+              <div class="result-info">
+                <span class="result-name">{{ getNombreCompleto(al) }}</span>
+                <span class="result-sub">Doc: {{ al.numeroDocumento || '-' }} &bull; {{ al.detalleCiclo || al.detalleMalla || '-' }} ({{ al.detalleParalelo || '-' }})</span>
+              </div>
+              <button type="button" class="btn-select-xs">Seleccionar</button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      } @else {
+        <!-- FICHA DEL ALUMNO SELECCIONADO -->
+        <div class="selected-student-card">
+          <div class="student-avatar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="selected-student-details">
+            <span class="selected-name">{{ getNombreCompleto(matriculaSeleccionada) }}</span>
+            <span class="selected-meta">Doc: {{ matriculaSeleccionada.numeroDocumento || '-' }} &bull; {{ matriculaSeleccionada.detalleCiclo || matriculaSeleccionada.detalleMalla || '-' }} ({{ matriculaSeleccionada.detalleParalelo || '-' }}) &bull; Matrícula #{{ matriculaSeleccionada.idMatricula }}</span>
+          </div>
+          <button type="button" class="btn-change-student" (click)="cambiarMatricula()" title="Cambiar estudiante">Cambiar</button>
+        </div>
+      }
+    </div>
+
+    <!-- PASO 2: SELECCIONAR ARANCEL / ESPECIE -->
+    <div class="form-group">
+      <label class="form-label">Arancel / Costo Extra <span class="req">*</span></label>
+      <app-custom-select
+        [items]="catalogoExtras"
+        labelField="detalle"
+        valueField="idEspecie"
+        [(selectedValue)]="especieSeleccionadaId"
+        placeholder="Seleccione el concepto (ej. Examen de Ubicación)">
+      </app-custom-select>
+    </div>
+
+    <!-- PASO 3: MONTO Y FECHA LÍMITE -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="form-label">Valor a Pagar ($) <span class="req">*</span></label>
+        <div class="input-money-wrap">
+          <span class="money-prefix">$</span>
+          <input type="number" [(ngModel)]="montoAsignacion" min="0.01" step="0.01" class="form-control pl-6" placeholder="0.00" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Fecha Límite (Opcional)</label>
+        <input type="date" [(ngModel)]="fechaLimiteAsignacion" class="form-control" />
+      </div>
+    </div>
+
+    <!-- PASO 4: OBSERVACIONES -->
+    <div class="form-group">
+      <label class="form-label">Observaciones / Motivo (Opcional)</label>
+      <textarea [(ngModel)]="observacionesAsignacion" rows="2" class="form-control form-textarea" placeholder="Ej: Solicitud de examen de nivelación aprobada por secretaría."></textarea>
+    </div>
+
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn-secondary" (click)="cerrarModalAsignar()" [disabled]="guardandoAsignacion">
+      Cancelar
+    </button>
+    <button type="button" class="btn-primary" (click)="guardarAsignacion()" [disabled]="guardandoAsignacion || !matriculaSeleccionada || !especieSeleccionadaId || montoAsignacion <= 0">
+      @if (guardandoAsignacion) {
+      <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+      }
+      <span>{{ guardandoAsignacion ? 'Asignando...' : 'Asignar al Estudiante' }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL: CREAR/EDITAR ESPECIE CATÁLOGO -->
+<app-shared-modal
+  [(visible)]="mostrarModalCatalogo"
+  [title]="especieEnEdicion ? 'Editar Costo Extra en Catálogo' : 'Nuevo Costo Extra en Catálogo'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'480px'"
+  (cancel)="cerrarModalCatalogo()">
+
+  <div class="modal-form">
+    <div class="form-group">
+      <label class="form-label">Nombre del Concepto / Arancel <span class="req">*</span></label>
+      <input type="text" [(ngModel)]="nombreNuevaEspecie" class="form-control" placeholder="Ej: EXAMEN DE UBICACIÓN, HOMOLOGACIÓN, CERTIFICADO" />
+      <span class="field-help">Este nombre aparecerá en las opciones para asignarlo a los alumnos y en los comprobantes de pago.</span>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn-secondary" (click)="cerrarModalCatalogo()" [disabled]="guardandoCatalogo">
+      Cancelar
+    </button>
+    <button type="button" class="btn-primary" (click)="guardarEspecieCatalogo()" [disabled]="guardandoCatalogo || !nombreNuevaEspecie.trim()">
+      @if (guardandoCatalogo) {
+      <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+      }
+      <span>{{ guardandoCatalogo ? 'Guardando...' : (especieEnEdicion ? 'Actualizar' : 'Crear Arancel') }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL: CONFIRMAR ANULACIÓN -->
+<app-confirmation-modal
+  [(visible)]="mostrarModalAnular"
+  title="Anular Costo Extra"
+  [message]="'¿Está seguro de anular el costo extra ' + (creditoAAnular?.especieDetalle || '') + ' de $' + (creditoAAnular?.montoOriginal || 0) + ' asignado a ' + (creditoAAnular?.alumnoNombre || '') + '?'"
+  acceptLabel="Sí, Anular"
+  rejectLabel="No, Cancelar"
+  [loading]="anulandoCredito"
+  (accept)="ejecutarAnulacion()"
+  (reject)="mostrarModalAnular = false">
+</app-confirmation-modal>
+
+<!-- MODAL: ASIGNACIÓN MASIVA DE ARANCEL -->
+<app-shared-modal
+  [(visible)]="mostrarModalMasivo"
+  [title]="'Asignación Masiva de Arancel / Costo Extra'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'640px'"
+  (cancel)="cerrarModalMasivo()">
+
+  <div class="modal-form">
+    <!-- Callout Informativo Anti-duplicados -->
+    <div class="masivo-info-banner">
+      <div class="banner-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="banner-svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="banner-text">
+        <span class="banner-title">Control Inteligente Anti-Duplicados</span>
+        <p class="banner-desc">
+          El sistema verificará cada matrícula antes de asignar. Si un estudiante ya tiene este arancel registrado, se omitirá automáticamente evitando cobros duplicados.
+        </p>
+      </div>
+    </div>
+
+    <!-- PASO 1: Período y Ciclo -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="form-label">Período Lectivo <span class="req">*</span></label>
+        <app-custom-select
+          [items]="periodos"
+          labelField="detalle"
+          valueField="idPeriodoLectivo"
+          [(selectedValue)]="masivoPeriodoId"
+          (selectedValueChange)="onMasivoPeriodoChange()"
+          placeholder="Seleccione período"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ciclo Académico <span class="req">*</span></label>
+        <app-custom-select
+          [items]="masivoCiclos"
+          labelField="detalle"
+          valueField="idCiclo"
+          [(selectedValue)]="masivoCicloId"
+          (selectedValueChange)="onMasivoCicloChange()"
+          placeholder="Seleccione ciclo"
+          [disabled]="!masivoPeriodoId || masivoCiclos.length === 0"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
+    </div>
+
+    <!-- PASO 2: Selección de Cursos / Mallas -->
+    <div class="form-group">
+      <div class="flex-between-label">
+        <label class="form-label mb-0">Cursos / Mallas a Asignar <span class="req">*</span></label>
+        @if (masivoCursos.length > 0) {
+        <span class="cursos-counter-badge">
+          {{ getCursosSeleccionadosCount() }} de {{ masivoCursos.length }} seleccionados
+        </span>
+        }
+      </div>
+
+      @if (cargandoCursosMasivo) {
+        <div class="cursos-state-box">
+          <span>Cargando cursos del ciclo...</span>
+        </div>
+      } @else if (masivoCursos.length === 0) {
+        <div class="cursos-state-box">
+          <span>Seleccione un período y ciclo para listar los cursos disponibles.</span>
+        </div>
+      } @else {
+        <div class="cursos-selector-box">
+          <div class="toggle-all-row">
+            <label class="checkbox-label-main">
+              <input
+                type="checkbox"
+                [checked]="masivoSeleccionarTodosCursos"
+                (change)="toggleTodosCursosMasivo($event)"
+              />
+              <span class="font-semibold">Seleccionar todos los cursos del ciclo</span>
+            </label>
+          </div>
+
+          <div class="cursos-grid-list">
+            @for (curso of masivoCursos; track (curso.idMalla || $index)) {
+              <label class="curso-item-checkbox" [class.curso-checked]="isCursoSeleccionado(curso.idMalla)">
+                <input
+                  type="checkbox"
+                  [checked]="isCursoSeleccionado(curso.idMalla)"
+                  (change)="setCursoSeleccionado(curso.idMalla, $any($event.target).checked)"
+                />
+                <span class="curso-name-text">{{ curso.detalle }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- PASO 3: Arancel / Especie -->
+    <div class="form-group">
+      <label class="form-label">Arancel / Rubro Extra <span class="req">*</span></label>
+      <app-custom-select
+        [items]="catalogoExtras"
+        labelField="detalle"
+        valueField="idEspecie"
+        [(selectedValue)]="masivoEspecieId"
+        placeholder="Seleccione el concepto (ej. Examen de Ubicación)"
+        [searchable]="true">
+      </app-custom-select>
+    </div>
+
+    <!-- PASO 4: Monto y Fecha Límite -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="form-label">Valor a Cobrar ($) <span class="req">*</span></label>
+        <div class="input-money-wrap">
+          <span class="money-prefix">$</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="form-control pl-6"
+            [(ngModel)]="masivoMonto"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Fecha Límite (Opcional)</label>
+        <input
+          type="date"
+          class="form-control"
+          [(ngModel)]="masivoFechaLimite"
+        />
+      </div>
+    </div>
+
+    <!-- PASO 5: Observaciones -->
+    <div class="form-group">
+      <label class="form-label">Observaciones / Motivo (Opcional)</label>
+      <textarea
+        class="form-control form-textarea"
+        rows="2"
+        [(ngModel)]="masivoObservaciones"
+        placeholder="Ej: Cobro extraordinario por resolución administrativa..."
+      ></textarea>
+    </div>
+  </div>
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn-secondary" (click)="cerrarModalMasivo()" [disabled]="guardandoMasivo">
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="btn-primary"
+      [disabled]="guardandoMasivo || getCursosSeleccionadosCount() === 0 || !masivoEspecieId || !masivoMonto || masivoMonto <= 0"
+      (click)="ejecutarAsignacionMasiva()">
+      @if (guardandoMasivo) {
+        <svg class="spinner-sm" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+      }
+      <span>{{ guardandoMasivo ? 'Asignando...' : 'Asignar a ' + getCursosSeleccionadosCount() + ' cursos' }}</span>
+    </button>
+  </div>
+</app-shared-modal>
+
+<!-- MODAL: RESULTADO DE ASIGNACIÓN MASIVA -->
+<app-shared-modal
+  [(visible)]="mostrarModalResultadoMasivo"
+  [title]="'Resumen de Asignación Masiva'"
+  [showFooter]="true"
+  [showCloseButton]="true"
+  [customWidth]="'480px'"
+  (cancel)="cerrarModalResultadoMasivo()">
+
+  @if (resultadoMasivo) {
+  <div class="resultado-masivo-box">
+    <div class="resultado-icon-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" class="res-svg"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+
+    <h4 class="resultado-h4">¡Asignación Completada con Éxito!</h4>
+    <p class="resultado-p">{{ resultadoMasivo.mensaje }}</p>
+
+    <div class="resultado-grid">
+      <div class="res-stat-item stat-eval">
+        <span class="stat-big-num">{{ resultadoMasivo.totalMatriculasEvaluadas }}</span>
+        <span class="stat-small-lbl">Matrículas</span>
+      </div>
+      <div class="res-stat-item stat-asig">
+        <span class="stat-big-num text-success">{{ resultadoMasivo.totalAsignados }}</span>
+        <span class="stat-small-lbl">Asignados</span>
+      </div>
+      <div class="res-stat-item stat-omit">
+        <span class="stat-big-num text-muted">{{ resultadoMasivo.totalOmitidosDuplicados }}</span>
+        <span class="stat-small-lbl">Omitidos</span>
+      </div>
+    </div>
+
+    @if (resultadoMasivo.totalOmitidosDuplicados > 0) {
+    <div class="res-anti-dup-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="note-svg"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Se protegieron <strong>{{ resultadoMasivo.totalOmitidosDuplicados }} estudiantes</strong> contra cobros duplicados.</span>
+    </div>
+    }
+  </div>
+  }
+
+  <div modal-footer class="modal-footer-actions">
+    <button type="button" class="btn-primary" (click)="cerrarModalResultadoMasivo()">
+      Aceptar
+    </button>
+  </div>
+</app-shared-modal>
+
+<app-shared-toast></app-shared-toast>

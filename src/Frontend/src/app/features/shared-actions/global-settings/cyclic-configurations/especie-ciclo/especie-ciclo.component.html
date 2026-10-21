@@ -1,0 +1,199 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Especies por Malla</h1>
+        <p>Configure los valores de cada especie para las diferentes mallas académicas.</p>
+      </div>
+      <div class="seasons-header-actions">
+      </div>
+    </div>
+  </div>
+  <!-- Filtros + Tabla -->
+  <div class="seasons-content-card">
+    <div class="rol-filtros-container mb-4">
+      <div class="seasons-form-row" style="width: 100%; align-items: flex-end;">
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Período Lectivo</label>
+          <p-select [(ngModel)]="selectedPeriodo" [options]="periodos" optionLabel="detalle"
+            (onChange)="onPeriodoChange()" placeholder="Seleccione un período" [showClear]="true" appendTo="body"
+            styleClass="w-full"></p-select>
+        </div>
+
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Ciclo</label>
+          <p-select [(ngModel)]="selectedCiclo" [options]="ciclos" optionLabel="detalle"
+            (onChange)="onCicloChange()" [disabled]="!selectedPeriodo" placeholder="Seleccione un ciclo"
+            [showClear]="true" appendTo="body" styleClass="w-full"></p-select>
+        </div>
+
+        <!-- Botón de acción -->
+        <div style="display: flex; gap: 0.5rem; white-space: nowrap; align-items: flex-end;">
+          <p-button *ngIf="selectedPeriodo && selectedCiclo" label="Duplicar" icon="pi pi-copy" (onClick)="duplicarDelCicloAnterior()"
+            styleClass="btn-accion-agregar"></p-button>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!selectedPeriodo">
+      <div class="select-warning-box">
+        <i class="pi pi-filter select-warning-icon"></i>
+        <span class="select-warning-text">Seleccione período para visualizar las mallas.</span>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="selectedPeriodo && !selectedCiclo">
+      <div class="select-warning-box">
+        <i class="pi pi-filter select-warning-icon"></i>
+        <span class="select-warning-text">Seleccione ciclo para visualizar las mallas.</span>
+      </div>
+    </ng-container>
+    @if (selectedPeriodo && selectedCiclo && mallas.length > 0) {
+    <p-table [value]="especiesPorMalla" [loading]="loading" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mallas">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 28%;">Malla</th>
+          <th>Especies Configuradas</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-mallaGroup>
+        <tr>
+          <td style="font-weight: 600; vertical-align: top; padding-top: 0.75rem;">
+            {{ mallaGroup.nombreMalla }}
+            <div *ngIf="mallaGroup.detalleCiclo" style="font-size: 0.75rem; font-weight: 400; opacity: 0.7;">
+              {{ mallaGroup.detalleCiclo }}
+            </div>
+          </td>
+          <td>
+            <div class="especie-chips-wrap">
+              <span *ngFor="let especie of mallaGroup.especies" class="especie-chip">
+                <span class="especie-chip-nombre">{{ especie.nombreEspecie }}</span>
+                <span class="especie-chip-valor">${{ especie.valor?.toFixed(2) }}</span>
+                <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm especie-chip-edit"
+                  (click)="editarEspecieCiclo(especie.especieCiclo)" pTooltip="Editar valor" tooltipPosition="top">
+                </button>
+              </span>
+              <span *ngIf="mallaGroup.especies.length === 0" class="especie-sin-datos">
+                Sin especies configuradas
+              </span>
+              <span *ngIf="(mallaGroup.especies || []).length < 2" class="especie-agregar-btn"
+                (click)="agregarEspecieEnMalla(mallaGroup)">
+                <i class="pi pi-plus" style="font-size: 0.75rem;"></i>
+                Agregar especie
+              </span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2">
+            <div class="table-empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <span class="empty-text">No hay especies configuradas para esta malla.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+    }
+    @if (selectedPeriodo && selectedCiclo && !loading && mallas.length === 0) {
+    <div class="select-warning-box">
+      <i class="pi pi-info-circle select-warning-icon"></i>
+      <span class="select-warning-text">No se encontraron mallas para el ciclo seleccionado.</span>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- Dialog Crear / Editar -->
+<p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '440px'}"
+  [header]="isEditing ? 'Editar Especie' : 'Nueva Especie'" (onHide)="cerrarDialog()" [draggable]="false"
+  [resizable]="false">
+  <div class="p-fluid flex flex-column gap-3" style="padding-top: 0.5rem;">
+    <div class="p-fluid formgrid grid">
+      <div class="field w-full">
+        <label class="font-semibold block mb-2">Especie <span class="text-red-400">*</span></label>
+        <p-select [(ngModel)]="especieCicloForm.idEspecie" [options]="especiesDisponibles" optionLabel="detalle"
+          optionValue="idEspecie" placeholder="Seleccione una especie" appendTo="body" styleClass="w-full"></p-select>
+      </div>
+      <div class="field w-full">
+        <label class="font-semibold block mb-2">Valor <span class="text-red-400">*</span></label>
+        <p-inputNumber [(ngModel)]="especieCicloForm.valorEspecie" mode="decimal" [minFractionDigits]="2"
+          [maxFractionDigits]="2" [min]="0" placeholder="0.00" styleClass="w-full"></p-inputNumber>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="cerrarDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarEspecieCiclo()"
+      [disabled]="!especieCicloForm.idEspecie || !especieCicloForm.valorEspecie"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog Duplicar -->
+<p-dialog [(visible)]="showDuplicarDialog" [modal]="true" [style]="{width: '680px'}"
+  header="Duplicar Configuraciones de Malla" (onHide)="cerrarDuplicarDialog()" [draggable]="false" [resizable]="false">
+  <div style="padding-top: 0.5rem;">
+    <p class="text-color-secondary mb-3">
+      <i class="pi pi-info-circle mr-1"></i>
+      Seleccione la malla origen y destino para copiar todas las configuraciones de especies.
+    </p>
+    <div class="p-fluid formgrid grid">
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Malla Origen (ciclo inactivo)</label>
+        <p-select [(ngModel)]="duplicarForm.mallaOrigen" [options]="sourceMallas"
+          [optionLabel]="'detalle'" placeholder="Seleccione la malla origen" appendTo="body" styleClass="w-full">
+          <ng-template let-malla pTemplate="item">
+            <div>
+              <div>{{ malla.detalle }}</div>
+              <div *ngIf="malla.detalleCiclo" style="font-size: 0.75rem; opacity: 0.7;">{{ malla.detalleCiclo }}</div>
+            </div>
+          </ng-template>
+          <ng-template let-malla pTemplate="selectedItem">
+            {{ getMallaLabel(malla) }}
+          </ng-template>
+        </p-select>
+        <div *ngIf="inactiveMallasCount > 10 && !showAllSource" style="margin-top: 0.4rem;">
+          <p-button label="Ver todas las mallas" (onClick)="toggleShowAllSource()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+      </div>
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Malla Destino (ciclo activo)</label>
+        <p-select [(ngModel)]="duplicarForm.mallaDestino" [options]="destinationMallas"
+          [optionLabel]="'detalle'" placeholder="Seleccione la malla destino" appendTo="body" styleClass="w-full">
+          <ng-template let-malla pTemplate="item">
+            <div>
+              <div>{{ malla.detalle }}</div>
+              <div *ngIf="malla.detalleCiclo" style="font-size: 0.75rem; opacity: 0.7;">{{ malla.detalleCiclo }}</div>
+            </div>
+          </ng-template>
+          <ng-template let-malla pTemplate="selectedItem">
+            {{ getMallaLabel(malla) }}
+          </ng-template>
+        </p-select>
+        <div *ngIf="activeMallasCount > 10 && !showAllDest" style="margin-top: 0.4rem;">
+          <p-button label="Ver todas las mallas" (onClick)="toggleShowAllDest()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="cerrarDuplicarDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Duplicar" icon="pi pi-copy" (onClick)="ejecutarDuplicacionDesdeDialogo()"
+      [disabled]="!duplicarForm.mallaOrigen || !duplicarForm.mallaDestino" severity="info"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Confirmar eliminar especie -->
+<app-confirmation-modal [visible]="showConfirmDeleteEspecie" title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar esta especie de la malla?" acceptLabel="Eliminar" rejectLabel="Cancelar"
+  (accept)="ejecutarEliminarEspecie()" (reject)="cancelarEliminar()" (hide)="cancelarEliminar()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>
+<p-confirmDialog></p-confirmDialog>

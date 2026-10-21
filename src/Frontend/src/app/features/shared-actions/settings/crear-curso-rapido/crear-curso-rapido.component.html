@@ -1,0 +1,497 @@
+    <div class="quick-setup">
+      <app-shared-toast></app-shared-toast>
+
+      <div class="qs-header">
+        <h1><i class="pi pi-bolt"></i> Creación Rápida de Curso</h1>
+        <p>Configure los datos mínimos necesarios para crear un curso y su malla académica</p>
+      </div>
+
+      <!-- Banner Duplicar -->
+      <div class="qs-duplicar-banner" *ngIf="ciclosPrevios.length > 0 && !mallaDuplicada">
+        <div class="qs-duplicar-info">
+          <i class="pi pi-copy"></i>
+          <div>
+            <strong>¿Ya tienes un ciclo configurado?</strong>
+            <p>Puedes duplicar la configuración de un ciclo anterior y solo ajustar lo necesario.</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" (click)="showDuplicarDialog = true">
+          <i class="pi pi-external-link"></i> Duplicar configuración existente
+        </button>
+      </div>
+
+      <div class="qs-duplicar-banner qs-duplicar-success" *ngIf="mallaDuplicada">
+        <i class="pi pi-check-circle"></i>
+        <span>Configuración duplicada exitosamente. La malla ya está lista para usar.</span>
+      </div>
+
+      <div class="qs-card">
+        <!-- Datos Básicos -->
+        <h3 class="qs-section-title"><i class="pi pi-database"></i> Datos Básicos</h3>
+        <div class="qs-field">
+          <label>Ciclo *</label>
+          <app-custom-select
+            [items]="ciclos"
+            labelField="detalle"
+            valueField="idCiclo"
+            [selectedValue]="form.get('idCiclo')?.value"
+            (selectedValueChange)="onCicloChange($event)"
+            placeholder="Seleccione ciclo...">
+          </app-custom-select>
+        </div>
+        <div class="qs-form-row">
+          <div class="qs-field">
+            <label>Especialidad *</label>
+            <app-custom-select
+              [items]="especialidades"
+              labelField="detalle"
+              valueField="idEspecialidad"
+              [selectedValue]="form.get('idEspecialidad')?.value"
+              (selectedValueChange)="onEspecialidadChange($event)"
+              placeholder="Informática, Ciencias...">
+            </app-custom-select>
+          </div>
+          <div class="qs-field">
+            <label>Curso *</label>
+            <app-custom-select
+              [items]="cursosFiltrados"
+              labelField="detalle"
+              valueField="idCursos"
+              [selectedValue]="form.get('idCurso')?.value"
+              (selectedValueChange)="form.patchValue({ idCurso: $event })"
+              [disabled]="!form.get('idEspecialidad')?.value"
+              placeholder="Primero BGU, Segundo BGU...">
+            </app-custom-select>
+          </div>
+        </div>
+        <div class="qs-form-row">
+          <div class="qs-field">
+            <label>Tipo de Oferta *</label>
+            <app-custom-select
+              [items]="tiposOferta"
+              labelField="detalle"
+              valueField="idtipoOferta"
+              [selectedValue]="form.get('idTipoOferta')?.value"
+              (selectedValueChange)="form.patchValue({ idTipoOferta: $event })"
+              placeholder="Cursos, Talleres...">
+            </app-custom-select>
+          </div>
+        </div>
+
+        <!-- Materias -->
+        <h3 class="qs-section-title"><i class="pi pi-book"></i> Materias del Curso</h3>
+        <div class="qs-section-row">
+          <button type="button" class="qs-btn-select" (click)="openDrawer('materias')"
+            [disabled]="!form.get('idCurso')?.value">
+            <i class="pi pi-list"></i>
+            {{ materiasSeleccionadas.length > 0 ? materiasSeleccionadas.length + ' materias seleccionadas' : 'Seleccionar materias' }}
+          </button>
+          <div class="qs-tags" *ngIf="materiasSeleccionadas.length > 0">
+            <span class="qs-tag" *ngFor="let m of materiasSeleccionadas">
+              {{ m.materia.detalle }} <i class="pi pi-times" (click)="removeMateria(m.materia)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Requisitos -->
+        <h3 class="qs-section-title"><i class="pi pi-check-square"></i> Requisitos</h3>
+        <div class="qs-section-row">
+          <button type="button" class="qs-btn-select" (click)="openDrawer('requisitos')">
+            <i class="pi pi-list"></i>
+            {{ requisitosSeleccionados.length > 0 ? requisitosSeleccionados.length + ' requisitos seleccionados' : 'Seleccionar requisitos' }}
+          </button>
+          <div class="qs-tags" *ngIf="requisitosSeleccionados.length > 0">
+            <span class="qs-tag" *ngFor="let r of requisitosSeleccionados">
+              {{ r.detalle }} <i class="pi pi-times" (click)="removeRequisito(r)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Paralelos -->
+        <h3 class="qs-section-title"><i class="pi pi-users"></i> Paralelos</h3>
+        <div class="qs-section-row">
+          <button type="button" class="qs-btn-select" (click)="openDrawer('paralelos')">
+            <i class="pi pi-list"></i>
+            {{ paralelosSeleccionados.length > 0 ? paralelosSeleccionados.length + ' paralelos seleccionados' : 'Seleccionar paralelos' }}
+          </button>
+          <div class="qs-tags" *ngIf="paralelosSeleccionados.length > 0">
+            <span class="qs-tag" *ngFor="let p of paralelosSeleccionados">
+              {{ p.nombreParalelo }} <i class="pi pi-times" (click)="removeParalelo(p)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Costos -->
+        <h3 class="qs-section-title"><i class="pi pi-dollar"></i> Costos (Especies)</h3>
+        <div class="qs-section-row">
+          <button type="button" class="qs-btn-select" (click)="openDrawer('especies')">
+            <i class="pi pi-list"></i>
+            {{ especiesSeleccionadas.length > 0 ? especiesSeleccionadas.length + ' costos seleccionados' : 'Seleccionar costos' }}
+          </button>
+          <div class="qs-tags" *ngIf="especiesSeleccionadas.length > 0">
+            <span class="qs-tag" *ngFor="let e of especiesSeleccionadas">
+              {{ e.especie.detalle }}: ${{ e.valorEspecie }} <i class="pi pi-times" (click)="removeEspecie(e)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="qs-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancelar()">Cancelar</button>
+          <button type="button" class="btn btn-success" (click)="mallaDuplicada ? volver() : crearMalla()"
+            [disabled]="(!mallaDuplicada && form.invalid) || loading">
+            <i class="pi" [class.pi-spin]="loading" [class.pi-check]="!loading"></i>
+            {{ mallaDuplicada ? 'Volver a Postulación' : 'Crear Malla y Volver' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Dialog: Duplicar configuración -->
+      <p-dialog [(visible)]="showDuplicarDialog" header="Duplicar configuración" [modal]="true" [closable]="true" [style]="{ width: '500px' }">
+        <div class="qs-dialog-body">
+          <div class="qs-dialog-field">
+            <label>Ciclo origen *</label>
+            <app-custom-select [items]="ciclosPrevios" labelField="detalle" valueField="idCiclo"
+              [selectedValue]="origenCicloId"
+              (selectedValueChange)="onOrigenCicloChange($event)"
+              placeholder="Seleccione ciclo origen">
+            </app-custom-select>
+          </div>
+          <div class="qs-dialog-field" *ngIf="mallasOrigen.length > 0">
+            <label>Malla a duplicar *</label>
+            <div class="qs-radio-list">
+              <label class="qs-radio-item" *ngFor="let m of mallasOrigen">
+                <input type="radio" name="mallaOrigen" [value]="m.idMalla" [(ngModel)]="origenMallaId">
+                <span>{{ m.detalle }}</span>
+              </label>
+            </div>
+          </div>
+          <div *ngIf="origenCicloId && mallasOrigen.length === 0" class="qs-empty-msg">
+            El ciclo seleccionado no tiene mallas configuradas.
+          </div>
+          <div class="qs-dialog-info">
+            <i class="pi pi-info-circle"></i>
+            <small>Ciclo destino: <strong>{{ cicloDestinoLabel }}</strong></small>
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button type="button" class="btn btn-secondary" (click)="showDuplicarDialog = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="ejecutarDuplicar()" [disabled]="!origenMallaId || duplicando">
+            <i class="pi" [class.pi-spin]="duplicando" [class.pi-copy]="!duplicando"></i>
+            Duplicar
+          </button>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Drawer: Materias -->
+      <app-shared-drawer [(visible)]="showMateriasDrawer" title="Seleccionar Materias" [position]="'right'" [size]="'xl'"
+        [showFooter]="true" confirmText="Guardar" cancelText="Cancelar" (confirm)="guardarDrawer('materias')" (cancel)="cancelarDrawer('materias')">
+        <div class="qs-drawer-content">
+          <div class="qs-drawer-toolbar">
+            <button type="button" class="qs-btn-create" (click)="showMateriaDialog = true">
+              <i class="pi pi-plus"></i> Nueva Materia
+            </button>
+          </div>
+          <div class="qs-drawer-defaults" *ngIf="plantillas.length > 0">
+            <div class="qs-plantilla-row">
+              <div class="qs-defaults-row">
+                <label>Plantilla por defecto:</label>
+                <app-custom-select [items]="plantillas" labelField="nombre" valueField="idPlantillaEvaluacion"
+                  [selectedValue]="materiaDefaultPlantilla"
+                  (selectedValueChange)="materiaDefaultPlantilla = $event; actualizarDefaultsMaterias()"
+                  placeholder="Sin plantilla">
+                </app-custom-select>
+              </div>
+              <button type="button" class="qs-btn-plantilla-toggle" [class.active]="showPlantillaColumn"
+                (click)="togglePlantillaPorMateria()">
+                <i class="pi" [class.pi-check-square]="showPlantillaColumn" [class.pi-square]="!showPlantillaColumn"></i>
+                Hay materias con distintos modelos
+              </button>
+            </div>
+          </div>
+
+          <!-- Historial de materias de ciclos anteriores -->
+          <div class="qs-historial-block" *ngIf="materiasHistorial.length > 0 || cargandoHistorial">
+            <div class="qs-historial-header" (click)="showHistorial = !showHistorial">
+              <i class="pi" [class.pi-chevron-down]="showHistorial" [class.pi-chevron-right]="!showHistorial"></i>
+              Materias de ciclos anteriores
+              <span class="qs-historial-count">{{ materiasHistorial.length }} encontradas</span>
+            </div>
+            <div class="qs-historial-body" *ngIf="showHistorial">
+              <div class="qs-table-wrap qs-table-wrapper" *ngIf="!cargandoHistorial">
+                <p-table [value]="materiasHistorial" [tableStyle]="{ 'width': '100%', 'min-width': '600px' }" size="small">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th style="width: 40px;"><input type="checkbox" [checked]="todasHistorialSel" (change)="toggleTodasHistorial($event)"></th>
+                      <th style="width: 240px; word-break: break-word; white-space: normal;">Materia</th>
+                      <th style="width: 70px;">Mód.</th>
+                      <th style="width: 75px;">Horas</th>
+                      <th style="width: 140px;">Ciclo origen</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-h>
+                    <tr [class.qs-row-selected]="h._histSel" (click)="h._histSel = !h._histSel" style="cursor:pointer">
+                      <td><input type="checkbox" [checked]="h._histSel" (change)="h._histSel = !h._histSel"></td>
+                      <td style="word-break: break-word; white-space: normal; line-height: 1.25;">{{ h.nombreMateria || ('Materia #' + h.idMateria) }}</td>
+                      <td>{{ h.modulo }}</td>
+                      <td>{{ h.duracionHoras }}</td>
+                      <td>{{ h._mallaOrigen }}</td>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="5" class="qs-empty">No hay materias en ciclos anteriores.</td></tr>
+                  </ng-template>
+                </p-table>
+              </div>
+              <div class="qs-historial-loading" *ngIf="cargandoHistorial">
+                <i class="pi pi-spin pi-spinner"></i> Cargando historial...
+              </div>
+              <div class="qs-historial-actions" *ngIf="!cargandoHistorial">
+                <button type="button" class="btn btn-primary btn-sm" (click)="copiarMateriasHistorial()"
+                  [disabled]="!algunHistorialSel">
+                  <i class="pi pi-copy"></i> Copiar seleccionadas
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="qs-table-wrap">
+            <p-table [value]="materiasDisponibles" [tableStyle]="{ 'width': '100%', 'min-width': showPlantillaColumn ? '850px' : '700px' }" size="small">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40px;"><input type="checkbox" [checked]="todasMateriasSel" (change)="toggleTodasMaterias($event)"></th>
+                  <th style="width: 240px; word-break: break-word; white-space: normal;">Materia</th>
+                  <th style="width: 70px;">Mód.</th>
+                  <th style="width: 70px;">Horas</th>
+                  <th style="width: 140px;">Fecha Inicio</th>
+                  <th style="width: 140px;">Fecha Fin</th>
+                  <th style="width: 150px;" *ngIf="showPlantillaColumn">Plantilla</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-row>
+                <tr [class.qs-row-selected]="row._selected" (click)="toggleMateriaRow(row)" style="cursor:pointer">
+                  <td><input type="checkbox" [checked]="row._selected" (click)="$event.stopPropagation()" (change)="toggleMateriaRow(row)"></td>
+                  <td style="word-break: break-word; white-space: normal; line-height: 1.25;">{{ row.detalle }}</td>
+                  <td>
+                    <input type="number" class="qs-inline-input" [(ngModel)]="row._modulo" min="1" step="1"
+                      (click)="$event.stopPropagation()" (change)="syncMateriaRow(row)">
+                  </td>
+                  <td>
+                    <input type="number" class="qs-inline-input" [(ngModel)]="row._horas" min="0" step="1"
+                      (click)="$event.stopPropagation()" (change)="syncMateriaRow(row)">
+                  </td>
+                  <td>
+                    <input type="date" class="qs-inline-input" [(ngModel)]="row._fechaInicio"
+                      (click)="$event.stopPropagation()"
+                      (change)="propagarFechaInicio(row._modulo, row._fechaInicio)">
+                  </td>
+                  <td>
+                    <input type="date" class="qs-inline-input" [(ngModel)]="row._fechaFin"
+                      (click)="$event.stopPropagation()"
+                      (change)="propagarFechaFin(row._modulo, row._fechaFin)">
+                  </td>
+                  <td *ngIf="showPlantillaColumn">
+                    <app-custom-select [items]="plantillas" labelField="nombre" valueField="idPlantillaEvaluacion"
+                      [selectedValue]="row._plantilla"
+                      (selectedValueChange)="row._plantilla = $event; syncMateriaRow(row)"
+                      placeholder="Sin plantilla">
+                    </app-custom-select>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td [attr.colspan]="showPlantillaColumn ? 7 : 6" class="qs-empty">No hay materias disponibles. Cree una nueva materia.</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </app-shared-drawer>
+
+      <!-- Drawer: Requisitos -->
+      <app-shared-drawer [(visible)]="showRequisitosDrawer" title="Seleccionar Requisitos" [position]="'right'" [size]="'md'"
+        [showFooter]="true" confirmText="Guardar" cancelText="Cancelar" (confirm)="guardarDrawer('requisitos')" (cancel)="cancelarDrawer('requisitos')">
+        <div class="qs-drawer-content">
+          <div class="qs-drawer-toolbar">
+            <button type="button" class="qs-btn-create" (click)="showRequisitoDialog = true">
+              <i class="pi pi-plus"></i> Nuevo Requisito
+            </button>
+          </div>
+          <p-table [value]="todosRequisitos" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosRequisitosSel" (change)="toggleTodosRequisitos($event)"></th>
+                <th>Requisito</th>
+                <th style="width:90px">Tipo</th>
+                <th style="width:80px">Oblig.</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-r>
+              <tr [class.qs-row-selected]="r._sel" (click)="toggleRequisito(r)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="r._sel" (click)="$event.stopPropagation()" (change)="toggleRequisito(r)"></td>
+                <td>{{ r.detalle }}</td>
+                <td>{{ r.tipoDato === 'ADJUNTO' ? 'Adjunto' : 'Sí/No' }}</td>
+                <td>{{ r.esObligatorio ? 'Sí' : 'No' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="4" class="qs-empty">No hay requisitos disponibles. Cree uno nuevo.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </app-shared-drawer>
+
+      <!-- Drawer: Paralelos -->
+      <app-shared-drawer [(visible)]="showParalelosDrawer" title="Seleccionar Paralelos" [position]="'right'" [size]="'md'"
+        [showFooter]="true" confirmText="Guardar" cancelText="Cancelar" (confirm)="guardarDrawer('paralelos')" (cancel)="cancelarDrawer('paralelos')">
+        <div class="qs-drawer-content">
+          <div class="qs-drawer-toolbar">
+            <button type="button" class="qs-btn-create" (click)="showParaleloDialog = true">
+              <i class="pi pi-plus"></i> Nuevo Paralelo
+            </button>
+          </div>
+          <p-table [value]="todosParalelos" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosParalelosSel" (change)="toggleTodosParalelos($event)"></th>
+                <th>Paralelo</th>
+                <th style="width:90px">Cupo</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr [class.qs-row-selected]="p._sel" (click)="toggleParalelo(p)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="p._sel" (click)="$event.stopPropagation()" (change)="toggleParalelo(p)"></td>
+                <td>{{ p.nombreParalelo || p.detalle }}</td>
+                <td>{{ p.cupoMaximo ?? '—' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="3" class="qs-empty">No hay paralelos disponibles.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </app-shared-drawer>
+
+      <!-- Drawer: Especies -->
+      <app-shared-drawer [(visible)]="showEspeciesDrawer" title="Seleccionar Costos (Especies)" [position]="'right'" [size]="'lg'"
+        [showFooter]="true" confirmText="Guardar" cancelText="Cancelar" (confirm)="guardarDrawer('especies')" (cancel)="cancelarDrawer('especies')">
+        <div class="qs-drawer-content">
+          <div class="qs-drawer-toolbar">
+            <button type="button" class="qs-btn-create" (click)="showEspecieDialog = true">
+              <i class="pi pi-plus"></i> Nueva Especie
+            </button>
+          </div>
+          <p-table [value]="todosEspecies" [tableStyle]="{ 'min-width': '100%' }" size="small">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width:40px"><input type="checkbox" [checked]="todosEspeciesSel" (change)="toggleTodosEspecies($event)"></th>
+                <th>Especie</th>
+                <th style="width:100px">Valor</th>
+                <th style="width:90px">Tipo</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-e>
+              <tr [class.qs-row-selected]="e._sel" (click)="toggleEspecie(e)" style="cursor:pointer">
+                <td><input type="checkbox" [checked]="e._sel" (click)="$event.stopPropagation()" (change)="toggleEspecie(e)"></td>
+                <td>{{ e.detalle }}</td>
+                <td>
+                  <input type="number" class="qs-inline-input" [(ngModel)]="e._valor" min="0" step="0.01"
+                    (click)="$event.stopPropagation()" placeholder="0.00">
+                </td>
+                <td>{{ e.esMatricula ? 'Matrícula' : e.esPension ? 'Pensión' : '—' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="4" class="qs-empty">No hay especies disponibles. Cree una nueva.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </app-shared-drawer>
+
+      <!-- Dialog: Nueva Materia -->
+      <p-dialog [(visible)]="showMateriaDialog" header="Nueva Materia" [modal]="true" [closable]="true" [style]="{ width: '400px' }">
+        <div class="qs-dialog-body">
+          <div class="qs-dialog-field">
+            <label>Nombre *</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevaMateriaDetalle" placeholder="Ej: Matemáticas">
+          </div>
+          <div class="qs-dialog-field">
+            <label>Horas Requeridas</label>
+            <input type="number" class="form-control" [(ngModel)]="nuevaMateriaHoras" placeholder="Ej: 80" min="0" step="1">
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button type="button" class="btn btn-secondary" (click)="showMateriaDialog = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="guardarNuevaMateria()" [disabled]="!nuevaMateriaDetalle.trim()">Guardar</button>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Dialog: Nuevo Requisito -->
+      <p-dialog [(visible)]="showRequisitoDialog" header="Nuevo Requisito" [modal]="true" [closable]="true" [style]="{ width: '450px' }">
+        <div class="qs-dialog-body">
+          <div class="qs-dialog-field">
+            <label>Detalle *</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevoRequisitoDetalle" placeholder="Ej: Cédula de identidad">
+          </div>
+          <div class="qs-dialog-field">
+            <label>Tipo de dato *</label>
+            <app-custom-select [items]="tipoDatoOptions" labelField="label" valueField="value"
+              [selectedValue]="nuevoRequisitoTipoDato"
+              (selectedValueChange)="nuevoRequisitoTipoDato = $event"
+              placeholder="Seleccione tipo">
+            </app-custom-select>
+          </div>
+          <div class="qs-dialog-check-row">
+            <label><input type="checkbox" [(ngModel)]="nuevoRequisitoObligatorio"> ¿Es obligatorio?</label>
+          </div>
+          <div class="qs-dialog-check-row">
+            <label><input type="checkbox" [(ngModel)]="nuevoRequisitoBloquea"> ¿Bloquea inscripción?</label>
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button type="button" class="btn btn-secondary" (click)="showRequisitoDialog = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="guardarNuevoRequisito()" [disabled]="!nuevoRequisitoDetalle.trim()">Guardar</button>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Dialog: Nuevo Paralelo -->
+      <p-dialog [(visible)]="showParaleloDialog" header="Nuevo Paralelo" [modal]="true" [closable]="true" [style]="{ width: '400px' }">
+        <div class="qs-dialog-body">
+          <div class="qs-dialog-field">
+            <label>Nombre *</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevoParaleloNombre" placeholder="Ej: A">
+          </div>
+          <div class="qs-dialog-field">
+            <label>Cupo máximo</label>
+            <input type="number" class="form-control" [(ngModel)]="nuevoParaleloCupo" placeholder="Ej: 35" min="1" step="1">
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button type="button" class="btn btn-secondary" (click)="showParaleloDialog = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="guardarNuevoParalelo()" [disabled]="!nuevoParaleloNombre.trim()">Guardar</button>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Dialog: Nueva Especie -->
+      <p-dialog [(visible)]="showEspecieDialog" header="Nueva Especie (Costo)" [modal]="true" [closable]="true" [style]="{ width: '450px' }">
+        <div class="qs-dialog-body">
+          <div class="qs-dialog-field">
+            <label>Detalle *</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevaEspecieDetalle" placeholder="Ej: Matrícula 2026">
+          </div>
+          <div class="qs-dialog-field">
+            <label>Valor *</label>
+            <input type="number" class="form-control" [(ngModel)]="nuevaEspecieValor" placeholder="Ej: 50" min="0" step="0.01">
+          </div>
+          <div class="qs-dialog-check-row">
+            <label><input type="checkbox" [(ngModel)]="nuevaEspecieEsMatricula"> Es matrícula</label>
+          </div>
+          <div class="qs-dialog-check-row">
+            <label><input type="checkbox" [(ngModel)]="nuevaEspecieEsPension"> Es pensión</label>
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button type="button" class="btn btn-secondary" (click)="showEspecieDialog = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="guardarNuevaEspecie()" [disabled]="!nuevaEspecieDetalle.trim()">Guardar</button>
+        </ng-template>
+      </p-dialog>
+    </div>

@@ -1,0 +1,179 @@
+<div class="seasons-container">
+  <div class="settings-header">
+    <div class="seasons-header-title">
+      <h1>Gestión de Beneficios</h1>
+      <p>Define el catálogo de becas y descuentos aplicables a los estudiantes.</p>
+    </div>
+    <p-button label="Nuevo Beneficio" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="btn-nuevo"></p-button>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="beneficios" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} beneficios">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Valor</th>
+          <th>Especie</th>
+          <th style="text-align:center">Renovación</th>
+          <th style="text-align:center">Estado</th>
+          <th style="text-align:center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-beneficio>
+        <tr>
+          <td class="col-primary">{{ beneficio.detalle }}</td>
+          <td>
+            <p-tag [value]="beneficio.tipoValor === 'PORCENTAJE' ? 'Porcentaje' : 'Monto Fijo'"
+                   [severity]="beneficio.tipoValor === 'PORCENTAJE' ? 'info' : 'warn'"></p-tag>
+          </td>
+          <td class="col-valor">{{ formatValor(beneficio) }}</td>
+          <td>{{ getEspecieLabel(beneficio.aplicaA) }}</td>
+          <td style="text-align:center">
+            <i class="pi" [class.pi-check-circle]="beneficio.requiereRenovacion"
+               [class.pi-minus-circle]="!beneficio.requiereRenovacion"
+               [class.icon-yes]="beneficio.requiereRenovacion"
+               [class.icon-no]="!beneficio.requiereRenovacion"></i>
+          </td>
+          <td style="text-align:center">
+            <p-tag [value]="beneficio.activo ? 'Activo' : 'Inactivo'"
+                   [severity]="beneficio.activo ? 'success' : 'secondary'"></p-tag>
+          </td>
+          <td class="seasons-actions-cell" style="justify-content:center">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(beneficio)"
+                      pTooltip="Editar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(beneficio)"
+                      pTooltip="Eliminar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7">
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-color-secondary)">
+              <i class="pi pi-tag" style="font-size:2rem; display:block; margin-bottom:0.5rem"></i>
+              No hay beneficios registrados aún.
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog crear/editar beneficio -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '580px'}"
+          [header]="isEditing ? 'Editar Beneficio' : 'Nuevo Beneficio'"
+          (onHide)="hideDialog()" [draggable]="false" [resizable]="false">
+  <form [formGroup]="beneficioForm">
+    <div class="seasons-dialog-content">
+      <div class="seasons-form-grid">
+
+        <div class="seasons-form-group">
+          <label class="seasons-form-label">Nombre <span class="required">*</span></label>
+          <input pInputText formControlName="detalle" placeholder="Ej: Beca de Excelencia 25%" class="seasons-form-control" />
+          <small class="form-hint" *ngIf="beneficioForm.get('detalle')?.invalid && beneficioForm.get('detalle')?.touched">
+            El nombre es requerido (mín. 3 caracteres).
+          </small>
+        </div>
+
+        <div class="seasons-form-row two-col">
+          <div class="seasons-form-group">
+            <label class="seasons-form-label">Tipo de Valor <span class="required">*</span></label>
+            <p-select formControlName="tipoValor"
+                      [options]="tipoValorOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      appendTo="body"
+                      styleClass="seasons-form-control w-full"></p-select>
+          </div>
+
+          <div class="seasons-form-group">
+            <label class="seasons-form-label">Valor <span class="required">*</span></label>
+            <p-inputNumber formControlName="valor"
+                           [min]="0.01"
+                           [maxFractionDigits]="2"
+                           [placeholder]="beneficioForm.get('tipoValor')?.value === 'PORCENTAJE' ? 'ej. 25' : 'ej. 10.00'"
+                           [inputStyleClass]="'seasons-form-control'"
+                           styleClass="w-full"></p-inputNumber>
+            <small class="form-hint" *ngIf="beneficioForm.get('valor')?.invalid && beneficioForm.get('valor')?.touched">
+              El valor debe ser mayor a 0.
+            </small>
+          </div>
+        </div>
+
+        <div class="seasons-form-group">
+          <label class="seasons-form-label">Aplica a (Especie) <span class="required">*</span></label>
+          <p-select formControlName="aplicaA"
+                    [options]="especies"
+                    optionLabel="detalle"
+                    optionValue="idEspecie"
+                    placeholder="Seleccionar especie"
+                    appendTo="body"
+                    styleClass="seasons-form-control w-full"></p-select>
+          <small class="form-hint" *ngIf="beneficioForm.get('aplicaA')?.invalid && beneficioForm.get('aplicaA')?.touched">
+            La especie es requerida.
+          </small>
+        </div>
+
+        <div class="seasons-form-group">
+          <label class="seasons-form-label">Descripción <span class="required">*</span></label>
+          <input pInputText formControlName="descripcion" placeholder="Descripción del beneficio" class="seasons-form-control" />
+          <small class="form-hint" *ngIf="beneficioForm.get('descripcion')?.invalid && beneficioForm.get('descripcion')?.touched">
+            La descripción es requerida.
+          </small>
+        </div>
+
+        <div class="seasons-form-row two-col checkbox-group">
+          <div class="seasons-form-group">
+            <label class="seasons-form-label">Es Beca <span class="required">*</span></label>
+            <div class="checkbox-wrap">
+              <p-checkbox formControlName="esBeca" [binary]="true" inputId="esBeca"></p-checkbox>
+              <label for="esBeca" class="checkbox-label">Marcar si es una beca</label>
+            </div>
+          </div>
+
+          <div class="seasons-form-group">
+            <label class="seasons-form-label">Requiere Renovación</label>
+            <div class="checkbox-wrap">
+              <p-checkbox formControlName="requiereRenovacion" [binary]="true" inputId="requiereRenovacion"></p-checkbox>
+              <label for="requiereRenovacion" class="checkbox-label">Asignar por ciclo académico</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="seasons-form-group" *ngIf="isEditing">
+          <label class="seasons-form-label">Estado</label>
+          <div class="checkbox-wrap">
+            <p-checkbox formControlName="activo" [binary]="true" inputId="activo"></p-checkbox>
+            <label for="activo" class="checkbox-label">Habilitar beneficio</label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideDialog()" [text]="true" severity="secondary"></p-button>
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="saveBeneficio()" [disabled]="beneficioForm.invalid || isSaving" [loading]="isSaving"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Confirm delete -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Confirmar Eliminación"
+  message="¿Estás seguro de que quieres eliminar este beneficio? Esta acción no se puede deshacer."
+  acceptLabel="Eliminar"
+  rejectLabel="Cancelar"
+  (accept)="deleteBeneficio()"
+  (reject)="cancelDelete()"
+  (hide)="cancelDelete()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>

@@ -1,0 +1,191 @@
+<app-shared-toast></app-shared-toast>
+
+<div class="apertura-container">
+
+  <p-card styleClass="apertura-card">
+    <ng-template pTemplate="header">
+      <div class="card-header">
+        <div class="header-actions" *ngIf="result">
+          <p-button
+            icon="pi pi-plus"
+            label="Nueva apertura"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="nueva()"
+          />
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- ── Aviso de flujo ─────────────────────────────────────────────── -->
+    <div class="flujo-aviso">
+      <i class="pi pi-info-circle"></i>
+      <span>
+        Este proceso debe ejecutarse <strong>antes</strong> de re-matricular alumnos en un nuevo ciclo.
+        Sin este paso no existirán mallas destino y la re-matriculación fallará.
+      </span>
+    </div>
+
+    <!-- ── Formulario ─────────────────────────────────────────────────── -->
+    <div class="form-section" *ngIf="!result">
+      <div class="form-grid">
+        <div class="form-item">
+          <label>Ciclo origen <span class="required">*</span></label>
+          <p-select
+            [(ngModel)]="idCicloOrigen"
+            [options]="todosCiclos"
+            optionLabel="detalle"
+            optionValue="idCiclo"
+            placeholder="Seleccione el ciclo a copiar"
+            [appendTo]="'body'"
+            styleClass="w-full"
+          />
+          <span class="form-hint">Ciclo del que se copiarán las mallas</span>
+        </div>
+
+        <div class="form-item arrow-col">
+          <i class="pi pi-arrow-right arrow-icon"></i>
+        </div>
+
+        <div class="form-item">
+          <label>Ciclo destino <span class="required">*</span></label>
+          <p-select
+            [(ngModel)]="idCicloDestino"
+            [options]="ciclosActivos"
+            optionLabel="detalle"
+            optionValue="idCiclo"
+            placeholder="Seleccione el ciclo activo"
+            [appendTo]="'body'"
+            styleClass="w-full"
+          />
+          <span class="form-hint">Solo ciclos activos disponibles</span>
+        </div>
+      </div>
+
+      <div class="form-opciones">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="clonarParalelos" />
+          <span>Clonar paralelos con sus cupos originales</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <p-button
+          icon="pi pi-play"
+          label="Clonar mallas"
+          [loading]="loading"
+          (onClick)="ejecutarClonado()"
+        />
+      </div>
+    </div>
+
+    <!-- ── Loading ────────────────────────────────────────────────────── -->
+    <div *ngIf="loading" class="loading-container">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Clonando mallas, por favor espere...</p>
+    </div>
+
+    <!-- ── Resultado ──────────────────────────────────────────────────── -->
+    <ng-container *ngIf="result && !loading">
+      <p-divider />
+
+      <div class="resultado-section">
+        <!-- Header resultado -->
+        <div class="resultado-header">
+          <i class="pi pi-check-circle resultado-icon"></i>
+          <div>
+            <h3>Clonación completada</h3>
+            <p>
+              <strong>{{ getNombreCiclo(result.idCicloOrigen) }}</strong>
+              <i class="pi pi-arrow-right" style="margin: 0 0.5rem; font-size: 0.8rem;"></i>
+              <strong>{{ getNombreCiclo(result.idCicloDestino) }}</strong>
+            </p>
+          </div>
+          <span class="total-badge">
+            <i class="pi pi-list"></i> {{ result.totalMallasClonadas }} malla(s) clonada(s)
+          </span>
+        </div>
+
+        <!-- Tabla de mallas clonadas -->
+        <p-table
+          [value]="result.mallas"
+          styleClass="p-datatable-sm p-datatable-gridlines"
+          [rowHover]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Malla clonada</th>
+              <th style="text-align:center; min-width:100px">ID origen</th>
+              <th style="text-align:center; min-width:100px">ID destino</th>
+              <th style="text-align:center; min-width:90px">Materias</th>
+              <th style="text-align:center; min-width:90px">Requisitos</th>
+              <th style="text-align:center; min-width:90px">Especies</th>
+              <th style="text-align:center; min-width:90px">Paralelos</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-malla>
+            <tr>
+              <td>
+                <div class="malla-cell">
+                  <i class="pi pi-book malla-icon"></i>
+                  <span>{{ malla.detalle || ('Malla #' + malla.idMallaDestino) }}</span>
+                </div>
+              </td>
+              <td style="text-align:center">
+                <code class="id-code">#{{ malla.idMallaOrigen }}</code>
+              </td>
+              <td style="text-align:center">
+                <code class="id-code id-nuevo">#{{ malla.idMallaDestino }}</code>
+              </td>
+              <td style="text-align:center">
+                <span class="num-badge">{{ malla.totalDetalles }}</span>
+              </td>
+              <td style="text-align:center">
+                <span class="num-badge">{{ malla.totalRequisitos }}</span>
+              </td>
+              <td style="text-align:center">
+                <span class="num-badge">{{ malla.totalEspecies }}</span>
+              </td>
+              <td style="text-align:center">
+                <span class="num-badge">{{ malla.totalParalelos }}</span>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="empty-message">
+                <i class="pi pi-inbox empty-icon"></i>
+                <p>No se encontraron mallas clonadas.</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- Resumen textual -->
+        <div class="resumen-box">
+          <pre>{{ result.resumen }}</pre>
+        </div>
+
+        <!-- Advertencias post-clonación -->
+        <div class="advertencias">
+          <div class="advertencia-item">
+            <i class="pi pi-calendar advertencia-icon"></i>
+            <div>
+              <strong>Configure las fechas de materias</strong>
+              <p>Las fechas de inicio y fin de DetalleMalla fueron limpiadas durante la clonación. Configúrelas manualmente si corresponde.</p>
+            </div>
+          </div>
+          <div class="advertencia-item">
+            <i class="pi pi-dollar advertencia-icon"></i>
+            <div>
+              <strong>Revise los valores de EspecieCiclo</strong>
+              <p>Los montos de pago se copiaron del ciclo origen. Si cambian para el nuevo ciclo, actualícelos desde la sección de Especies.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </ng-container>
+
+  </p-card>
+</div>

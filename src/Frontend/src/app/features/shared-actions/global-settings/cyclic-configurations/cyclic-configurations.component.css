@@ -1,0 +1,48 @@
+/* === DESIGN SYSTEM: Settings navigation tabs === */
+
+.settings-page {
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 2px solid var(--surface-border);
+  margin-bottom: 2rem;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-color-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.settings-tab:hover {
+  color: var(--text-color);
+  background-color: var(--surface-hover);
+}
+
+.settings-tab.active {
+  color: var(--text-color);
+  border-bottom-color: var(--brand-yellow-dark);
+  font-weight: 600;
+}
+
+.settings-tab i {
+  font-size: 1rem;
+}

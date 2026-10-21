@@ -1,0 +1,142 @@
+<div class="seasons-container">
+  <!-- Header -->
+  <div class="settings-header">
+    <div class="seasons-header-title">
+      <h1>Gestión de Cuentas Bancarias</h1>
+      <p>Configura las cuentas bancarias utilizadas para la recaudación de pagos de estudiantes.</p>
+    </div>
+    <p-button label="Nueva Cuenta" icon="pi pi-plus" (onClick)="openCreateDialog()" styleClass="btn-nuevo"></p-button>
+  </div>
+
+  <div class="seasons-content-card">
+    <p-table [value]="cuentas" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cuentas">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Banco</th>
+          <th>Número de Cuenta</th>
+          <th>Tipo de Cuenta</th>
+          <th style="text-align:center">Activo</th>
+          <th style="text-align:center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-cuenta>
+        <tr>
+          <td class="col-primary">{{ cuenta.banco }}</td>
+          <td class="col-numero">{{ cuenta.numeroCuenta }}</td>
+          <td>
+            <span class="badge-tipo-cuenta">{{ cuenta.detalleTipoCuenta || getTipoCuentaLabel(cuenta.idTipoCuenta) }}</span>
+          </td>
+          <td style="text-align:center">
+            <i class="pi"
+               [class.pi-check-circle]="cuenta.activo"
+               [class.pi-times-circle]="!cuenta.activo"
+               [class.icon-yes]="cuenta.activo"
+               [class.icon-no]="!cuenta.activo"></i>
+          </td>
+          <td class="seasons-actions-cell" style="justify-content:center">
+            <p-button icon="pi pi-pencil" (onClick)="openEditDialog(cuenta)"
+                      pTooltip="Editar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-edit p-button-sm"></p-button>
+            <p-button icon="pi pi-trash" (onClick)="confirmDelete(cuenta)"
+                      pTooltip="Desactivar" tooltipPosition="top"
+                      styleClass="p-button-text p-button-rounded btn-delete p-button-sm"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5">
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-color-secondary)">
+              <i class="pi pi-building-columns" style="font-size:2rem; display:block; margin-bottom:0.5rem"></i>
+              No hay cuentas bancarias registradas aún.
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog create / edit -->
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '500px'}"
+          [header]="isEditing ? 'Editar Cuenta Bancaria' : 'Crear Cuenta Bancaria'"
+          (onHide)="hideDialog()" [draggable]="false" [resizable]="false" styleClass="p-dialog-custom">
+  <div class="seasons-dialog-content">
+    <form [formGroup]="cuentaForm" (ngSubmit)="saveCuenta()" class="seasons-form-grid">
+
+      <!-- Banco -->
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="banco" class="seasons-form-label">Nombre del Banco <span class="required">*</span></label>
+          <input pInputText id="banco" formControlName="banco" class="seasons-form-control"
+                 placeholder="ej. Banco Pichincha" />
+          <small class="form-hint" *ngIf="cuentaForm.get('banco')?.invalid && cuentaForm.get('banco')?.touched">
+            El nombre del banco es requerido.
+          </small>
+        </div>
+      </div>
+
+      <!-- Número de Cuenta -->
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="numeroCuenta" class="seasons-form-label">Número de Cuenta <span class="required">*</span></label>
+          <input pInputText id="numeroCuenta" formControlName="numeroCuenta" class="seasons-form-control"
+                 placeholder="ej. 2200123456789" />
+          <small class="form-hint" *ngIf="cuentaForm.get('numeroCuenta')?.invalid && cuentaForm.get('numeroCuenta')?.touched">
+            El número de cuenta es requerido (mín. 4 caracteres).
+          </small>
+        </div>
+      </div>
+
+      <!-- Tipo de Cuenta -->
+      <div class="seasons-form-row">
+        <div class="seasons-form-group">
+          <label for="idTipoCuenta" class="seasons-form-label">Tipo de Cuenta <span class="required">*</span></label>
+          <select id="idTipoCuenta" formControlName="idTipoCuenta" class="seasons-form-control">
+            <option [ngValue]="null">Seleccionar tipo de cuenta</option>
+            <option *ngFor="let tipo of tiposCuenta" [ngValue]="tipo.idTipoCuenta">{{ tipo.detalle }}</option>
+          </select>
+          <small class="form-hint" *ngIf="cuentaForm.get('idTipoCuenta')?.invalid && cuentaForm.get('idTipoCuenta')?.touched">
+            El tipo de cuenta es requerido.
+          </small>
+        </div>
+      </div>
+
+      <!-- Activo (solo edición) -->
+      <div class="seasons-form-row" *ngIf="isEditing">
+        <div class="seasons-form-group checkbox-group">
+          <label class="seasons-form-label">Estado</label>
+          <div class="checkbox-wrap">
+            <p-checkbox formControlName="activo" [binary]="true" inputId="activo"></p-checkbox>
+            <label for="activo" class="checkbox-label">Cuenta activa</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="seasons-form-actions">
+        <p-button label="Cancel" icon="pi pi-times" type="button"
+                  (onClick)="hideDialog()" styleClass="p-button-secondary p-button-outlined"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" type="submit"
+                  [disabled]="cuentaForm.invalid || isSaving" styleClass="p-button-primary"></p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
+
+<!-- Confirm deactivate -->
+<app-confirmation-modal
+  [visible]="showConfirmDelete"
+  title="Desactivar Cuenta Bancaria"
+  message="¿Estás seguro de que quieres desactivar esta cuenta bancaria? Ya no estará disponible para pagos."
+  acceptLabel="Desactivar"
+  rejectLabel="Cancelar"
+  (accept)="deleteCuenta()"
+  (reject)="cancelDelete()"
+  (hide)="cancelDelete()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>

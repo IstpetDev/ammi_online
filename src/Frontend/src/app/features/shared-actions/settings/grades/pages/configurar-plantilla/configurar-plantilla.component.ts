@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   PlantillaEvaluacionDTO,
@@ -17,37 +17,36 @@ import { TipoPlantillaEstructuraService } from '../../../../../../core/services/
 import { TipoReglaCalculoService } from '../../../../../../core/services/infrastructure/tipo-regla-calculo.service';
 import { ReglasCalculoService } from '../../../../../../core/services/infrastructure/reglas-calculo.service';
 
-import { EstructuraTreeComponent } from '../../components/estructura-tree/estructura-tree.component';
+import { EstructuraTreeComponent, BatchNodeItem } from '../../components/estructura-tree/estructura-tree.component';
 import { NodoFormComponent, NodoConReglaData } from '../../components/nodo-form/nodo-form.component';
 import { ValidacionPesosComponent } from '../../components/validacion-pesos/validacion-pesos.component';
 import { MessageService } from 'primeng/api';
 
 // PrimeNG Imports
 import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
+import { SharedToastComponent } from '../../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-configurar-plantilla',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     EstructuraTreeComponent,
     NodoFormComponent,
     ValidacionPesosComponent,
     ButtonModule,
-    ToastModule,
-    ConfirmDialogModule
-  ],
+    ConfirmDialogModule, SharedToastComponent],
   providers: [MessageService, ConfirmationService],
   templateUrl: './configurar-plantilla.component.html',
   styleUrls: ['./configurar-plantilla.component.css']
 })
-export class ConfigurarPlantillaComponent implements OnInit {
+export class ConfigurarPlantillaComponent implements OnChanges {
   @Input() plantilla!: PlantillaEvaluacionDTO;
   @Output() back = new EventEmitter<void>();
+
+  @ViewChild(EstructuraTreeComponent) estructuraTreeComp?: EstructuraTreeComponent;
 
   estructura: PlantillaEstructuraDTO[] = [];
   tiposEstructura: TipoPlantillaEstructuraDTO[] = [];
@@ -72,11 +71,23 @@ export class ConfigurarPlantillaComponent implements OnInit {
     private confirmationService: ConfirmationService
   ) {}
 
-  ngOnInit(): void {
-    if (this.plantilla) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['plantilla'] && this.plantilla?.idPlantillaEvaluacion) {
+      this.resetState();
       this.loadCatalogos();
       this.loadEstructura();
     }
+  }
+
+  private resetState(): void {
+    this.estructura = [];
+    this.validacion = null;
+    this.loading = false;
+    this.showNodoDialog = false;
+    this.editingNodo = null;
+    this.currentParentId = null;
+    this.ordenSugerido = 1;
+    this.reglaExistenteNodo = null;
   }
 
   loadCatalogos(): void {
@@ -135,11 +146,55 @@ export class ConfigurarPlantillaComponent implements OnInit {
   // --- Handlers del Arbol ---
 
   onAddNode(event: { parentId: number | null }): void {
-    this.currentParentId = event.parentId;
-    this.editingNodo = null;
-    this.reglaExistenteNodo = null;
-    this.ordenSugerido = this.calcularOrdenSugerido(event.parentId);
-    this.showNodoDialog = true;
+    if (this.estructuraTreeComp) {
+      this.estructuraTreeComp.openInlineAdd(event.parentId);
+    } else {
+      this.currentParentId = event.parentId;
+      this.editingNodo = null;
+      this.reglaExistenteNodo = null;
+      this.ordenSugerido = this.calcularOrdenSugerido(event.parentId);
+      this.showNodoDialog = true;
+    }
+  }
+
+  onAddBatchNodes(event: { parentId: number | null; nodes: BatchNodeItem[] }): void {
+    if (!event.nodes || event.nodes.length === 0) return;
+
+    this.loading = true;
+    const ordenBase = this.calcularOrdenSugerido(event.parentId);
+
+    const requests = event.nodes.map((n, idx) => {
+      const dto: PlantillaEstructuraCreateDTO = {
+        idPlantillaEvaluacion: this.plantilla.idPlantillaEvaluacion,
+        idNodoPadre: event.parentId,
+        nodoNombre: n.nodoNombre,
+        peso: n.peso,
+        idTipoPlantillaEstructura: n.idTipoPlantillaEstructura,
+        orden: ordenBase + idx
+      };
+      return this.estructuraService.create(dto);
+    });
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: `${event.nodes.length} opción(es) agregada(s) correctamente`
+        });
+        this.loadEstructura();
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Error al agregar nodos:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron agregar algunos o todos los nodos'
+        });
+        this.loadEstructura();
+      }
+    });
   }
 
   onEditNode(nodo: PlantillaEstructuraDTO): void {

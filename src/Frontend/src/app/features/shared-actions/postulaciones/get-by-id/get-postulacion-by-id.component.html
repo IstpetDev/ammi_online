@@ -1,6 +1,205 @@
 <div class="postulacion-detail-container">
-  <p-toast></p-toast>
+  <app-shared-toast></app-shared-toast>
   <p-confirmDialog></p-confirmDialog>
+
+  <!-- Modal Confirmar Aprobación Postulación -->
+  <app-shared-modal
+    [(visible)]="mostrarDialogAprobarPostulacion"
+    title="Confirmar aprobación"
+    size="md"
+    cancelText="Cancelar"
+    confirmText="Aprobar"
+    [confirmDisabled]="!selectedIdMallaParalelo"
+    [confirmLoading]="aprobandoPostulacion"
+    (confirm)="confirmarAprobarPostulacion()"
+    (close)="cancelarDialogAprobarPostulacion()">
+    
+    <div *ngIf="!adjuntosObligatoriosAprobados" class="alert alert-warning" style="background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.9rem;">
+      <i class="pi pi-exclamation-triangle" style="font-size: 1.2rem; margin-top: 1px;"></i>
+      <div>
+        <strong>Atención:</strong> Aún faltan requisitos obligatorios por aprobar. ¿Estás seguro de aprobar la postulación? Estos requisitos podrán ser llenados más adelante.
+      </div>
+    </div>
+
+    <p style="font-size:1.08rem; color:#333; margin-bottom:1.25rem;">¿Estás seguro de que deseas <b>aprobar</b> esta
+      postulación? Seleccione el paralelo en el que se matriculará el estudiante.</p>
+
+    <!-- Paralelo / Curso selector -->
+    <div style="margin-bottom:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <label style="font-weight:600; color:var(--text-color, #333); font-size:0.95rem; margin:0;">
+          Curso / Paralelo asignado <span style="color:#e53935;">*</span>
+        </label>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button type="button" class="btn-action-ghost" (click)="abrirConfiguracionCursos()" title="Configurar nuevo curso en ventana externa">
+            <i class="pi pi-external-link" style="font-size:0.8rem;"></i> Configurar nuevo curso
+          </button>
+          <button type="button" class="btn-icon-ghost" (click)="recargarParalelos()" [disabled]="loadingParalelos" title="Recargar lista de cursos/paralelos">
+            <i class="pi" [class.pi-spin]="loadingParalelos" [class.pi-spinner]="loadingParalelos" [class.pi-refresh]="!loadingParalelos"></i>
+          </button>
+        </div>
+      </div>
+      <div *ngIf="loadingParalelos" style="color:#888; font-size:0.9rem; padding:0.4rem 0;">
+        <i class="pi pi-spin pi-spinner" style="margin-right:0.4rem;"></i>Cargando cursos y paralelos...
+      </div>
+      <select *ngIf="!loadingParalelos" [(ngModel)]="selectedIdMallaParalelo"
+        style="width:100%; padding:0.55rem 0.75rem; border:1px solid var(--surface-border, #ccc); border-radius:6px; font-size:0.95rem; background:var(--surface-hover, #fafafa); color:var(--text-color, #333);">
+        <option [ngValue]="null" disabled>Seleccione un paralelo</option>
+        <option *ngFor="let mp of mallaParalelos" [ngValue]="mp.idMallaParalelo"
+          [disabled]="getCuposDisponibles(mp) <= 0">
+          Paralelo {{ mp.nombreParalelo }} — Cupos disponibles: {{ getCuposDisponibles(mp) }} / {{ mp.cupoMaximo }}
+        </option>
+      </select>
+      <small *ngIf="!loadingParalelos && mallaParalelos.length === 0" style="color:#e53935; font-size:0.85rem; display:block; margin-top:0.4rem;">
+        No hay paralelos activos disponibles para esta malla. Configure primero los paralelos haciendo clic en "Configurar nuevo curso".
+      </small>
+    </div>
+  </app-shared-modal>
+
+  <!-- Modal Confirmar Rechazo Postulación -->
+  <app-shared-modal
+    [(visible)]="mostrarDialogRechazarPostulacion"
+    title="Confirmar rechazo"
+    size="md"
+    cancelText="Cancelar"
+    confirmText="Rechazar"
+    confirmClass="btn-danger"
+    (confirm)="confirmarRechazarPostulacion()"
+    (close)="cancelarDialogRechazarPostulacion()">
+    <p style="font-size:1.08rem; color:#333; margin-bottom:1.2rem;">¿Estás seguro de que deseas <b>rechazar</b> esta
+      postulación? Esta acción no se puede deshacer.</p>
+    <div style="margin-bottom:1.2rem;">
+      <label for="motivoRechazoPostulacion"
+        style="display:block; font-weight:500; color:#555; margin-bottom:0.4rem;">
+        Motivo de rechazo <span style="color:#999; font-weight:400;">(opcional)</span>
+      </label>
+      <textarea id="motivoRechazoPostulacion" [(ngModel)]="motivoRechazoPostulacion" rows="3"
+        placeholder="Indique la razón del rechazo para notificar al postulante..."
+        style="width:100%; border-radius:0.5rem; border:1px solid #e0e0e0; font-size:0.95rem; resize:vertical; background:#fafafa; padding:0.5rem;"></textarea>
+    </div>
+  </app-shared-modal>
+
+  <!-- Modal Contactar -->
+  <app-shared-modal
+    [(visible)]="mostrarDialogContacto"
+    title="Contactar Postulante"
+    size="md"
+    cancelText="Cancelar"
+    confirmText="Confirmar Contacto"
+    confirmClass="btn-primary"
+    (confirm)="confirmarContacto()"
+    (close)="cancelarDialogContacto()">
+    <div class="contacto-modal-content">
+      <i class="pi pi-phone" style="font-size:1.5rem;color:#0284c7;margin-top:0.1rem;"></i>
+      <div style="flex: 1;">
+        <p style="margin:0 0 0.5rem;font-size:1rem;color:#333;">
+          ¿Deseas registrar un contacto con el postulante
+          <strong>"{{ getNombreEstudiante() }}"</strong>?
+        </p>
+        <p style="margin:0;font-size:0.88rem;color:#666;">
+          La postulación mantendrá su estado actual en <strong>Contacto Persona</strong>. Podrás actualizar las observaciones de contacto a continuación.
+        </p>
+
+        <div class="contacto-datos" *ngIf="tieneDatosContacto" style="margin-top:1rem;padding:0.75rem;background:#f5f5f5;border-radius:6px;">
+          <strong style="display:block;margin-bottom:0.4rem;">Datos de contacto (haz clic para interactuar):</strong>
+          <span *ngFor="let c of datosContacto" style="display:flex;align-items:center;font-size:0.85rem;margin-bottom: 0.3rem;">
+            <i class="pi" [class.pi-envelope]="c?.tipocontacto?.detalle?.toUpperCase().includes('CORREO') || c?.tipocontacto?.detalle?.toUpperCase().includes('MAIL')"
+              [class.pi-phone]="!c?.tipocontacto?.detalle?.toUpperCase().includes('CORREO') && !c?.tipocontacto?.detalle?.toUpperCase().includes('MAIL')" style="margin-right: 0.4rem;"></i>
+            @if (c?.tipocontacto?.detalle?.toUpperCase().includes('CORREO') || c?.tipocontacto?.detalle?.toUpperCase().includes('MAIL')) {
+              <a href="mailto:{{ c.detalle }}" style="color: #0284c7; text-decoration: underline;">{{ c.detalle }}</a>
+            } @else {
+              <a href="tel:{{ c.detalle }}" style="color: #0284c7; text-decoration: underline;">{{ c.detalle }}</a>
+            }
+          </span>
+        </div>
+        <p *ngIf="!tieneDatosContacto" style="margin-top:0.5rem;font-size:0.85rem;color:#999;">
+          No hay datos de contacto registrados para este postulante.
+        </p>
+
+        <div class="contacto-resultado-section">
+          <label for="modalContactoObservaciones" class="contacto-resultado-label">
+            <i class="pi pi-comment"></i> Observaciones de revisión / contacto
+          </label>
+          <textarea id="modalContactoObservaciones" [(ngModel)]="contactoResultadoTexto" class="contacto-resultado-textarea"
+            placeholder="Ej. Se contactó al postulante, está interesado y se le indicó la oferta académica."></textarea>
+        </div>
+      </div>
+    </div>
+  </app-shared-modal>
+
+  <!-- Modal Editar Datos Básicos del Postulante (Ligero) -->
+  <app-shared-modal
+    [(visible)]="mostrarModalEdicionBasica"
+    title="Editar datos básicos del postulante"
+    size="md"
+    cancelText="Cancelar"
+    confirmText="Guardar Cambios"
+    [confirmLoading]="guardandoEdicionBasica"
+    (confirm)="guardarEdicionBasica()"
+    (close)="cancelarEdicionBasica()">
+    <div class="edit-basico-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Primer Nombre <span class="required-star">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formEdicionBasica.primerNombre" placeholder="Primer nombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Segundo Nombre</label>
+          <input type="text" class="form-control" [(ngModel)]="formEdicionBasica.segundoNombre" placeholder="Segundo nombre (opcional)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Primer Apellido <span class="required-star">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formEdicionBasica.primerApellido" placeholder="Primer apellido">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Segundo Apellido</label>
+          <input type="text" class="form-control" [(ngModel)]="formEdicionBasica.segundoApellido" placeholder="Segundo apellido (opcional)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Cédula / Documento <span class="required-star">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formEdicionBasica.documento" placeholder="Número de documento / CI">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de Nacimiento</label>
+          <input type="date" class="form-control" [(ngModel)]="formEdicionBasica.fechaNacimiento">
+        </div>
+      </div>
+    </div>
+  </app-shared-modal>
+
+  <!-- Modal Confirmar Eliminación Permanente de Postulación y Postulante -->
+  <app-shared-modal
+    [(visible)]="mostrarDialogEliminarPostulacion"
+    title="Eliminar Postulación y Postulante"
+    size="md"
+    cancelText="Cancelar"
+    confirmText="Eliminar definitivamente"
+    confirmClass="btn-danger"
+    [confirmLoading]="eliminandoPostulacion"
+    (confirm)="confirmarEliminarPostulacion()"
+    (close)="cancelarDialogEliminarPostulacion()">
+    <div class="delete-warning-box">
+      <div class="delete-warning-header">
+        <i class="pi pi-exclamation-triangle delete-warning-icon"></i>
+        <span class="delete-warning-title">¿Deseas eliminar permanentemente este registro?</span>
+      </div>
+      <p class="delete-warning-desc">
+        Esta acción es <strong>irreversible</strong> y eliminará completamente:
+      </p>
+      <ul class="delete-warning-list">
+        <li>El expediente y registro de la postulación actual.</li>
+        <li>Todos los documentos personales y archivos adjuntos asociados.</li>
+        <li>La información personal registrada de <strong>{{ getNombreEstudiante() }}</strong> (CI: {{ postulacionByDocumento?.items?.[0]?.personasimple?.documento }}).</li>
+      </ul>
+      <p class="delete-warning-note">
+        Una vez eliminada, la persona deberá iniciar un nuevo proceso de postulación desde cero.
+      </p>
+    </div>
+  </app-shared-modal>
 
   <div class="detail-content" *ngIf="postulacionByDocumento">
     <!-- Mostrar loading mientras se cargan los requisitos -->
@@ -12,249 +211,92 @@
 
     <!-- Contenido principal cuando no está cargando -->
     <div class="content-wrapper" *ngIf="!loading">
-    <!-- Zona Izquierda - 30% -->
-    <div class="left-panel">
-      <div class="info-section">
-        <h3>Información del Postulante</h3>
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-field">
-              <label>Nombre Completo</label>
-              <span>{{ postulacionByDocumento.personasimple?.primerNombre + ' ' + postulacionByDocumento.personasimple?.segundoNombre + ' ' + postulacionByDocumento.personasimple?.primerApellido + ' ' + postulacionByDocumento.personasimple?.segundoApellido || 'No especificado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Oferta Académica</label>
-              <span>{{ postulacionByDocumento.malla?.detalle || 'No especificada' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Estado</label>
-              <span class="status-badge" [class]="'status-' + ((postulacionByDocumento.tipoestadoaprobacion?.detalle?.toLowerCase() || 'desconocido').replace(' ', '-'))">{{ postulacionByDocumento.tipoestadoaprobacion?.detalle || 'Sin Estado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Fecha de Postulación</label>
-              <span>{{ 'No disponible' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Ciclo</label>
-              <span>{{ postulacionByDocumento.malla?.mallaCiclo?.ciclo?.detalle || 'No especificado' }}</span>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="info-field">
-              <label>Curso</label>
-              <span>{{ postulacionByDocumento.malla?.curso?.detalle || 'No especificado' }}</span>
-            </div>
-            <div class="info-field">
-              <label>Edad</label>
-              <span>{{ calcularEdad(postulacionByDocumento.personasimple?.pinfo?.fechaNacimiento) || 'No disponible' }}</span>
-            </div>
-          </div>
+      <!-- Zona Izquierda - 35% -->
+      <div class="left-panel"
+        [class.no-actions]="!( !ocultarAccionesPostulacion && postulacionByDocumento.items[0]?.tipoestadoaprobacion?.detalle !== 'APROBADO' && postulacionByDocumento.items[0]?.tipoestadoaprobacion?.detalle !== 'RECHAZADO' && postulacionByDocumento.items[0]?.tipoestadoaprobacion?.detalle !== 'APROBADO' )">
+        <div class="section-header">
+          <h3>Información del Postulante</h3>
+          <button type="button" (click)="volver()" class="btn-back-small">← Volver</button>
         </div>
-      </div>
+        <div class="left-scroll-content">
+          <!-- Subcomponente: Información del Postulante -->
+          <app-postulante-info
+            [postulante]="postulacionByDocumento.items[0]"
+            (editarPostulante)="abrirEdicionPostulante()"
+            (eliminarPostulante)="abrirDialogEliminarPostulacion()">
+          </app-postulante-info>
 
-      <div class="requisitos-section">
-        <h3>Requisitos y Documentos</h3>
-        <div class="requisitos-grid">
-          <div class="requisito-card" *ngFor="let requisito of requisitos">
-            <div class="requisito-header">
-              <span class="requisito-name">{{ requisito.detalle }}</span>
-              <div class="requisito-badges">
-                <span class="requisito-status" [class.required]="requisito.esObligatorio">
-                  {{ requisito.esObligatorio ? 'Obligatorio' : 'Opcional' }}
-                </span>
-                <span class="requisito-completed" *ngIf="requisito.completado">
-                  <i class="pi pi-check-circle"></i> Subido
-                </span>
-                <span class="requisito-approved" *ngIf="requisito.completado && requisito.documentoExistente?.estado === true">
-                  <i class="pi pi-check"></i> Aprobado
-                </span>
-                <span class="requisito-rejected" *ngIf="requisito.completado && requisito.documentoExistente?.estado === false">
-                  <i class="pi pi-times"></i> Rechazado
-                </span>
-              </div>
-            </div>
-            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'ADJUNTO'">
-
-              <p-button
-                label="Subir"
-                icon="pi pi-upload"
-                (onClick)="subirDocumento(requisito)"
-                styleClass="p-button-sm p-button-outlined"
-                [disabled]="requisito.completado && !getDocumentoPendiente(requisito)">
-              </p-button>
-              <p-button
-                label="Ver"
-                icon="pi pi-eye"
-                (onClick)="verDocumento(requisito)"
-                styleClass="p-button-sm p-button-outlined"
-                [disabled]="!getDocumentoPendiente(requisito) && !requisito.completado">
-              </p-button>
-              <!-- Eliminar documento pendiente -->
-              <p-button
-                label="Quitar"
-                icon="pi pi-times"
-                (onClick)="eliminarDocumentoPendiente(requisito)"
-                styleClass="p-button-sm p-button-warning p-button-outlined"
-                [disabled]="!getDocumentoPendiente(requisito)"
-                *ngIf="getDocumentoPendiente(requisito)">
-              </p-button>
-              <!-- Eliminar documento completado del servidor -->
-            
-              <!-- Botones de administración -->
-              <p-button 
-                label="Aprobar Doc." 
-                icon="pi pi-check" 
-                (onClick)="aceptarDocumento(requisito)" 
-                styleClass="p-button-sm p-button-success"
-                [disabled]="!requisito.completado"
-                *ngIf="!requisito.documentoExistente?.estado">
-              </p-button>
-              <p-button 
-                label="Rechazar Doc." 
-                icon="pi pi-times" 
-                (onClick)="rechazarDocumento(requisito)" 
-                styleClass="p-button-sm p-button-danger"
-                [disabled]="!requisito.completado"
-                *ngIf="!requisito.documentoExistente?.estado">
-              </p-button>
-            </div>
-            <div class="requisito-actions" *ngIf="requisito.tipoDato === 'BOOL'">
-              <!-- Estado: Sin selección y sin completar - Mostrar botones -->
-              <div class="bool-buttons" *ngIf="!requisito.completado && !getSeleccionBoolPendiente(requisito)">
-                <p-button
-                  label="Sí Cumple"
-                  icon="pi pi-check"
-                  (onClick)="marcarRequisitoCumple(requisito, true)"
-                  styleClass="p-button-sm p-button-success p-button-outlined">
-                </p-button>
-                <p-button
-                  label="No Cumple"
-                  icon="pi pi-times"
-                  (onClick)="marcarRequisitoCumple(requisito, false)"
-                  styleClass="p-button-sm p-button-warning p-button-outlined">
-                </p-button>
-              </div>
-
-              <!-- Estado: Selección pendiente - Mostrar selección con opción de cambiar -->
-              <div class="bool-pending" *ngIf="!requisito.completado && getSeleccionBoolPendiente(requisito)">
-                <div class="pending-selection">
-                  <span class="pending-badge" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'cumple' : 'no-cumple'">
-                    <i class="pi" [class]="getSeleccionBoolPendiente(requisito)?.valorBool ? 'pi-check' : 'pi-times'"></i>
-                    {{ getSeleccionBoolPendiente(requisito)?.valorBool ? 'Sí Cumple' : 'No Cumple' }}
-                    <small>(Pendiente)</small>
-                  </span>
-                  <div class="pending-actions">
-                    <p-button
-                      label="Cambiar"
-                      icon="pi pi-pencil"
-                      (onClick)="eliminarSeleccionBoolPendiente(requisito)"
-                      styleClass="p-button-sm p-button-text p-button-secondary">
-                    </p-button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Estado: Completado - Mostrar resultado final -->
-              <div class="bool-result" *ngIf="requisito.completado">
-                <div class="bool-completed-content">
-                  <span class="result-badge" [class]="requisito.documentoExistente?.valorDato ? 'cumple' : 'no-cumple'">
-                    <i class="pi" [class]="requisito.documentoExistente?.valorDato ? 'pi-check' : 'pi-times'"></i>
-                    {{ requisito.documentoExistente?.valorDato ? 'Cumple' : 'No Cumple' }}
-                  </span>
-                  <p class="result-message" *ngIf="!requisito.documentoExistente?.valorDato">
-                    Un asesor se comunicará contigo para orientarte sobre este requisito.
-                  </p>
-                </div>
-              
-              </div>
-            </div>
-          </div>
+          <!-- Subcomponente: Lista de Requisitos -->
+          <app-requisitos-list
+            [requisitos]="requisitos"
+            [persona]="persona"
+            [postulante]="postulacionByDocumento.items[0]"
+            (viewDocument)="onViewDocument($event)"
+            (requirementsChanged)="onRequirementsChanged($event)">
+          </app-requisitos-list>
         </div>
-        <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+
+        <!-- Subcomponente: Acciones Generales de Postulación -->
+        <app-acciones-postulacion
+          [postulacion]="postulacionByDocumento.items[0]"
+          [puedeIntentarAprobacion]="puedeIntentarAprobacion"
+          [motivoBloqueoAprobacion]="motivoBloqueoAprobacion"
+          [aprobandoPostulacion]="aprobandoPostulacion"
+          [ocultarAccionesPostulacion]="ocultarAccionesPostulacion"
+          (contactar)="abrirDialogContacto()"
+          (completarRegistro)="abrirCompletarRegistro()"
+          (rechazar)="rechazarPostulacion()"
+          (aprobar)="aprobarPostulacion()">
+        </app-acciones-postulacion>
+
+        @if (mostrarDrawerContactoManual) {
+          <app-shared-drawer
+            [(visible)]="mostrarDrawerContactoManual"
+            title="Completar datos de postulación"
+            mode="drawer"
+            position="right"
+            size="xl"
+            [showFooter]="false"
+            (close)="mostrarDrawerContactoManual = false">
+            <app-create-postulation-manual
+              [idPersona]="contactoIdPersona"
+              [idPostulacion]="contactoIdPostulacion"
+              [postulacionData]="postulacionByDocumento?.items?.[0]"
+              (completed)="onContactoManualCompleted()">
+            </app-create-postulation-manual>
+          </app-shared-drawer>
+        }
+
+        <button type="button" (click)="volver()" class="btn-back"
+          *ngIf="!postulacionByDocumento && !loading">Volver</button>
       </div>
 
-      <div class="acciones-section" *ngIf="postulacionByDocumento.tipoestadoaprobacion?.detalle !== 'APROBADO' && postulacionByDocumento.tipoestadoaprobacion?.detalle !== 'RECHAZADO' && postulacionByDocumento.tipoestadoaprobacion?.detalle !== 'FINALIZADO'">
-        <h3>Acciones de Postulación</h3>
-        <div class="acciones-grid">
-          <p-button
-            label="Aprobar"
-            icon="pi pi-check-circle"
-            (onClick)="aprobarPostulacion()"
-            styleClass="p-button-sm p-button-success">
-          </p-button>
-     
-          <p-button
-            label="Rechazar"
-            icon="pi pi-times-circle"
-            (onClick)="rechazarPostulacion()"
-            styleClass="p-button-sm p-button-danger">
-          </p-button>
-        </div>
+      <!-- Zona Derecha - 65% (Previsualización de Documentos en Desktop) -->
+      <div class="right-panel">
+        <app-documento-preview
+          [previewUrl]="previewUrl"
+          [previewFileName]="previewFileName"
+          [previewFileType]="previewFileType">
+        </app-documento-preview>
       </div>
-    </div>
-
-    <!-- Zona Derecha - 70% -->
-    <div class="right-panel">
-      <div class="preview-header">
-        <button type="button" (click)="volver()" class="btn-back-small">← Volver</button>
-        <button
-          type="button"
-          (click)="confirmarDatos()"
-          class="btn-confirm"
-          [disabled]="documentosPendientes.length === 0 || uploading">
-          <i class="pi pi-check"></i>
-          {{ uploading ? 'Subiendo...' : 'Confirmar Datos (' + documentosPendientes.length + ')' }}
-        </button>
-      </div>
-      <div class="document-preview">
-        <h3>Previsualización de Documentos</h3>
-        <div class="preview-content">
-          <div class="no-documents" *ngIf="!previewUrl">
-            <i class="pi pi-file"></i>
-            <p>Selecciona un documento y presiona "Ver" para previsualizarlo</p>
-            <p class="hint" *ngIf="documentosPendientes.length > 0">
-              Tienes {{ documentosPendientes.length }} documento(s) listo(s) para subir
-            </p>
-          </div>
-          <div class="preview-container" *ngIf="previewUrl">
-            <div class="preview-header-info">
-              <span class="preview-filename">
-                <i class="pi pi-file-pdf"></i>
-                {{ previewFileName }}
-              </span>
-            </div>
-            <!-- Mostrar iframe solo para tipos de archivo soportados -->
-            <iframe
-              [src]="previewUrl | safe:'resourceUrl'"
-              class="document-iframe"
-              width="100%"
-              height="600px"
-              frameborder="0"
-              *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType)">
-            </iframe>
-            <!-- Mostrar información para archivos no previsualizable -->
-            <div class="non-previewable-file" *ngIf="previewUrl && !esTipoPrevisualizable(previewFileName, previewFileType)">
-              <div class="file-info">
-                <i class="pi pi-file" style="font-size: 3rem; color: var(--primary-color);"></i>
-                <h4>Archivo cargado correctamente</h4>
-                <p><strong>Nombre:</strong> {{ previewFileName }}</p>
-                <p><strong>Tipo:</strong> {{ obtenerTipoArchivo(previewFileName, previewFileType) }}</p>
-                <p class="note">Este tipo de archivo no se puede previsualizar en el navegador, pero ha sido procesado correctamente.</p>
-                <a [href]="previewUrl" [download]="previewFileName" class="download-link">
-                  <i class="pi pi-download"></i> Descargar archivo
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     </div>
   </div>
+
+  <!-- Shared Drawer para previsualización en móvil / pantallas pequeñas -->
+  <app-shared-drawer
+    [(visible)]="mostrarDrawerPreviewMobile"
+    [title]="previewFileName || 'Previsualización de Documento'"
+    mode="drawer"
+    position="right"
+    size="xl"
+    [showFooter]="false"
+    (close)="mostrarDrawerPreviewMobile = false">
+    <app-documento-preview
+      [previewUrl]="previewUrl"
+      [previewFileName]="previewFileName"
+      [previewFileType]="previewFileType">
+    </app-documento-preview>
+  </app-shared-drawer>
 
   <div class="error" *ngIf="!postulacionByDocumento && !loading">
     <div class="error-card">
@@ -264,3 +306,17 @@
     </div>
   </div>
 </div>
+
+<!-- Dialog: Ver detalles de pago tras aprobación -->
+<p-dialog [(visible)]="mostrarDialogVerDetalles" [modal]="true" [closable]="true" [header]="'Detalles del estudiante'"
+  [style]="{ width: '95vw', maxWidth: '1200px' }" (onHide)="onCerrarDetallesPago()">
+
+  <div *ngIf="loadingDetalles" style="display:flex; align-items:center; justify-content:center; padding: 3rem;">
+    <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    <span style="margin-left: 1rem; color: #666;">Cargando detalles...</span>
+  </div>
+
+  <app-ver-detalles *ngIf="!loadingDetalles && estudianteDetalles" [estudianteSeleccionado]="estudianteDetalles!"
+    [detallesCreditoAPI]="detallesCreditoDialog" (volver)="mostrarDialogVerDetalles = false">
+  </app-ver-detalles>
+</p-dialog>

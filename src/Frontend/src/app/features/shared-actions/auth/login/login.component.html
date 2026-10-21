@@ -1,50 +1,89 @@
-<div class="login-container">
-  <div class="login-card">
-    <div class="back-to-home">
-      <a routerLink="/" class="back-link">
-        <i class="pi pi-arrow-left"></i>
-        Volver al inicio
-      </a>
-    </div>
-    <h2>Iniciar Sesión</h2>
+<app-shared-toast></app-shared-toast>
+<div class="split-login-container">
+  <!-- Left Side: Graphic Illustration -->
+  <div class="login-graphic-side">
+    <!-- Floating Background Ornaments -->
+    <div class="bg-circles"></div>
+    <div class="bg-dots"></div>
     
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="username">Usuario</label>
-        <input
-          type="text"
-          id="username"
-          formControlName="username"
-          class="form-input"
-          placeholder="Tu usuario"
-        >
-        <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="error-message">
-          Usuario requerido
+    <div class="graphic-content">
+      <div class="graphic-logo-wrapper">
+        <div class="illustration-blob">
+          <img src="assets/shared/Logo-sin-fondo-oscuro.png" alt="AMMI Online" class="graphic-logo-img">
         </div>
       </div>
+      
+      <div class="graphic-text">
+        <h2>Educación sin fronteras</h2>
+        <p>Accede a tus cursos, calificaciones y pagos desde un solo lugar de manera rápida y segura.</p>
+      </div>
+    </div>
+  </div>
 
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          class="form-input"
-          placeholder="Tu contraseña"
-        >
-        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-message">
-          La contraseña debe tener al menos 6 caracteres
-        </div>
+  <!-- Right Side: Login Form -->
+  <div class="login-form-side">
+    <!-- Floating Back Arrow Icon at the Top -->
+    <a routerLink="/" class="back-arrow-btn" aria-label="Volver al inicio">
+      <i class="pi pi-arrow-left"></i>
+    </a>
+
+    <div class="login-form-wrapper">
+      <!-- Brand Logo at Top of Form (Centered) -->
+      <div class="brand-logo-container">
+        <img [src]="logoSrc()" alt="AMMI Online Logo" class="brand-logo">
+      </div>
+      
+      <div class="welcome-header">
+        <h1>¡Bienvenido de nuevo!</h1>
+        <p>Ingresa tus credenciales para acceder a la plataforma</p>
       </div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || isLoading">
-        <span *ngIf="!isLoading">Iniciar Sesión</span>
-        <p-progressSpinner *ngIf="isLoading" [style]="{width: '20px', height: '20px'}" strokeWidth="4" animationDuration="1s"></p-progressSpinner>
-      </button>
-    </form>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <div class="input-wrapper">
+            <i class="pi pi-user input-icon"></i>
+            <input type="text" id="username" formControlName="username" class="form-input" placeholder="ejemplo_usuario">
+          </div>
+          <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="error-message">
+            Usuario requerido
+          </div>
+        </div>
 
-    <div *ngIf="loginError" class="error-message">
-      {{ loginError }}
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <div class="password-input-wrapper">
+            <i class="pi pi-lock input-icon"></i>
+            <input [type]="showPassword ? 'text' : 'password'" id="password" formControlName="password" class="form-input" placeholder="••••••••••••">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showPassword = !showPassword"
+              [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+          </div>
+          <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-message">
+            La contraseña debe tener al menos 6 caracteres
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || isLoading">
+          <span *ngIf="!isLoading">Iniciar Sesión</span>
+          <p-progressSpinner *ngIf="isLoading" [style]="{width: '20px', height: '20px'}" strokeWidth="4"
+            animationDuration="1s"></p-progressSpinner>
+        </button>
+
+        <div class="form-footer">
+          <a routerLink="/forgot-password" class="forgot-password-link">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+      </form>
+      
+      <div class="form-copyright">
+        <p>&copy; {{ currentYear }} AMMI Online. Todos los derechos reservados.</p>
+      </div>
     </div>
   </div>
 </div>

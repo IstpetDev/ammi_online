@@ -1,15 +1,5 @@
-<div class="w-full p-4">
-  <p-toast></p-toast>
-
-  <div class="flex items-center mb-6">
-    <p-button icon="pi pi-arrow-left" [rounded]="true" [text]="true"
-              (onClick)="onCancel()"></p-button>
-    <h1 class="text-2xl font-bold text-[var(--text-color)] ml-2">
-      {{ isEditing ? 'Editar' : 'Nueva' }} Plantilla de Evaluación
-    </h1>
-  </div>
-
-  <div class="card p-6 bg-[var(--surface-card)] rounded-lg shadow max-w-4xl mx-auto">
+<div class="p-4">
+  <div class=" ">
     <form [formGroup]="plantillaForm" (ngSubmit)="onSubmit()">
       <!-- Nombre -->
       <div class="field mb-4">
@@ -37,21 +27,8 @@
       </div>
 
       <!-- Estado -->
-      <div class="field mb-6 flex items-center gap-3">
-        <label class="font-semibold m-0">Estado</label>
-        <p-toggleswitch formControlName="esActivo"></p-toggleswitch>
-        <span [class]="plantillaForm.get('esActivo')?.value ? 'text-green-600 font-medium' : 'text-red-500 font-medium'">
-            {{ plantillaForm.get('esActivo')?.value ? 'Activa' : 'Inactiva' }}
-        </span>
-      </div>
 
-      <!-- Botones -->
-      <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
-        <p-button label="Cancelar" (onClick)="onCancel()" [text]="true" severity="secondary"></p-button>
-        <p-button label="Guardar" type="submit" icon="pi pi-save"
-                  [disabled]="plantillaForm.invalid || loading"
-                  [loading]="loading"></p-button>
-      </div>
+
     </form>
   </div>
 </div>

@@ -36,7 +36,7 @@
         <tr>
           <th>ID</th>
           <th>Detalle</th>
-          <th>Diferible</th>
+          <th>Tipo</th>
           <th>Acciones</th>
         </tr>
       </ng-template>
@@ -46,8 +46,9 @@
           <td>{{ especie.idEspecie }}</td>
           <td>{{ especie.detalle }}</td>
           <td>
-            <i [class]="especie.esDiferible ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"></i>
-            {{ especie.esDiferible ? 'Sí' : 'No' }}
+            <span *ngIf="especie.esMatricula" class="p-tag p-tag-info">Matrícula</span>
+            <span *ngIf="especie.esPension" class="p-tag p-tag-success">Pensión</span>
+            <span *ngIf="!especie.esMatricula && !especie.esPension" class="p-tag p-tag-secondary">Otro</span>
           </td>
           <td>
             <div class="flex gap-2">
@@ -108,17 +109,24 @@
           maxlength="100">
       </div>
 
-      <!-- Es Diferible -->
+      <!-- Tipo de especie -->
       <div class="field mb-4">
+        <div class="flex items-center mb-2">
+          <p-checkbox
+            [(ngModel)]="especieForm.esMatricula"
+            inputId="esMatricula"
+            label="Es Matrícula">
+          </p-checkbox>
+        </div>
         <div class="flex items-center">
           <p-checkbox
-            [(ngModel)]="especieForm.esDiferible"
-            inputId="esDiferible"
-            label="Es diferible">
+            [(ngModel)]="especieForm.esPension"
+            inputId="esPension"
+            label="Es Pensión">
           </p-checkbox>
         </div>
         <small class="text-gray-500 block mt-1">
-          Indica si esta especie puede ser pagada en cuotas
+          Las pensiones (no matrícula) pueden ser diferidas en cuotas
         </small>
       </div>
     </div>
@@ -141,7 +149,7 @@
   </p-dialog>
 
   <!-- Toast para mensajes -->
-  <p-toast></p-toast>
+  <app-shared-toast></app-shared-toast>
 
   <!-- Confirm Dialog -->
   <p-confirmDialog></p-confirmDialog>

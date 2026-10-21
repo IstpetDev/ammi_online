@@ -1,0 +1,231 @@
+<div class="ccp-wrapper">
+  <app-shared-toast></app-shared-toast>
+
+  <app-shared-header icon="pi pi-sitemap" title="Configurar Cursos para Postulaciones"
+    subtitle="Configure los cursos que estarán disponibles en el proceso de postulación">
+  </app-shared-header>
+
+  <!-- Step 0: Configuración General (Periodo + Tipo de Oferta) -->
+  <div class="ccp-card">
+    <div class="ccp-top-row">
+      <!-- Periodo Lectivo -->
+      <div class="ccp-top-periodo-col">
+        <h3 class="ccp-section-title"><i class="pi pi-calendar"></i> Periodo Lectivo</h3>
+        <div class="ccp-periodo-row" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+          <div class="ccp-field" style="flex:1;">
+            <label>Seleccione el periodo *</label>
+            <app-custom-select [items]="periodos" labelField="detalle" valueField="idPeriodoLectivo"
+              [selectedValue]="selectedPeriodoId" (selectedValueChange)="onPeriodoChange($event)"
+              placeholder="Seleccione periodo...">
+            </app-custom-select>
+          </div>
+          <button type="button" class="ccp-btn ccp-btn-primary" style="height: 38px; display: flex; align-items: center; gap: 0.25rem;"
+            (click)="periodoDialog.openNew()">
+            <i class="pi pi-plus"></i> Nuevo
+          </button>
+        </div>
+      </div>
+
+      <!-- Tipo de Oferta -->
+      <div class="ccp-top-oferta-col" *ngIf="selectedPeriodoId">
+        <h3 class="ccp-section-title"><i class="pi pi-tag"></i> Tipo de Oferta</h3>
+        <div class="offer-grid">
+          <div class="offer-card" *ngFor="let oferta of tiposOferta"
+            [class.active]="selectedTipoOfertaId === oferta.idtipoOferta"
+            (click)="onTipoOfertaChange(oferta.idtipoOferta)">
+            <i class="pi" [ngClass]="getOfertaIcon(oferta.detalle)"></i>
+            <span>{{ oferta.detalle }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Ciclo CRUD -->
+  <div class="ccp-card" *ngIf="selectedPeriodoId && selectedTipoOfertaId">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+      <h3 class="ccp-section-title" style="margin:0;"><i class="pi pi-layers"></i> Ciclo</h3>
+      <button type="button" class="ccp-btn ccp-btn-primary" (click)="cicloDialog.openNew()">
+        <i class="pi pi-plus"></i> Nuevo Ciclo
+      </button>
+    </div>
+
+    <div class="ccp-ciclo-list" *ngIf="ciclosDelPeriodo.length > 0">
+      <div class="ccp-ciclo-item" *ngFor="let c of ciclosDelPeriodo" [class.selected]="selectedCicloId === c.idCiclo"
+        (click)="onCicloSelect(c.idCiclo!)">
+        <input type="radio" name="cicloSel" [checked]="selectedCicloId === c.idCiclo" (click)="$event.stopPropagation()"
+          (change)="onCicloSelect(c.idCiclo!)">
+        <div class="ccp-ciclo-info">
+          <span class="ccp-ciclo-nombre">{{ c.detalle }}</span>
+          <span class="ccp-ciclo-detalle">
+            {{ c.nombreRegimen || getRegimenDetalle(c.idRegimen) }} ·
+            {{ c.nombreTipoOferta || getTipoOfertaDetalle(c.idTipoOferta) }} ·
+            {{ c.esActivo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+        <div class="ccp-ciclo-actions">
+          <button type="button" class="ccp-btn-icon" (click)="$event.stopPropagation(); cicloDialog.openEdit(c)" title="Editar">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button type="button" class="ccp-btn-icon danger" (click)="$event.stopPropagation(); deleteCiclo(c)"
+            title="Eliminar">
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" *ngIf="ciclosDelPeriodo.length === 0" style="padding:1.5rem;">
+      <i class="pi pi-inbox"></i>
+      <span>No hay ciclos para el tipo de oferta seleccionado.</span>
+      <button type="button" class="ccp-btn ccp-btn-primary" (click)="cicloDialog.openNew()">
+        Nuevo ciclo
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Cursos -->
+  <div class="ccp-card" *ngIf="selectedCicloId">
+    <div style="margin-top: 0.5rem;">
+      <h3 class="ccp-section-title" style="margin-bottom:0.5rem;">
+        <i class="pi pi-book"></i> Cursos
+        <span style="font-weight:400;font-size:0.75rem;color:var(--text-color-secondary);margin-left:0.25rem;">
+          ({{ cursosFiltrados.length }} encontrados)
+        </span>
+      </h3>
+
+      <div *ngIf="cargandoCursos" class="empty-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Cargando configuración de cursos...</span>
+      </div>
+
+      <div *ngIf="!cargandoCursos && cursosFiltrados.length === 0" class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <span>No hay cursos para el ciclo seleccionado</span>
+      </div>
+
+      <div class="course-list" *ngIf="!cargandoCursos && cursosFiltrados.length > 0">
+        <div class="course-item" *ngFor="let curso of cursosFiltrados; trackBy: trackByCurso">
+          <div class="course-info">
+            <span class="course-name">{{ curso.detalle }}</span>
+            <div class="course-summary">
+              <span>Materias: {{ curso._materiasCount ?? 0 }}</span>
+              <span>Req: {{ curso._requisitosCount ?? 0 }}</span>
+              <span>Par: {{ curso._paralelosCount ?? 0 }}</span>
+              <span>Costos: {{ curso._especiesCount ?? 0 }}</span>
+            </div>
+          </div>
+          <div class="course-status" [ngClass]="{
+            'configured': curso._status === 'configured',
+            'partial': curso._status === 'partial',
+            'unconfigured': curso._status === 'unconfigured' || !curso._status
+          }">
+            <i class="pi" [ngClass]="{
+              'pi-check-circle': curso._status === 'configured',
+              'pi-exclamation-circle': curso._status === 'partial',
+              'pi-exclamation-triangle': curso._status === 'unconfigured' || !curso._status
+            }"></i>
+            <span>{{ curso._statusLabel || 'Sin configurar' }}</span>
+          </div>
+          <div class="course-actions">
+            <button type="button" class="ccp-btn ccp-btn-ghost" (click)="verConfiguracion(curso)"
+              *ngIf="curso._status === 'configured'">
+              <i class="pi pi-eye"></i>
+              Ver
+            </button>
+            <button type="button" class="ccp-btn" [ngClass]="{
+                'ccp-btn-primary': curso._status === 'configured',
+                'ccp-btn-warning': curso._status === 'partial',
+                'ccp-btn-secondary': curso._status === 'unconfigured' || !curso._status
+              }" (click)="configurarCurso(curso)">
+              <i class="pi" [ngClass]="{
+                'pi-pencil': curso._status === 'configured',
+                'pi-cog': curso._status !== 'configured'
+              }"></i>
+              {{ curso._status === 'configured' ? 'Editar' : curso._status === 'partial' ? 'Completar' : 'Configurar' }}
+            </button>
+            <button type="button" class="ccp-btn ccp-btn-ghost" (click)="abrirReplicar(curso)"
+              *ngIf="curso._status !== 'configured'">
+              <i class="pi pi-copy"></i>
+              Replicar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODULAR DIALOGS & DRAWER ─── -->
+
+  <!-- Periodo Dialog Component -->
+  <app-periodo-dialog #periodoDialog [(visible)]="showPeriodoDialog" (saved)="onPeriodoSaved($event)">
+  </app-periodo-dialog>
+
+  <!-- Ciclo Dialog Component -->
+  <app-ciclo-dialog #cicloDialog [(visible)]="showCicloDialog" 
+    [selectedPeriodoId]="selectedPeriodoId" [selectedTipoOfertaId]="selectedTipoOfertaId"
+    [regimenes]="regimenes" [tiposOferta]="tiposOferta" [periodos]="periodos" [ciclosDelPeriodo]="ciclosDelPeriodo"
+    (saved)="onCicloSaved($event)">
+  </app-ciclo-dialog>
+
+  <!-- Ver Configuración Dialog Component -->
+  <app-ver-configuracion-dialog [(visible)]="showVerDialog" [curso]="cursoAVer"
+    [materias]="verMaterias" [requisitos]="verRequisitos" [paralelos]="verParalelos" [costos]="verCostos">
+  </app-ver-configuracion-dialog>
+
+  <!-- Curso Config Wizard Component -->
+  <app-curso-config-wizard [(visible)]="showConfigDrawer" [curso]="cursoEnConfiguracion"
+    [selectedCicloId]="selectedCicloId" [selectedTipoOfertaId]="selectedTipoOfertaId" [ciclos]="ciclos"
+    [replicatedData]="replicarOrigenData" (saved)="onCursoConfigSaved($event)">
+  </app-curso-config-wizard>
+
+  <!-- ─── DIALOG: Confirmar eliminar ciclo ─── -->
+  <app-shared-modal [(visible)]="showDeleteCicloDialog" title="Eliminar ciclo" customWidth="400px" [showFooter]="true"
+    cancelText="Cancelar" confirmText="Eliminar" confirmClass="btn-danger" confirmIcon="pi pi-trash"
+    (confirm)="confirmDeleteCiclo()" (cancel)="showDeleteCicloDialog = false">
+    <p style="font-size:0.85rem;color:var(--text-color);margin:0;">
+      ¿Está seguro de eliminar el ciclo <strong>{{ cicloAEliminar?.detalle }}</strong>?
+    </p>
+  </app-shared-modal>
+
+  <!-- ─── DIALOG: Replicar de otro curso ─── -->
+  <app-shared-modal [(visible)]="showReplicarDialog"
+    [title]="'Replicar configuración de: ' + (cursoAReplicar?.detalle || '')" customWidth="520px" [showFooter]="true"
+    cancelText="Cancelar" confirmText="Copiar seleccionados" confirmIcon="pi pi-copy"
+    [confirmDisabled]="!replicarOrigenId || (!replicarOpciones.materias && !replicarOpciones.requisitos && !replicarOpciones.paralelos && !replicarOpciones.costos)"
+    (confirm)="ejecutarReplicar()" (cancel)="showReplicarDialog = false">
+    <div class="ccp-dialog-body">
+      <div class="ccp-dialog-field">
+        <label>Seleccione el curso origen para copiar la configuración</label>
+        <app-custom-select [items]="cursosOrigenReplicar" labelField="_label" valueField="idCursos"
+          [selectedValue]="replicarOrigenId" (selectedValueChange)="onReplicarOrigenChange($event)"
+          placeholder="Seleccione curso origen...">
+        </app-custom-select>
+      </div>
+      <div *ngIf="replicarOrigenData" class="ccp-dialog-field">
+        <label style="margin-bottom:0.35rem;">¿Qué desea copiar?</label>
+        <div class="ccp-check-group" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+          <label class="ccp-check-item" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" [(ngModel)]="replicarOpciones.materias">
+            Materias ({{ replicarOrigenData.materiasCount }})
+          </label>
+          <label class="ccp-check-item" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" [(ngModel)]="replicarOpciones.requisitos">
+            Requisitos ({{ replicarOrigenData.requisitosCount }})
+          </label>
+          <label class="ccp-check-item" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" [(ngModel)]="replicarOpciones.paralelos">
+            Paralelos ({{ replicarOrigenData.paralelosCount }})
+          </label>
+          <label class="ccp-check-item" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" [(ngModel)]="replicarOpciones.costos">
+            Costos ({{ replicarOrigenData.costosCount }})
+          </label>
+        </div>
+      </div>
+      <div *ngIf="replicarOrigenId && !replicarOrigenData" class="empty-state" style="padding:1rem;">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Cargando datos del curso origen...</span>
+      </div>
+    </div>
+  </app-shared-modal>
+</div>
