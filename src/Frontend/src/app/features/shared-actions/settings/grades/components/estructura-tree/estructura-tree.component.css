@@ -1,7 +1,107 @@
+/* Table layout & border refinement */
+:host ::ng-deep .p-treetable {
+  border: none !important;
+  background: transparent !important;
+}
+
+:host ::ng-deep .p-treetable .p-treetable-thead > tr > th {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: none !important;
+  white-space: nowrap !important;
+}
+
+:host ::ng-deep .p-treetable .p-treetable-tbody > tr {
+  background-color: #ffffff !important;
+  transition: background-color 0.15s ease !important;
+}
+
 :host ::ng-deep .p-treetable .p-treetable-tbody > tr > td {
-    padding: 0.5rem 0.75rem;
+  padding: 0.65rem 1rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 0.875rem !important;
+  white-space: nowrap !important;
+}
+
+:host ::ng-deep .p-treetable .p-treetable-tbody > tr:last-child > td {
+  border-bottom: none !important;
+}
+
+:host ::ng-deep .p-treetable .p-treetable-tbody > tr:hover {
+  background-color: #f8fafc !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Custom toggler styling */
+:host ::ng-deep .p-treetable-toggler {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  color: #64748b !important;
+  background: transparent !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.15s ease !important;
+  margin-right: 0.375rem !important;
+}
+
+:host ::ng-deep .p-treetable-toggler:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 .vertical-align-middle {
-    vertical-align: middle;
+  vertical-align: middle;
+}
+
+.tree-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.icon-calc {
+  display: inline-flex;
+  vertical-align: middle;
+  color: var(--text-color-secondary);
+}
+
+/* Compact inputs inside tree inline form */
+:host ::ng-deep .inline-compact-form input.p-inputtext,
+:host ::ng-deep .inline-compact-form .p-inputtext {
+  padding: 0.35rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  height: 2rem !important;
+  border-radius: 0.375rem !important;
+}
+
+:host ::ng-deep .inline-compact-form .p-inputnumber-input {
+  padding: 0.35rem 0.4rem !important;
+  font-size: 0.75rem !important;
+  height: 2rem !important;
+  border-radius: 0.375rem !important;
+}
+
+:host ::ng-deep .inline-compact-form .p-inputnumber-button {
+  width: 1.1rem !important;
+  padding: 0 !important;
+}
+
+/* Inputs inside estructura tree related dialogs/forms should be full width */
+:host ::ng-deep input.p-inputtext,
+:host ::ng-deep textarea.p-inputtextarea,
+:host ::ng-deep .p-dropdown,
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-select .p-select-label,
+:host ::ng-deep .p-calendar,
+:host ::ng-deep .p-inputnumber {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }

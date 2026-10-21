@@ -1,291 +1,382 @@
-/* Component styles */
+/* =====================================================
+   DESIGN SYSTEM — SETTINGS COMPONENTS
+   Basado en brand: yellow #E9B902, black #1D1E1C
+   Principios: claridad, consistencia, acción visible
+   ===================================================== */
 
-.nav-link {
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s ease;
+/* ---- Contenedor principal ---- */
+.settings-page {
+  width: 100%;
+  padding: 1.5rem;
 }
 
-.nav-link.active-link {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-.content-area {
-  min-height: 400px;
-  padding: 1rem;
-  background-color: var(--surface-card);
-  border-radius: 8px;
-  border: 1px solid var(--surface-border);
-}
-
-.card-grid {
+/* ---- Tab navigation ---- */
+.settings-tabs {
   display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--surface-border);
+  margin-bottom: 2rem;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-color-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.settings-tab:hover {
+  color: var(--text-color);
+  background-color: var(--surface-hover);
+}
+
+.settings-tab.active {
+  color: var(--text-color);
+  border-bottom-color: var(--brand-yellow-dark);
+  font-weight: 600;
+}
+
+.settings-tab i {
+  font-size: 1rem;
+  color: var(--brand-black);
+}
+
+.settings-tab.active i {
+  color: var(--brand-black);
+}
+
+/* ---- Page header ---- */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--brand-yellow-dark);
   flex-wrap: wrap;
   gap: 1rem;
 }
 
-.card-item {
-  flex: 1 1 300px;
-  background-color: var(--surface-card);
-  border: 1px solid var(--surface-border);
-  transition: all 0.3s ease;
-}
-
-.card-item:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  transform: translateY(-5px);
-}
-
-.card-title {
+.settings-header-title h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--text-color);
-}
-
-.card-description {
-  color: var(--text-color-secondary);
-}
-
-.card-separator {
-  border-color: var(--surface-border);
-}
-
-
-/* Ciclo*/
-.postulations-container {
-  width: 100%;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.postulations-header {
-  margin-bottom: 2rem;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 2rem;
-}
-
-.header-title h2 {
-  font-size: 1.75rem !important;
-  font-weight: 600 !important;
-  color: var(--text-color);
-  margin: 0 0 0.5rem 0;
-}
-
-.header-title p {
-  color: var(--text-color-secondary);
   margin: 0;
 }
 
-.header-actions {
-  flex-shrink: 0;
+.settings-header-title p {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  margin: 0.25rem 0 0 0;
 }
 
-:host ::ng-deep .header-actions .p-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .header-actions {
-    align-self: flex-start;
-  }
-}
-
-.content-card {
-  background-color: var(--surface-card);
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
-}
-
-/* Estilos para la tabla */
-:host ::ng-deep .p-datatable {
-  width: 100%;
-  border-radius: 0.5rem;
+/* ---- Content card (tabla) ---- */
+.settings-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* ---- Tabla PrimeNG overrides ---- */
 :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-  background-color: var(--surface-section);
-  color: var(--text-color);
+  background: var(--surface-ground) !important;
+  color: var(--text-color) !important;
   font-weight: 600;
-  border-bottom: 2px solid var(--surface-border);
-  padding: 1rem 0.75rem;
-  text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.4px;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--brand-yellow-dark) !important;
 }
 
 :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-  border-bottom: 1px solid var(--surface-border);
-  padding: 1rem 0.75rem;
-  color: var(--text-color);
+  padding: 0.9rem 1.25rem;
   font-size: 0.9rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-color);
 }
 
 :host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
-  background-color: var(--surface-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  background-color: var(--surface-hover) !important;
 }
 
 :host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td {
   border-bottom: none;
 }
 
-:host ::ng-deep .p-paginator {
-  background-color: var(--surface-card);
-  color: var(--text-color);
+:host ::ng-deep .p-datatable .p-paginator {
   border-top: 1px solid var(--surface-border);
-  padding: 1rem;
+  background: var(--surface-ground);
+  padding: 0.75rem 1.25rem;
+}
+
+/* Empty message */
+:host ::ng-deep .p-datatable .p-datatable-emptymessage td {
+  text-align: center;
+  color: var(--text-color-secondary);
+  padding: 3rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ---- Celda de acciones ---- */
+.settings-actions-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+:host ::ng-deep .settings-actions-cell .p-button.p-button-text {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 8px !important;
+  padding: 0 !important;
+}
+
+:host ::ng-deep .settings-actions-cell .btn-edit {
+  background-color: rgba(233, 185, 2, 0.12) !important;
+  border: none !important;
+  color: var(--brand-yellow-dark) !important;
+}
+
+:host ::ng-deep .settings-actions-cell .btn-edit:hover {
+  background-color: rgba(233, 185, 2, 0.25) !important;
+}
+
+:host ::ng-deep .settings-actions-cell .btn-delete {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: none !important;
+  color: #ef4444 !important;
+}
+
+:host ::ng-deep .settings-actions-cell .btn-delete:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* ---- Estado badge (activo/inactivo) ---- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: rgba(40, 167, 69, 0.12);
+  color: #28a745;
+}
+
+.status-badge.inactive {
+  background-color: var(--surface-ground);
+  color: var(--text-color-secondary);
+  border: 1px solid var(--surface-border);
+}
+
+/* ---- Formulario en diálogo ---- */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.settings-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.settings-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.settings-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.settings-form-label .required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.settings-form-control {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.settings-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+  box-shadow: 0 0 0 3px rgba(233, 185, 2, 0.15);
+}
+
+/* ---- Acciones del formulario ---- */
+.settings-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--surface-border);
+  margin-top: 0.5rem;
+}
+
+/* ---- Mantener compatibilidad con clases antiguas ---- */
+.seasons-container { padding: 0; }
+.seasons-header { margin-bottom: 0; }
+.seasons-header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.seasons-content-card { background: var(--surface-card); border-radius: 10px; overflow: hidden; border: 1px solid var(--surface-border); }
+.seasons-actions-cell { display: flex; gap: 0.25rem; align-items: center; }
+.seasons-form-grid { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; }
+.seasons-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+.seasons-form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.seasons-form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-color); }
+.seasons-form-control {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.seasons-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+  box-shadow: 0 0 0 3px rgba(233, 185, 2, 0.15);
+}
+.seasons-form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--surface-border); }
+.seasons-dialog-content { padding: 0; }
+
+.seasons-header {
+  margin-bottom: 2rem;
+}
+
+.seasons-header-content {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page {
-  border-radius: 0.375rem;
-  margin: 0 0.125rem;
-  transition: all 0.2s ease;
+.seasons-header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0;
+  background: linear-gradient(45deg, #1a237e, #0d47a1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page:hover {
-  background-color: var(--surface-hover);
+.seasons-header-title p {
+  font-style: italic;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+  width: 100%;
 }
 
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
-  background-color: var(--primary-color);
-  color: white;
+.seasons-content-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
-/* Botones de acciones */
-.actions-cell {
+/* Modal and Form Styles */
+::ng-deep .p-dialog-custom .p-dialog-content {
+  padding: 30px !important;
+}
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.seasons-form-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.seasons-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.seasons-form-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.seasons-form-control {
+  width: 100% !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  border: 1px solid #d1d5db;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.seasons-form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.seasons-form-actions p-button {
+  flex: 1;
+}
+
+::ng-deep .seasons-form-actions .p-button {
+  width: 100% !important;
+  justify-content: center !important;
+  padding: 12px !important;
+}
+
+.seasons-actions-cell {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
-  align-items: center;
-}
-
-:host ::ng-deep .p-button-rounded {
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-:host ::ng-deep .p-button-rounded .p-button-icon {
-  font-size: 1rem;
-}
-
-:host ::ng-deep .p-button-rounded:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Tabla responsive - columnas ocupan espacio automático */
-:host ::ng-deep .p-datatable-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* Estilo para mensaje vacío */
-:host ::ng-deep .p-datatable .p-datatable-emptymessage {
-  text-align: center;
-  color: var(--text-color-secondary);
-  font-style: italic;
-  padding: 2rem;
-}
-
-/* Estilo para el botón agregar */
-:host ::ng-deep .p-button {
-  transition: all 0.2s ease-in-out;
-  border-radius: 0.5rem;
-  font-weight: 500;
-}
-
-:host ::ng-deep .p-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-
-/* Estilos para el dialog */
-.p-dialog-custom .p-dialog-header {
-  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-hover, #0056b3) 100%) !important;
-  color: white !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 1.5rem 2rem !important;
-  border-bottom: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-}
-
-.p-dialog-custom .p-dialog-header .p-dialog-title {
-  font-size: 1.25rem !important;
-  font-weight: 700 !important;
-  margin: 0 !important;
-  color: white !important;
-}
-
-.p-dialog-custom .p-dialog-header .p-dialog-header-icon {
-  color: white !important;
-  font-size: 1.2rem !important;
-}
-
-.p-dialog-custom .p-dialog-content {
-  padding: 0 !important;
-  background-color: var(--surface-card, #ffffff) !important;
-}
-
-.p-dialog-custom .p-dialog-footer {
-  padding: 1.5rem 2rem !important;
-  border-top: 2px solid var(--surface-border, #e9ecef) !important;
-  background: linear-gradient(135deg, var(--surface-section, #f8f9fa) 0%, var(--surface-ground, #f1f3f4) 100%) !important;
-  border-radius: 0 0 12px 12px !important;
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 1rem !important;
-}
-
-
-
-.p-dialog-custom {
-  border-radius: 12px !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid var(--surface-border, #e9ecef) !important;
-}
-
-.dialog-content {
-  padding: 2rem !important;
-  background: linear-gradient(135deg, var(--surface-card, #ffffff) 0%, var(--surface-ground, #f8f9fa) 100%) !important;
-  border-radius: 8px !important;
-  margin: 0.5rem !important;
-}
-
-.form-grid {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 1.5rem !important;
-}
-
-.form-row {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
   gap: 1.5rem !important;
 }
 
@@ -373,4 +464,3 @@
   color: white !important;
   border-color: var(--primary-color, #007bff) !important;
 }
-

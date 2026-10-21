@@ -1,1 +1,32 @@
 /* CSS Vacío por ahora */
+
+/* Make inputs and dropdowns full width in validacion-pesos */
+:host ::ng-deep input.p-inputtext,
+:host ::ng-deep textarea.p-inputtextarea,
+:host ::ng-deep .p-dropdown,
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-select .p-select-label,
+:host ::ng-deep .p-calendar,
+:host ::ng-deep .p-inputnumber {
+	width: 100% !important;
+	box-sizing: border-box !important;
+}
+
+/* Normaliza el mensaje para evitar la línea verde y contracciones */
+:host ::ng-deep .p-message {
+	width: 100% !important;
+	border-radius: 8px !important;
+	padding: 0.75rem 1rem !important;
+	background: var(--surface-card) !important;
+	border: 1px solid var(--surface-border) !important;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+}
+
+:host ::ng-deep .p-message.p-message-success {
+	border-left: 4px solid var(--success-color) !important;
+}
+
+:host ::ng-deep .p-message.p-message-error {
+	border-left: 4px solid var(--error-color) !important;
+}
+

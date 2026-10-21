@@ -5,34 +5,32 @@ import { PlantillaEvaluacionService } from '../../../../../../core/services/infr
 import { PlantillaEstructuraService } from '../../../../../../core/services/infrastructure/plantilla-estructura.service';
 import { PlantillaEvaluacionDTO } from '../../../../../../data/models/notas';
 import { ConfirmationModalComponent } from '../../../../../../shared/modal-confirmation/confirmation-modal.component';
+import { SharedDrawerComponent } from '../../../../../../shared/shared-drawer/shared-drawer.component';
+import { SharedTableComponent, SharedTableColTemplateDirective, TableColumn, PageEvent } from '../../../../../../shared/shared-table/shared-table.component';
 
 // PrimeNG Imports
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
+import { SharedToastComponent } from '../../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-plantilla-list',
   standalone: true,
-  imports: [
-    CommonModule, 
+  imports: [CommonModule, 
     FormsModule,
-    TableModule,
+    SharedTableComponent,
+    SharedTableColTemplateDirective,
     ButtonModule,
     TagModule,
     TooltipModule,
     SelectButtonModule,
-    DialogModule,
     InputTextModule,
-    ToastModule,
-    ConfirmationModalComponent
-  ],
+    SharedDrawerComponent,
+    ConfirmationModalComponent, SharedToastComponent],
   providers: [MessageService],
   templateUrl: './plantilla-list.component.html',
   styleUrls: ['./plantilla-list.component.css']
@@ -44,7 +42,24 @@ export class PlantillaListComponent implements OnInit {
 
   plantillas: PlantillaEvaluacionDTO[] = [];
   loading: boolean = false;
-  
+
+  // Shared table
+  currentPage: number = 1;
+  rowsPerPage: number = 10;
+
+  tableColumns: TableColumn[] = [
+    { field: 'nombre', header: 'Nombre' },
+    { field: 'detalle', header: 'Descripción' },
+    { field: 'estado', header: 'Estado', width: '120px', align: 'center' },
+    { field: 'cantidadMateriasUsando', header: 'Materias Usando', width: '160px', align: 'center' },
+    { field: 'acciones', header: 'Acciones', width: '200px', align: 'center' }
+  ];
+
+  get paginatedPlantillas(): PlantillaEvaluacionDTO[] {
+    const start = (this.currentPage - 1) * this.rowsPerPage;
+    return this.plantillas.slice(start, start + this.rowsPerPage);
+  }
+
   // Filtro
   filtroOptions: any[] = [
     { label: 'Activas', value: 'activas' },
@@ -82,6 +97,7 @@ export class PlantillaListComponent implements OnInit {
     request$.subscribe({
       next: (data) => {
         this.plantillas = data;
+        this.currentPage = 1;
         this.loading = false;
       },
       error: (err) => {
@@ -93,6 +109,10 @@ export class PlantillaListComponent implements OnInit {
 
   onFiltroChange(): void {
     this.loadPlantillas();
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.currentPage = event.page;
   }
 
   onCreate(): void {

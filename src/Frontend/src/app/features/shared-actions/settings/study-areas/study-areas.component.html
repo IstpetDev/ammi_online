@@ -1,20 +1,19 @@
-<div class="w-full p-4">
+<div class="settings-page">
 
-  <!-- Navigation Menu -->
-  <div class="mb-6">
-    <nav class="flex space-x-4 border-b border-gray-200">
-      <a (click)="setActiveTab('areas')" [class.active-link]="activeTab === 'areas'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
-        Áreas
-      </a>
-      <a (click)="setActiveTab('areas-competencia')" [class.active-link]="activeTab === 'areas-competencia'" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 cursor-pointer">
-        Áreas de Competencia
-      </a>
-    </nav>
-  </div>
+  <nav class="settings-tabs">
+    <button class="settings-tab" [class.active]="activeTab === 'areas'" (click)="setActiveTab('areas')">
+      <i class="pi pi-book"></i>
+      Áreas
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'areas-competencia'" (click)="setActiveTab('areas-competencia')">
+      <i class="pi pi-star"></i>
+      Áreas de Competencia
+    </button>
+  </nav>
 
-  <!-- Content Area -->
-  <div class="content-area">
+  <div>
     <app-areas *ngIf="activeTab === 'areas'"></app-areas>
     <app-areas-competencia *ngIf="activeTab === 'areas-competencia'"></app-areas-competencia>
   </div>
+
 </div>

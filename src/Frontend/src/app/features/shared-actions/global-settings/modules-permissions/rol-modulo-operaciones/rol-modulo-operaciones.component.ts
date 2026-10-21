@@ -6,44 +6,43 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { AutoCompleteModule } from 'primeng/autocomplete';
+import { SelectModule } from 'primeng/select';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService } from 'primeng/api';
 import { RolService, ModuloOperacionService, RolOperacionService, ModuloService } from '../../../../../core/services/seguridad';
 import { RolDTO, ModuloOperacionDTO, RolOperacionDTO, ModuloDTO } from '../../../../../data/models/Entities';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-rol-modulo-operaciones',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     FormsModule,
     TableModule,
     ButtonModule,
     DialogModule,
     InputTextModule,
-    AutoCompleteModule,
+    SelectModule,
     ToggleButtonModule,
-    ToastModule
-  ],
+    CheckboxModule, SharedToastComponent],
   templateUrl: './rol-modulo-operaciones.component.html',
   styleUrls: ['./rol-modulo-operaciones.component.css']
 })
 export class RolModuloOperacionesComponent implements OnInit {
+    permisosPendientes: Array<{ permission: any; operacionName: string }> = [];
   roles: RolDTO[] = [];
   modulos: ModuloDTO[] = [];
   moduloOperaciones: ModuloOperacionDTO[] = [];
   rolOperaciones: RolOperacionDTO[] = [];
   loading = false;
 
-  rolOperacionDialog = false;
-  rolOperacion: RolOperacionDTO = { idRol: 0, idModuloOperacion: 0, esActivo: true };
-  isEdit = false;
+  selectedRolId: number | null = null;
+  
+  // Estructura agrupada por rol y módulo
+  groupedPermissions: any[] = [];
 
-  selectedRol: RolDTO | null = null;
-  filteredRoles: RolDTO[] = [];
-  permissions: { [key: string]: boolean } = {};
+  
   operaciones = [
     { id: 1, name: 'CREAR' },
     { id: 2, name: 'LEER' },
@@ -66,6 +65,43 @@ export class RolModuloOperacionesComponent implements OnInit {
     this.loadRolOperaciones();
   }
 
+  groupPermissions() {
+    if (!this.selectedRolId) {
+      this.groupedPermissions = [];
+      return;
+    }
+
+    const grouped = new Map<number, any>();
+
+    // Inicializar todos los módulos con sus operaciones
+    this.modulos.forEach(modulo => {
+      const moduloOps = this.moduloOperaciones.filter(mo => mo.idModulo === modulo.idModulo);
+      const permissions: any = {
+        idRol: this.selectedRolId!,
+        idModulo: modulo.idModulo,
+        moduloNombre: modulo.detalle,
+        operaciones: {}
+      };
+
+      this.operaciones.forEach(op => {
+        const moduloOp = moduloOps.find(mo => mo.idOperacion === op.id);
+        const rolOp = this.rolOperaciones.find(
+          ro => ro.idRol === this.selectedRolId! && ro.idModuloOperacion === moduloOp?.idModuloOperacion
+        );
+
+        permissions.operaciones[op.name] = {
+          enabled: rolOp?.esActivo || false,
+          idRolOperacion: rolOp?.idRolOperacion,
+          idModuloOperacion: moduloOp?.idModuloOperacion
+        };
+      });
+
+      grouped.set(modulo.idModulo!, permissions);
+    });
+
+    this.groupedPermissions = Array.from(grouped.values());
+  }
+
   getRolName(idRol?: number): string {
     const rol = this.roles.find(r => r.idRol === idRol);
     return rol?.detalle || '';
@@ -86,24 +122,10 @@ export class RolModuloOperacionesComponent implements OnInit {
     return operaciones[(idOperacion || 1) - 1] || '';
   }
 
-  filterRoles(event: any) {
-    this.filteredRoles = this.roles.filter(r => r.detalle?.toLowerCase().includes(event.query.toLowerCase()));
-  }
-
   onRolChange() {
-    if (this.selectedRol) {
-      this.loadPermissions();
+    if (this.selectedRolId) {
+      this.groupPermissions();
     }
-  }
-
-  loadPermissions() {
-    this.permissions = {};
-    this.rolOperaciones.filter(ro => ro.idRol === this.selectedRol!.idRol).forEach(ro => {
-      const mo = this.moduloOperaciones.find(m => m.idModuloOperacion === ro.idModuloOperacion);
-      if (mo) {
-        this.permissions[mo.idModulo + '-' + mo.idOperacion] = ro.esActivo || false;
-      }
-    });
   }
 
   loadRoles() {
@@ -133,6 +155,9 @@ export class RolModuloOperacionesComponent implements OnInit {
       next: (data: RolOperacionDTO[]) => {
         this.rolOperaciones = data;
         this.loading = false;
+        if (this.selectedRolId) {
+          this.groupPermissions();
+        }
       },
       error: () => {
         this.loading = false;
@@ -140,57 +165,101 @@ export class RolModuloOperacionesComponent implements OnInit {
       }
     });
   }
-
-  openNewRolOperacionDialog() {
-    this.rolOperacion = { idRol: 0, idModuloOperacion: 0, esActivo: true };
-    this.isEdit = false;
-    this.selectedRol = null;
-    this.rolOperacionDialog = true;
-  }
-
-  editRolOperacion(ro: RolOperacionDTO) {
-    this.rolOperacion = { ...ro };
-    this.isEdit = true;
-    this.selectedRol = this.roles.find(r => r.idRol === ro.idRol) || null;
-    this.rolOperacionDialog = true;
-  }
-
-  hideRolOperacionDialog() {
-    this.rolOperacionDialog = false;
-  }
-
-  saveRolOperacion() {
-    this.rolOperacion.idRol = this.selectedRol?.idRol || 0;
-    if (this.isEdit) {
-      this.rolOperacionService.updateRolOperacion(this.rolOperacion).subscribe({
-        next: () => {
-          this.loadRolOperaciones();
-          this.hideRolOperacionDialog();
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Asignación actualizada' });
-        },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al actualizar asignación' })
-      });
-    } else {
-      this.rolOperacionService.createRolOperacion(this.rolOperacion).subscribe({
-        next: () => {
-          this.loadRolOperaciones();
-          this.hideRolOperacionDialog();
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Asignación creada' });
-        },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al crear asignación' })
+    enviarPermisos() {
+      if (this.permisosPendientes.length === 0) {
+        this.messageService.add({ severity: 'info', summary: 'Sin cambios', detail: 'No hay permisos pendientes por guardar.' });
+        return;
+      }
+      let successCount = 0;
+      let errorCount = 0;
+      const total = this.permisosPendientes.length;
+      let finished = 0;
+      const onFinish = () => {
+        finished++;
+        if (finished === total) {
+          if (errorCount === 0) {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Permisos actualizados',
+              detail: 'Todos los permisos fueron guardados correctamente.'
+            });
+            this.loadRolOperaciones();
+          }
+          // Limpiar cache
+          this.permisosPendientes = [];
+        }
+      };
+      this.permisosPendientes.forEach(({ permission, operacionName }) => {
+        const op = permission.operaciones[operacionName];
+        if (op.idRolOperacion) {
+          // Actualizar existente
+          const rolOp: RolOperacionDTO = {
+            idRolOperacion: op.idRolOperacion,
+            idRol: permission.idRol,
+            idModuloOperacion: op.idModuloOperacion,
+            esActivo: op.enabled
+          };
+          this.rolOperacionService.updateRolOperacion(rolOp).subscribe({
+            next: () => {
+              successCount++;
+              onFinish();
+            },
+            error: () => {
+              op.enabled = !op.enabled;
+              errorCount++;
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo actualizar el permiso'
+              });
+              onFinish();
+            }
+          });
+        } else {
+          // Crear nuevo
+          const rolOp: RolOperacionDTO = {
+            idRol: permission.idRol,
+            idModuloOperacion: op.idModuloOperacion,
+            esActivo: op.enabled
+          };
+          this.rolOperacionService.createRolOperacion(rolOp).subscribe({
+            next: () => {
+              successCount++;
+              onFinish();
+            },
+            error: () => {
+              op.enabled = !op.enabled;
+              errorCount++;
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo crear el permiso'
+              });
+              onFinish();
+            }
+          });
+        }
       });
     }
-  }
 
-  deleteRolOperacion(ro: RolOperacionDTO) {
-    if (confirm('¿Está seguro de eliminar esta asignación?')) {
-      this.rolOperacionService.deleteRolOperacion(ro.idRolOperacion!).subscribe({
-        next: () => {
-          this.loadRolOperaciones();
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Asignación eliminada' });
-        },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar asignación' })
+  onPermissionChange(permission: any, operacionName: string) {
+    const op = permission.operaciones[operacionName];
+    if (!op.idModuloOperacion) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Esta operación no está configurada para este módulo'
       });
+      return;
+    }
+    // Guardar en cache
+    const index = this.permisosPendientes.findIndex(
+      (p: { permission: any; operacionName: string }) => p.permission.idModulo === permission.idModulo && p.operacionName === operacionName
+    );
+    if (index > -1) {
+      this.permisosPendientes[index] = { permission, operacionName };
+    } else {
+      this.permisosPendientes.push({ permission, operacionName });
     }
   }
 }

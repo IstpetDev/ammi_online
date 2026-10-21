@@ -1,33 +1,39 @@
 <div class="w-full p-4">
-  <p-toast></p-toast>
+  <app-shared-toast></app-shared-toast>
   <p-confirmDialog></p-confirmDialog>
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center">
-      <p-button icon="pi pi-arrow-left" [rounded]="true" [text]="true"
-                (onClick)="onBack()"></p-button>
-      <div class="ml-2">
-        <h1 class="text-2xl font-bold text-[var(--text-color)]">Configurar Estructura</h1>
-        <p class="text-gray-500">{{ plantilla.nombre }}</p>
+  <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80">
+    <div class="flex items-center gap-3">
+      <button class="btn-back" (click)="onBack()" title="Volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-20">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800 tracking-tight">Configurar Estructura</h1>
+        <p class="text-xs font-medium text-slate-500 mt-0.5">{{ plantilla.nombre }}</p>
       </div>
     </div>
-    
-    <div class="flex gap-2">
-      <p-button label="Agregar Nodo Raíz" icon="pi pi-plus" 
-                (onClick)="onAddNode({ parentId: null })"></p-button>
-    </div>
+
+    <button class="btn-nuevo" (click)="onAddNode({ parentId: null })">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Agregar Nodo Raíz
+    </button>
   </div>
 
   <!-- Validacion -->
   <app-validacion-pesos [validacion]="validacion"></app-validacion-pesos>
 
   <!-- Arbol -->
-  <div class="card p-4 bg-[var(--surface-card)] rounded-lg shadow overflow-x-auto">
+  <div class="">
     <app-estructura-tree [estructura]="estructura" 
                          [tiposEstructura]="tiposEstructura"
                          [loading]="loading"
                          (addNode)="onAddNode($event)"
+                         (addBatchNodes)="onAddBatchNodes($event)"
                          (editNode)="onEditNode($event)"
                          (deleteNode)="onDeleteNode($event)">
     </app-estructura-tree>

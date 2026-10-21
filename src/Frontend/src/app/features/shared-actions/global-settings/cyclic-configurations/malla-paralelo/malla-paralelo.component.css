@@ -1,0 +1,259 @@
+.select-warning-box {
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  min-height: 40vh;
+}
+
+.rol-filtros-container {
+  background: var(--surface-card);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.filtros-row-fullwidth {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto;
+  gap: 1rem;
+  width: 100%;
+  align-items: end;
+}
+
+.filtro-item {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-botones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .filtros-row-fullwidth {
+    grid-template-columns: 1fr 1fr 1fr;
+    row-gap: 1rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .filtros-row-fullwidth {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .filtros-row-fullwidth {
+    grid-template-columns: 1fr;
+  }
+  .filtro-botones {
+    justify-content: flex-start;
+  }
+}
+
+:host ::ng-deep .btn-accion-agregar.p-button {
+  background-color: var(--brand-yellow-dark) !important;
+  border-color: var(--brand-yellow-dark) !important;
+  color: var(--brand-black) !important;
+  font-weight: 600;
+}
+
+:host ::ng-deep .btn-accion-agregar.p-button:hover {
+  background-color: var(--brand-yellow) !important;
+  border-color: var(--brand-yellow) !important;
+}
+
+.seasons-container {
+  padding: 20px;
+}
+
+.seasons-header {
+  margin-bottom: 2rem;
+}
+
+.seasons-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seasons-header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text-color);
+}
+
+.seasons-header-title p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+.seasons-content-card {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.seasons-form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.35rem;
+}
+
+.seasons-form-control {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--surface-ground);
+  color: var(--text-color);
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.seasons-form-control:focus {
+  border-color: var(--primary-color);
+}
+
+.seasons-form-control:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.seasons-actions-cell {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.empty-state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+}
+
+.badge-activo {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.badge-inactivo {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #fce4ec;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+/* Dialog styles */
+.seasons-dialog-content {
+  padding: 0.5rem 0;
+}
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.seasons-form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.seasons-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.seasons-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.especie-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.especie-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+}
+
+.especie-chip-nombre {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.especie-chip-valor {
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+}
+
+.especie-chip-edit {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.especie-sin-datos {
+  color: var(--text-color-secondary);
+  font-style: italic;
+}
+
+.especie-agregar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px dashed var(--surface-border);
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-color-secondary);
+}
+
+.especie-agregar-btn:hover {
+  background: var(--surface-100);
+  color: var(--text-color);
+}

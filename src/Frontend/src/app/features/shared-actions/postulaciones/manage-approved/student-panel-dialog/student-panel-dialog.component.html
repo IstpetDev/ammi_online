@@ -1,0 +1,219 @@
+<app-shared-drawer [(visible)]="visible" mode="drawer" position="right" size="full" [showCloseButton]="true"
+  [closeOnOverlayClick]="false" [showFooter]="false" [noContentPadding]="true" (close)="closeDialog()"
+  (cancel)="closeDialog()">
+
+  <div drawer-title>
+    <div class="panel-header">
+      <div class="panel-header-avatar">
+        <i class="pi pi-user"></i>
+      </div>
+      <div class="panel-header-info">
+        <span class="panel-header-name">
+          {{ matricula?.primerNombre }} {{ matricula?.segundoNombre }}
+          {{ matricula?.primerApellido }} {{ matricula?.segundoApellido }}
+        </span>
+        <span class="panel-header-meta">
+          <span><i class="pi pi-id-card"></i> {{ matricula?.numeroDocumento }}</span>
+          <span class="sep">·</span>
+          <span><i class="pi pi-book"></i> {{ matricula?.detalleMalla }}</span>
+          <span class="sep">·</span>
+          <span><i class="pi pi-tag"></i> {{ matricula?.detalleCiclo }}</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL BODY WITH VERTICAL SIDEBAR NAVIGATION ────────── -->
+  <div class="panel-container-layout">
+    <!-- Sidebar de navegación vertical -->
+    <aside class="panel-sidebar">
+      <nav class="panel-nav">
+        <button type="button" class="nav-item" [class.active]="activeTab === '0'" (click)="activeTab = '0'">
+          <i class="pi pi-book nav-icon"></i>
+          <span class="nav-label">Materias</span>
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="activeTab === '1'" (click)="activeTab = '1'">
+          <i class="pi pi-folder-open nav-icon"></i>
+          <span class="nav-label">Documentos</span>
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="activeTab === '2'" (click)="activeTab = '2'">
+          <i class="pi pi-credit-card nav-icon"></i>
+          <span class="nav-label">Pagos y Deudas</span>
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="activeTab === '3'" (click)="activeTab = '3'">
+          <i class="pi pi-file-edit nav-icon"></i>
+          <span class="nav-label">Completar Datos</span>
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="activeTab === '4'" (click)="activeTab = '4'">
+          <i class="pi pi-tag nav-icon"></i>
+          <span class="nav-label">Beneficios</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Contenido principal según sección activa -->
+    <main class="panel-main-content">
+
+      <!-- ══════════════════════════════════════════════════════
+           SECCIÓN 0 – MATERIAS (UNA SOLA COLUMNA ORDENADA)
+           ══════════════════════════════════════════════════════ -->
+      @if (activeTab === '0') {
+        <div class="tab-body single-col">
+          <!-- Tarjeta 1: Edición rápida de Paralelo y Estado -->
+          <div class="edit-card">
+            <h3 class="edit-card-title">
+              <i class="pi pi-pencil"></i> Configuración de la Matrícula
+            </h3>
+
+            <!-- Estado actual en fila horizontal -->
+            <div class="field-group-horizontal">
+              <div class="field-item">
+                <label>Curso:</label>
+                <span class="field-value">{{ matricula?.detalleMalla || '—' }}</span>
+              </div>
+              <div class="field-item">
+                <label>Paralelo actual:</label>
+                <span class="field-value">{{ matricula?.detalleParalelo || '—' }}</span>
+              </div>
+              <div class="field-item">
+                <label>Estado:</label>
+                <span class="field-value">{{ estadoLabel }}</span>
+              </div>
+            </div>
+
+            <!-- Formulario de cambio de paralelo y estado -->
+            <div class="edit-fields-row">
+              <!-- Cambiar paralelo -->
+              <div class="form-field flex-1">
+                <label>Cambiar Paralelo</label>
+                @if (loadingParalelos) {
+                  <div class="loading-inline">
+                    <i class="pi pi-spin pi-spinner"></i> Cargando paralelos...
+                  </div>
+                }
+                @if (!loadingParalelos) {
+                  <select [(ngModel)]="editForm.idMallaParalelo" class="form-select"
+                    [disabled]="!!matricula?.esFinalizada">
+                    <option [ngValue]="undefined">— Seleccione un paralelo —</option>
+                    @for (mp of mallaParalelosDisponiblesCambio; track mp.idMallaParalelo) {
+                      <option [ngValue]="mp.idMallaParalelo">
+                        Paralelo {{ mp.nombreParalelo }}
+                        (Disponibles: {{ getCuposDisponibles(mp) }} / Cupo: {{ mp.cupoMaximo || 0 }})
+                      </option>
+                    }
+                  </select>
+                }
+
+                @if (paraleloSeleccionado) {
+                  <small class="field-help">
+                    Paralelo seleccionado: {{ paraleloSeleccionado.nombreParalelo }} ·
+                    Cupos disponibles: {{ getCuposDisponibles(paraleloSeleccionado) }}
+                  </small>
+                }
+              </div>
+
+              <!-- Cambiar estado -->
+              <div class="form-field flex-1">
+                <label>Estado de Matrícula</label>
+                <select [(ngModel)]="editForm.idEstadoMatricula" class="form-select"
+                  [disabled]="!estadosMatricula.length">
+                  <option [ngValue]="null">— Seleccione un estado —</option>
+                  @for (estado of estadosMatricula; track estado.idEstadoMatricula) {
+                    <option [ngValue]="estado.idEstadoMatricula">
+                      {{ estado.detalle }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <!-- Botón guardar -->
+              <div class="form-field-action">
+                <button class="btn-save" (click)="guardarEdicion()" [disabled]="saving || !hasPendingChanges()">
+                  <i class="pi" [class.pi-check]="!saving" [class.pi-spin]="saving" [class.pi-spinner]="saving"></i>
+                  {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+                </button>
+              </div>
+            </div>
+
+            @if (!matricula?.esFinalizada) {
+              <div class="alert-callout alert-warning" style="margin-top: 0.5rem;">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>Cambiar de paralelo eliminará todas las notas registradas de esta matrícula.</span>
+              </div>
+            }
+          </div>
+
+          <!-- Tarjeta 2: Lista de Materias asignadas -->
+          <div class="materias-section-card">
+            <h3 class="section-card-title">
+              <i class="pi pi-book"></i> Malla Curricular y Materias Asignadas
+            </h3>
+            <div class="materias-content-wrap">
+              @if (idMalla) {
+                <app-view-student-subjects [idMalla]="idMalla" />
+              } @else {
+                <div class="empty-col">
+                  <i class="pi pi-exclamation-circle"></i>
+                  <p>No hay malla asignada a esta matrícula.</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════════
+           SECCIÓN 1 – DOCUMENTOS
+           ══════════════════════════════════════════════════════ -->
+      @if (activeTab === '1' && matricula) {
+        <div class="tab-body full-height">
+          <app-view-student-documents [matricula]="matricula" [idPersona]="idPersona" [idMalla]="idMalla" />
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════════
+           SECCIÓN 2 – PAGOS Y DEUDAS
+           ══════════════════════════════════════════════════════ -->
+      @if (activeTab === '2' && matricula) {
+        <div class="tab-body full-height">
+          <app-view-student-payments [matricula]="matricula" />
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════════
+           SECCIÓN 3 – COMPLETAR DATOS
+           ══════════════════════════════════════════════════════ -->
+      @if (activeTab === '3') {
+        <div class="tab-body center-action">
+          <app-complete-data-dialog [matricula]="matricula" (onDataSaved)="onCompleteDataSaved()">
+          </app-complete-data-dialog>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════════
+           SECCIÓN 4 – BENEFICIOS
+           ══════════════════════════════════════════════════════ -->
+      @if (activeTab === '4') {
+        <div class="tab-body">
+          @if (idPersona) {
+            <app-view-student-benefits [idPersona]="idPersona!" [idCiclo]="idCiclo" [idAprobadoPor]="idAprobadoPor" />
+          } @else {
+            <div class="empty-col">
+              <i class="pi pi-exclamation-circle"></i>
+              <p>No se encontró información de la persona asociada.</p>
+            </div>
+          }
+        </div>
+      }
+
+    </main>
+  </div>
+
+</app-shared-drawer>
+
+<app-shared-toast></app-shared-toast>
+<p-confirmDialog></p-confirmDialog>

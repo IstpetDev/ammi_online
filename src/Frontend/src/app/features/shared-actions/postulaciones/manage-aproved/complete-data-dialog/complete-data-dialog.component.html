@@ -1,0 +1,252 @@
+<app-shared-toast></app-shared-toast>
+
+<div class="premium-container">
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="loading">
+    <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+    <p>Sincronizando información...</p>
+  </div>
+
+  <!-- Header Section -->
+
+  <!-- Main Content in Single Screen Layout -->
+  <div class="main-layout" *ngIf="!loading && persona">
+
+    <!-- Status Banner at top if missing fields -->
+    <div class="status-summary-bar" *ngIf="tieneDatosFaltantes">
+      <div class="status-summary-badge">
+        <i class="pi pi-exclamation-triangle text-amber-500"></i>
+        <span>Campos pendientes: <strong>{{ listaCamposFaltantes.join(', ') }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Section Content Area (All sections in one scrollable view) -->
+    <main class="section-container">
+
+      <!-- ==========================================
+           1. INFORMACIÓN PERSONAL
+           ========================================== -->
+      <div class="content-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <i class="pi pi-user header-icon"></i>
+            <div>
+              <h3>Información Personal</h3>
+              <p>Datos básicos de identidad y estado civil</p>
+            </div>
+          </div>
+          <div *ngIf="!editMode['personales']">
+            <p-button label="Editar" icon="pi pi-pencil" [text]="true" size="small"
+              (onClick)="startEdit('personales')"></p-button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div *ngIf="loadingSections['personales']" class="section-loader">
+            <p-progressSpinner strokeWidth="3"></p-progressSpinner>
+            <p>Cargando información...</p>
+          </div>
+
+          <!-- View mode -->
+          <div *ngIf="!loadingSections['personales'] && !editMode['personales']" class="view-mode">
+            <div class="preview-grid">
+              <div class="preview-item">
+                <label>Fecha de Nacimiento</label>
+                <p>{{ personaInfoData?.fechaNacimiento || 'Pendiente' }} ({{
+                  calcularEdad(personaInfoData?.fechaNacimiento) }})</p>
+              </div>
+              <div class="preview-item">
+                <label>Estado Civil</label>
+                <p>{{ getEstadoCivilNombre(personaInfoData?.idEstadoCivil) }}</p>
+              </div>
+              <div class="preview-item full-width">
+                <label>Nacionalidad / Etnia</label>
+                <p>{{ getNacionalidadEtnicaNombre(personaInfoData?.idNacionalidadEtnica) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit mode -->
+          <div *ngIf="!loadingSections['personales'] && editMode['personales']" class="edit-form-layout">
+            <div class="form-grid-modern">
+              <div class="field-item">
+                <label>Fecha Nacimiento *</label>
+                <p-datepicker [(ngModel)]="editData.personales.fechaNacimiento" dateFormat="dd/mm/yy" [showIcon]="true"
+                  appendTo="body" class="w-full"></p-datepicker>
+              </div>
+              <div class="field-item">
+                <label>Estado Civil</label>
+                <p-select [(ngModel)]="editData.personales.idEstadoCivil" [options]="estadosCiviles"
+                  optionLabel="nombre" optionValue="idEstadoCivil" placeholder="Seleccione" appendTo="body"
+                  class="w-full"></p-select>
+              </div>
+              <div class="field-item">
+                <label>Etnia</label>
+                <p-select [(ngModel)]="editData.personales.idEtnia" [options]="etnias" optionLabel="nombre"
+                  optionValue="idEtnia" (onChange)="onEtniaChange($event)" placeholder="Seleccione" appendTo="body"
+                  class="w-full"></p-select>
+              </div>
+              <div class="field-item">
+                <label>Nacionalidad</label>
+                <p-select [(ngModel)]="editData.personales.idNacionalidadEtnica"
+                  [options]="filteredNacionalidadesEtnicas" optionLabel="nombre" optionValue="idnacionalidadEtnica"
+                  [disabled]="!editData.personales.idEtnia" placeholder="Seleccione" appendTo="body"
+                  class="w-full"></p-select>
+              </div>
+            </div>
+            <div class="form-footer">
+              <p-button label="Cancelar" [text]="true" (onClick)="cancelEdit('personales')"></p-button>
+              <p-button label="Guardar" icon="pi pi-check" [loading]="savingSection === 'personales'"
+                (onClick)="savePersonaInfo()"></p-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           2. UBICACIÓN Y DOMICILIO
+           ========================================== -->
+      <div class="content-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <i class="pi pi-map-marker header-icon"></i>
+            <div>
+              <h3>Ubicación y Domicilio</h3>
+              <p>Dirección donde reside actualmente el estudiante</p>
+            </div>
+          </div>
+          <div *ngIf="!editMode['direccion']">
+            <p-button label="Actualizar" icon="pi pi-pencil" [text]="true" size="small"
+              (onClick)="startEdit('direccion')"></p-button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div *ngIf="loadingSections['direccion']" class="section-loader">
+            <p-progressSpinner strokeWidth="3"></p-progressSpinner>
+            <p>Cargando información...</p>
+          </div>
+
+          <div *ngIf="!loadingSections['direccion'] && !editMode['direccion']" class="view-mode">
+            <div class="preview-grid">
+              <div class="preview-item full-width">
+                <label>Parroquia / Lugar</label>
+                <p>{{ getParroquiaNombre(personaDireccionData?.idParroquia) }}</p>
+              </div>
+              <div class="preview-item full-width">
+                <label>Dirección Específica</label>
+                <p>{{ personaDireccionData?.direccionDomiciliaria || 'Pendiente de registro' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loadingSections['direccion'] && editMode['direccion']" class="edit-form-layout">
+            <div class="form-grid-modern">
+              <div class="field-item full-width">
+                <label>Cantón / Municipio *</label>
+                <p-select [(ngModel)]="editData.direccion.idCanton" [options]="cantones" optionLabel="nombre"
+                  optionValue="idCanton" [filter]="true" filterBy="nombre" appendTo="body"
+                  placeholder="Seleccione un cantón..." class="w-full" (onChange)="onCantonChange($event)">
+                </p-select>
+              </div>
+              <div class="field-item full-width">
+                <label>Parroquia / Ubicación *</label>
+                <p-select [(ngModel)]="editData.direccion.idParroquia" [options]="parroquias" optionLabel="nombre"
+                  optionValue="idParroquia" [filter]="true" filterBy="nombre" appendTo="body"
+                  [disabled]="!editData.direccion.idCanton" placeholder="Seleccione una parroquia..." class="w-full">
+                </p-select>
+              </div>
+              <div class="field-item full-width">
+                <label>Calle Principal, Secundaria y # de Casa</label>
+                <input type="text" pInputText [(ngModel)]="editData.direccion.direccionDomiciliaria" class="w-full"
+                  placeholder="Ej: Urbanización Los Pinos, Calle A N12-3">
+              </div>
+            </div>
+            <div class="form-footer">
+              <p-button label="Cancelar" [text]="true" (onClick)="cancelEdit('direccion')"></p-button>
+              <p-button label="Fijar Ubicación" icon="pi pi-check" [loading]="savingSection === 'direccion'"
+                (onClick)="savePersonaDireccion()"></p-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           3. CANALES DE CONTACTO
+           ========================================== -->
+      <div class="content-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <i class="pi pi-phone header-icon"></i>
+            <div>
+              <h3>Canales de Contacto</h3>
+              <p>Teléfonos y correos registrados para notificaciones</p>
+            </div>
+          </div>
+          <div *ngIf="!editMode['contacto']">
+            <p-button label="Nuevo Canal" icon="pi pi-plus" [text]="true" size="small"
+              (onClick)="startEdit('contacto')"></p-button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div *ngIf="loadingSections['contacto']" class="section-loader">
+            <p-progressSpinner strokeWidth="3"></p-progressSpinner>
+            <p>Cargando información...</p>
+          </div>
+
+          <div *ngIf="!loadingSections['contacto']">
+            <div class="contact-list" *ngIf="contactosData.length > 0">
+              <div class="contact-card-item" *ngFor="let contacto of contactosData; let i = index">
+                <div class="contact-icon">
+                  <i
+                    [class]="getTipoDatoContactoNombre(contacto).toLowerCase().includes('mail') || getTipoDatoContactoNombre(contacto).toLowerCase().includes('correo') ? 'pi pi-envelope' : 'pi pi-phone'"></i>
+                </div>
+                <div class="contact-info">
+                  <span class="contact-type">{{ getTipoDatoContactoNombre(contacto) }}</span>
+                  <span class="contact-value">{{ contacto.detalle }}</span>
+                </div>
+                <div class="contact-badge" *ngIf="contacto.esPrincipal">Principal</div>
+                <button class="icon-btn" (click)="editContacto(i)" title="Editar contacto">
+                  <i class="pi pi-pencil"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="empty-state-card" *ngIf="contactosData.length === 0 && !editMode['contacto']">
+              <i class="pi pi-phone"></i>
+              <p>No hay canales de contacto registrados aún.</p>
+            </div>
+
+            <div *ngIf="editMode['contacto']" class="edit-form-layout alt-bg" style="margin-top: 1rem;">
+              <div class="form-grid-modern">
+                <div class="field-item">
+                  <label>Medio</label>
+                  <p-select [(ngModel)]="editData.contacto.idTipoDatoContacto" [options]="tiposDatoContacto"
+                    optionLabel="detalle" optionValue="idTipoDatoContacto" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="field-item">
+                  <label>Valor / Número</label>
+                  <input type="text" pInputText [(ngModel)]="editData.contacto.detalle" class="w-full"
+                    [placeholder]="contactoPlaceholder">
+                </div>
+              </div>
+              <div class="form-footer">
+                <p-button [label]="editingContactoIndex >= 0 ? 'Guardar' : 'Añadir'"
+                  [icon]="editingContactoIndex >= 0 ? 'pi pi-check' : 'pi pi-plus'"
+                  [loading]="savingSection === 'contacto'" (onClick)="saveDatosContacto()"></p-button>
+                <p-button label="Cerrar" [text]="true" (onClick)="cancelEdit('contacto')"></p-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+</div>
+
+<!-- Hidden file input for uploads -->
+<input type="file" #requisitoFileInput style="display: none" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+  (change)="onRequisitoFileSelected($event)">

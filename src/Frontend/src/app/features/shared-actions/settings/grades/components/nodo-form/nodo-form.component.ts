@@ -12,9 +12,10 @@ import {
   ReglasCalculoUpdateDTO
 } from '../../../../../../data/models/notas';
 
+// Shared Imports
+import { SharedDrawerComponent } from '../../../../../../shared/shared-drawer/shared-drawer.component';
+
 // PrimeNG Imports
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
@@ -35,8 +36,7 @@ export interface NodoConReglaData {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
-    ButtonModule,
+    SharedDrawerComponent,
     InputTextModule,
     InputNumberModule,
     SelectModule,

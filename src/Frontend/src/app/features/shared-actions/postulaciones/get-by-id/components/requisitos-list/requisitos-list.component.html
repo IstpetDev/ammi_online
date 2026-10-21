@@ -1,0 +1,208 @@
+<!-- Diálogo de motivo de rechazo de documento -->
+<app-shared-modal
+  [(visible)]="mostrarDialogRechazo"
+  title="Motivo de rechazo"
+  size="md"
+  cancelText="Cancelar"
+  confirmText="Rechazar"
+  confirmClass="btn-danger"
+  [confirmDisabled]="!motivoRechazo.trim()"
+  (confirm)="confirmarRechazoDocumento()"
+  (close)="cancelarDialogRechazo()">
+  <div class="motivo-rechazo-area">
+    <label for="motivoRechazo" class="motivo-rechazo-label">Por favor, indique el motivo del rechazo:</label>
+    <textarea id="motivoRechazo" [(ngModel)]="motivoRechazo" rows="4" class="motivo-rechazo-textarea"
+      style="width: 100%; border-radius: 0.5rem; border: 1px solid #e0e0e0; font-size: 0.95rem; resize: vertical; background: #fafafa; padding: 0.5rem;"></textarea>
+  </div>
+</app-shared-modal>
+
+<!-- Diálogo de confirmación de aprobación de documento -->
+<app-shared-modal
+  [(visible)]="mostrarDialogAprobarDocumento"
+  title="Confirmar aprobación de documento"
+  size="md"
+  cancelText="Cancelar"
+  confirmText="Aprobar"
+  confirmClass="btn-primary"
+  (confirm)="confirmarAprobarDocumento()"
+  (close)="cancelarDialogAprobarDocumento()">
+  <div style="display:flex;align-items:flex-start;gap:1rem;">
+    <i class="pi pi-info-circle" style="font-size:1.5rem;color:#388e3c;margin-top:0.1rem;"></i>
+    <div>
+      <p style="margin:0 0 0.5rem;font-size:1rem;color:#333;">
+        ¿Confirmas la aprobación del documento
+        <strong>"{{ requisitoAprobacion?.detalle }}"</strong>?
+      </p>
+      <p style="margin:0;font-size:0.88rem;color:#666;">Esta acción marcará el documento como aprobado y notificará el cambio de estado.</p>
+    </div>
+  </div>
+</app-shared-modal>
+
+<!-- Diálogo de confirmación de eliminación de documento -->
+<app-confirmation-modal
+  [(visible)]="mostrarDialogEliminarDocumento"
+  title="Confirmar eliminación"
+  [message]="mensajeEliminarDocumento"
+  acceptLabel="Eliminar"
+  rejectLabel="Cancelar"
+  [loading]="eliminandoDocumento"
+  (accept)="confirmarEliminarDocumento()"
+  (reject)="cancelarDialogEliminarDocumento()"
+  (hide)="cancelarDialogEliminarDocumento()">
+</app-confirmation-modal>
+
+<div class="requisitos-section">
+  <div class="section-header">
+    <h3>Requisitos y Documentos</h3>
+    <small class="requisitos-info" style="color: #6c757d; display: block; margin-top: 5px; font-weight: 500;">
+      <i class="pi pi-info-circle"></i> Peso máximo por archivo: 15MB
+    </small>
+  </div>
+
+  <!-- Ayuda visual clara de uso -->
+  <div class="visual-aid-banner" style="background-color: var(--surface-hover); border-left: 4px solid var(--primary-color); padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+    <i class="pi pi-info-circle" style="color: var(--primary-color); font-size: 1.1rem; margin-top: 2px;"></i>
+    <div style="font-size: 0.82rem; color: var(--text-color-secondary); line-height: 1.4;">
+      <strong>Instrucciones:</strong> Para aprobar o rechazar los requisitos de tipo adjunto, primero debe visualizarlos haciendo clic en el icono del ojo (<i class="pi pi-eye" style="font-size: 0.75rem;"></i>). Una vez visualizados, se habilitarán las opciones correspondientes.
+    </div>
+  </div>
+
+  <div class="requisitos-grid">
+    <div class="requisito-card" *ngFor="let requisito of requisitos">
+      <div class="requisito-header">
+        <span class="requisito-name">{{ requisito.detalle }}</span>
+        <div class="requisito-badges">
+          <span class="requisito-status" [class.required]="requisito.esObligatorio">
+            {{ requisito.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ────── BOOL ────── -->
+      <div class="requisito-actions" *ngIf="requisito.tipoDato === 'BOOL'">
+        <!-- Sin definir -->
+        <ng-container *ngIf="!requisito.completado && !esSubiendo(requisito)">
+          <div class="bool-buttons">
+            <button type="button" class="btn-action btn-bool-si btn-icon-only"
+              (click)="marcarRequisitoCumple(requisito, true)" title="Sí Cumple">
+              <i class="pi pi-check"></i>
+            </button>
+            <button type="button" class="btn-action btn-bool-no btn-icon-only"
+              (click)="marcarRequisitoCumple(requisito, false)" title="No Cumple">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        </ng-container>
+        <!-- Guardando -->
+        <ng-container *ngIf="esSubiendo(requisito)">
+          <div class="estado-badge estado-subido"><i class="pi pi-spin pi-spinner"></i> Guardando...</div>
+        </ng-container>
+        <!-- Definido -->
+        <ng-container *ngIf="requisito.completado && !esSubiendo(requisito)">
+          <div class="bool-result">
+            <span class="result-badge"
+              [class]="requisito.documentoExistente?.valorDato ? 'cumple' : 'no-cumple'">
+              <i class="pi" [class.pi-check]="requisito.documentoExistente?.valorDato"
+                [class.pi-times]="!requisito.documentoExistente?.valorDato"></i>
+              {{ requisito.documentoExistente?.valorDato ? 'Cumple' : 'No Cumple' }}
+            </span>
+            <button type="button" class="btn-action btn-cambiar btn-icon-only"
+              (click)="marcarRequisitoCumple(requisito, !requisito.documentoExistente?.valorDato)"
+              title="Cambiar">
+              <i class="pi pi-pencil"></i>
+            </button>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- ────── ADJUNTO: máquina de estados ────── -->
+      <div class="requisito-actions" *ngIf="requisito.tipoDato === 'ADJUNTO'"
+        [ngSwitch]="getEstado(requisito)">
+
+        <!-- Estado: sin-documento -->
+        <ng-container *ngSwitchCase="'sin-documento'">
+          <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+            (click)="iniciarSubida(requisito)" title="Subir documento">
+            <i class="pi pi-upload"></i>
+          </button>
+        </ng-container>
+
+        <!-- Estado: subiendo (upload en curso) -->
+        <ng-container *ngSwitchCase="'subiendo'">
+          <div class="estado-badge estado-subido">
+            <i class="pi pi-spin pi-spinner"></i> Subiendo...
+          </div>
+        </ng-container>
+
+        <!-- Estado: subido-pendiente → admin puede ver, aprobar o rechazar -->
+        <ng-container *ngSwitchCase="'subido-pendiente'">
+          <div class="estado-badge estado-subido">
+            <i class="pi pi-clock"></i> En revisión
+          </div>
+          <div class="doc-action-group">
+            <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+              (click)="verDocumento(requisito)" title="Ver documento">
+              <i class="pi pi-eye"></i>
+            </button>
+            <button type="button" class="btn-action btn-approve-brand btn-icon-only"
+              [disabled]="!documentoFueVisto(requisito)"
+              (click)="aceptarDocumento(requisito)" title="Aprobar documento">
+              <i class="pi pi-check-circle"></i>
+            </button>
+            <button type="button" class="btn-action btn-reject-brand btn-icon-only"
+              [disabled]="!documentoFueVisto(requisito)"
+              (click)="rechazarDocumento(requisito)" title="Rechazar documento">
+              <i class="pi pi-times-circle"></i>
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- Estado: aprobado -->
+        <ng-container *ngSwitchCase="'aprobado'">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.5rem;">
+            <div class="estado-badge estado-aprobado" style="margin-bottom: 0; flex: 1; width: auto;">
+              <i class="pi pi-check-circle"></i> Aprobado
+            </div>
+            <div class="doc-action-group" style="margin-top: 0; flex-shrink: 0;">
+              <button type="button" class="btn-action btn-ver-doc btn-icon-only" (click)="verDocumento(requisito)"
+                title="Ver documento">
+                <i class="pi pi-eye"></i>
+              </button>
+              <button type="button" class="btn-action btn-reject-brand btn-icon-only" (click)="eliminarDocumentoCompletado(requisito)"
+                title="Eliminar documento">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Estado: rechazado -->
+        <ng-container *ngSwitchCase="'rechazado'">
+          <div class="estado-badge estado-rechazado">
+            <i class="pi pi-times-circle"></i> Rechazado
+          </div>
+          <div class="rechazado-mensaje">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Documento rechazado. Puedes subir un documento de reemplazo.</span>
+          </div>
+          <div class="doc-action-group">
+            <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+              (click)="iniciarSubida(requisito)" title="Subir nuevo documento">
+              <i class="pi pi-upload"></i>
+            </button>
+            <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+              (click)="verDocumento(requisito)" title="Ver documento anterior">
+              <i class="pi pi-eye"></i>
+            </button>
+          </div>
+        </ng-container>
+      </div><!-- /requisito-actions adjunto -->
+
+    </div><!-- /requisito-card -->
+  </div><!-- /requisitos-grid -->
+  <input type="file" #fileInput hidden (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" />
+</div>
+
+<app-shared-revert-toast [(visible)]="revertVisible" [title]="revertTitle" [message]="revertMessage"
+  (revert)="ejecutarRevert()">
+</app-shared-revert-toast>

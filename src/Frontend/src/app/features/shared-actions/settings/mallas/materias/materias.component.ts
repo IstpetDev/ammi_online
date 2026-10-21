@@ -6,19 +6,20 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { TagModule } from 'primeng/tag';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MateriaDTO } from '../../../../../data/models/Entities';
 import { MateriaService } from '../../../../../core/services/infrastructure/materia.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-materias',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, InputNumberModule, CheckboxModule, ToggleButtonModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, InputNumberModule, TagModule, CheckboxModule, ToggleButtonModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './materias.component.html',
   styleUrls: ['./materias.component.css'],
   providers: [MessageService]
@@ -52,10 +53,7 @@ export class MateriasComponent implements OnInit {
   loadMaterias(): void {
     this.materiaService.getAll().subscribe({
       next: (data) => {
-        console.log('Datos recibidos del servicio:', data);
-        console.log('Items:', data?.items);
         this.materias = Array.isArray(data?.items) ? data.items : [];
-        console.log('Materias asignadas:', this.materias);
       },
       error: (error) => {
         console.error('Error al cargar materias:', error);
