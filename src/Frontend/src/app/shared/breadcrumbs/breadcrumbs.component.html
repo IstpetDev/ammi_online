@@ -1,0 +1,31 @@
+<nav class="breadcrumbs-container" aria-label="Breadcrumb" *ngIf="breadcrumbs.length > 0">
+  <button class="breadcrumb-back-btn" *ngIf="canGoBack" (click)="goBack()" title="Regresar">
+    <i class="pi pi-arrow-left"></i>
+    <span>Volver</span>
+  </button>
+  <div class="breadcrumb-divider-vertical" *ngIf="canGoBack"></div>
+
+  <ol class="breadcrumbs-list">
+    <li class="breadcrumb-item">
+      <a routerLink="/dashboard" (click)="onHomeClick()" class="breadcrumb-link home-link" title="Inicio">
+        <i class="pi pi-home"></i>
+        <span>Inicio</span>
+      </a>
+    </li>
+    
+    <ng-container *ngFor="let item of breadcrumbs; let last = last">
+      <!-- Evitar duplicar 'Inicio' si ya está como home -->
+      <ng-container *ngIf="item.label !== 'Inicio'">
+        <li class="breadcrumb-separator">
+          <i class="pi pi-angle-right"></i>
+        </li>
+        <li class="breadcrumb-item" [class.active]="last">
+          <a *ngIf="!last" [routerLink]="item.url" (click)="onBreadcrumbClick(item)" class="breadcrumb-link">
+            <span>{{ item.label }}</span>
+          </a>
+          <span *ngIf="last" class="breadcrumb-current">{{ item.label }}</span>
+        </li>
+      </ng-container>
+    </ng-container>
+  </ol>
+</nav>

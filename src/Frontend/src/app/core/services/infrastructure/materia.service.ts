@@ -16,8 +16,8 @@ export class MateriaService {
   constructor(private http: HttpClient) { }
 
   // Obtener todas las materias
-  getAll(): Observable<PaginatedMateriaResponse> {
-    return this.http.get<IResponse<PaginatedMateriaResponse>>(`${this.apiUrl}${API_ENDPOINTS.infraestructura.materia.getAll}`).pipe(
+  getAll(pageSize: number = 100): Observable<PaginatedMateriaResponse> {
+    return this.http.get<IResponse<PaginatedMateriaResponse>>(`${this.apiUrl}${API_ENDPOINTS.infraestructura.materia.getAll}?PageSize=${100}`).pipe(
       map(response => response.data)
     );
   }

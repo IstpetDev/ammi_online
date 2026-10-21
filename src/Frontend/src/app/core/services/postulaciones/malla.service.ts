@@ -15,11 +15,33 @@ export class MallaService {
 
   constructor(private http: HttpClient) { }
 
+  private normalizarMallasResponse(response: any): MallaDTO[] {
+    if (Array.isArray(response)) {
+      return response as MallaDTO[];
+    }
+
+    if (response?.data?.items && Array.isArray(response.data.items)) {
+      return response.data.items as MallaDTO[];
+    }
+
+    if (Array.isArray(response?.items)) {
+      return response.items as MallaDTO[];
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data as MallaDTO[];
+    }
+
+    return [];
+  }
+
   /**
    * Obtener todas las mallas
    */
   getMallas(): Observable<MallaDTO[]> {
-    return this.http.get<MallaDTO[]>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.malla.getAll}`);
+    return this.http.get<any>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.malla.getAll}`).pipe(
+      map(response => this.normalizarMallasResponse(response))
+    );
   }
 
   /**
@@ -27,7 +49,9 @@ export class MallaService {
    */
   getMallasByTipoOferta(idTipoOferta: number): Observable<MallaDTO[]> {
     const url = `${this.apiUrl}${API_ENDPOINTS.postulaciones.malla.getByTipoOferta(idTipoOferta)}`;
-    return this.http.get<MallaDTO[]>(url);
+    return this.http.get<any>(url).pipe(
+      map(response => this.normalizarMallasResponse(response))
+    );
   }
 
   /**
@@ -45,6 +69,16 @@ export class MallaService {
   getCursosByMalla(idMalla: number): Observable<number | undefined> {
     return this.getMallaById(idMalla).pipe(
       map(malla => malla?.idCursos)
+    );
+  }
+
+  /**
+   * Obtener mallas con parámetros de filtrado (IdTipoOferta, IdCiclo, etc.)
+   */
+  getMallasByParams(params?: { IdTipoOferta?: number, IdCiclo?: number, IdMalla?: number, IdCursos?: number, Detalle?: string }): Observable<MallaDTO[]> {
+    const url = `${this.apiUrl}${API_ENDPOINTS.postulaciones.malla.getByParams(params)}`;
+    return this.http.get<IResponse<MallaDTO[]> | any>(url).pipe(
+      map(response => this.normalizarMallasResponse(response))
     );
   }
 }

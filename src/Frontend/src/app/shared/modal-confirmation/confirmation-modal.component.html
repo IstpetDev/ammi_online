@@ -2,8 +2,9 @@
   [visible]="visible"
   [modal]="true"
   [closable]="true"
-  [style]="{ width: '600px', maxHeight: '80vh' }"
+  [style]="{ width: '600px', maxHeight: '80vh', zIndex: '10000' }"
   [header]="title"
+  appendTo="body"
   (onHide)="onHide()">
   <div class="modal-content">
     <div class="message-content" [innerHTML]="message"></div>
@@ -20,6 +21,8 @@
       [label]="acceptLabel"
       icon="pi pi-check"
       class="p-button-primary"
+      [disabled]="loading"
+      [loading]="loading"
       (onClick)="onAccept()">
     </p-button>
   </ng-template>

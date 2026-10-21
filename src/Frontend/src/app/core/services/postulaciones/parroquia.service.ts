@@ -35,5 +35,11 @@ export class ParroquiaService {
       map(response => response.data)
     );
   }
+
+  create(data: Partial<ParroquiaDTO>): Observable<any> {
+    return this.http.post<IResponse<any>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.parroquia.create}`, { parroquiaDTO: data }).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

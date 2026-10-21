@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, map, tap } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map, expand, reduce, EMPTY } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { IResponse } from '../../../data/models/IResponse';
 import {
@@ -22,6 +22,40 @@ export class DistributivoService {
   constructor(private http: HttpClient) {}
 
   /**
+   * Helper para extraer array de respuestas paginadas o directas
+   * Soporta: array directo, { items: [] } o { data: { items: [] } }
+   */
+  private extractArray<T>(data: any): T[] {
+    if (Array.isArray(data)) return data;
+    if (data?.items && Array.isArray(data.items)) return data.items;
+    return [];
+  }
+
+  /**
+   * Helper que itera todas las páginas de forma secuencial y devuelve un array completo.
+   * @param fetcher función que recibe (pageNumber, pageSize) y devuelve el raw data del backend
+   * @param pageSize cantidad de registros por página (default 100)
+   */
+  private fetchAllPages<T>(
+    fetcher: (pageNumber: number, pageSize: number) => Observable<any>,
+    pageSize = 100
+  ): Observable<T[]> {
+    const fetch$ = (page: number): Observable<{ items: T[]; hasNextPage: boolean; page: number }> =>
+      fetcher(page, pageSize).pipe(
+        map((raw: any) => ({
+          items: this.extractArray<T>(raw),
+          hasNextPage: raw?.hasNextPage === true,
+          page
+        }))
+      );
+
+    return fetch$(1).pipe(
+      expand(({ hasNextPage, page }) => hasNextPage ? fetch$(page + 1) : EMPTY),
+      reduce((acc: T[], { items }) => [...acc, ...items], [])
+    );
+  }
+
+  /**
    * Helper para validar respuesta del backend
    */
   private validateResponse<T>(response: IResponse<T>): T {
@@ -35,16 +69,17 @@ export class DistributivoService {
    * Obtener todos los distributivos (con información de plantilla para admin)
    */
   getAll(): Observable<DistributivoDTO[]> {
-    return this.http.get<IResponse<any[]>>(this.apiUrl)
-      .pipe(map(r => {
-        const data = r.data || [];
-        // Mapear para incluir información de plantilla si está disponible
-        return data.map((d: any) => ({
-          ...d,
-          idPlantillaEvaluacion: d.idPlantillaEvaluacion || 0,
-          nombrePlantilla: d.nombrePlantilla || ''
-        }));
-      }));
+    return this.fetchAllPages<any>(
+      (pageNumber, pageSize) => this.http.get<IResponse<any>>(this.apiUrl, {
+        params: new HttpParams().set('PageNumber', pageNumber).set('PageSize', pageSize)
+      }).pipe(map(r => r.data))
+    ).pipe(
+      map(data => data.map((d: any) => ({
+        ...d,
+        idPlantillaEvaluacion: d.idPlantillaEvaluacion || 0,
+        nombrePlantilla: d.nombrePlantilla || ''
+      })))
+    );
   }
 
   /**
@@ -59,9 +94,12 @@ export class DistributivoService {
    * Obtener distributivos por docente (todas las asignaciones)
    */
   getByDocente(idPersona: number): Observable<DistributivoDTO[]> {
-    return this.http.get<IResponse<DistributivoDTO[]>>(
-      `${this.apiUrl}/ByDocente/${idPersona}`
-    ).pipe(map(r => r.data || []));
+    return this.fetchAllPages<DistributivoDTO>(
+      (pageNumber, pageSize) => this.http.get<IResponse<any>>(
+        `${this.apiUrl}/ByDocente/${idPersona}`,
+        { params: new HttpParams().set('PageNumber', pageNumber).set('PageSize', pageSize) }
+      ).pipe(map(r => r.data))
+    );
   }
 
   /**
@@ -73,7 +111,7 @@ export class DistributivoService {
       `${this.apiUrl}/ByDocente/${idPersona}`
     ).pipe(map(r => {
       // Mapear a AsignacionDocenteDTO si el backend retorna DistributivoDTO
-      const data = r.data || [];
+      const data = this.extractArray<any>(r.data);
       return data.map((d: any) => ({
         idDistributivo: d.idDistributivo,
         idDetalleMalla: d.idDetalleMalla,
@@ -84,7 +122,8 @@ export class DistributivoService {
         nombrePlantilla: d.nombrePlantilla || '',
         cantidadAlumnos: d.cantidadAlumnos || 0,
         idMalla: d.idMalla || 0,
-        nombreMalla: d.nombreMalla || ''
+        nombreMalla: d.nombreMalla || '',
+        alumnos: d.alumnos || []
       }));
     }));
   }
@@ -93,27 +132,36 @@ export class DistributivoService {
    * Obtener distributivos por malla
    */
   getByMalla(idMalla: number): Observable<DistributivoDTO[]> {
-    return this.http.get<IResponse<DistributivoDTO[]>>(
-      `${this.apiUrl}/ByMalla/${idMalla}`
-    ).pipe(map(r => r.data || []));
+    return this.fetchAllPages<DistributivoDTO>(
+      (pageNumber, pageSize) => this.http.get<IResponse<any>>(
+        `${this.apiUrl}/ByMalla/${idMalla}`,
+        { params: new HttpParams().set('PageNumber', pageNumber).set('PageSize', pageSize) }
+      ).pipe(map(r => r.data))
+    );
   }
 
   /**
    * Obtener distributivos por paralelo
    */
   getByParalelo(idParalelo: number): Observable<DistributivoDTO[]> {
-    return this.http.get<IResponse<DistributivoDTO[]>>(
-      `${this.apiUrl}/ByParalelo/${idParalelo}`
-    ).pipe(map(r => r.data || []));
+    return this.fetchAllPages<DistributivoDTO>(
+      (pageNumber, pageSize) => this.http.get<IResponse<any>>(
+        `${this.apiUrl}/ByParalelo/${idParalelo}`,
+        { params: new HttpParams().set('PageNumber', pageNumber).set('PageSize', pageSize) }
+      ).pipe(map(r => r.data))
+    );
   }
 
   /**
    * Obtener distributivos por ciclo
    */
   getByCiclo(idCiclo: number): Observable<DistributivoDTO[]> {
-    return this.http.get<IResponse<DistributivoDTO[]>>(
-      `${this.apiUrl}/ByCiclo/${idCiclo}`
-    ).pipe(map(r => r.data || []));
+    return this.fetchAllPages<DistributivoDTO>(
+      (pageNumber, pageSize) => this.http.get<IResponse<any>>(
+        `${this.apiUrl}/ByCiclo/${idCiclo}`,
+        { params: new HttpParams().set('PageNumber', pageNumber).set('PageSize', pageSize) }
+      ).pipe(map(r => r.data))
+    );
   }
 
   /**
@@ -129,9 +177,9 @@ export class DistributivoService {
    * Obtener docentes disponibles (con rol PROFESOR)
    */
   getDocentesDisponibles(): Observable<DocenteDisponibleDTO[]> {
-    return this.http.get<IResponse<DocenteDisponibleDTO[]>>(
+    return this.http.get<IResponse<any>>(
       `${this.apiUrl}/Docentes`
-    ).pipe(map(r => r.data || []));
+    ).pipe(map(r => this.extractArray<DocenteDisponibleDTO>(r.data)));
   }
 
   /**

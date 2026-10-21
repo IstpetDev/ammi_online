@@ -18,44 +18,47 @@ export class EspecieCicloService {
    * Obtener todas las especies ciclo
    */
   getAll(): Observable<EspecieCicloDTO[]> {
-    console.log('🌐 EspecieCicloService.getAll llamado');
     return this.http.get<any>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.getAll}`)
       .pipe(map(response => {
-        console.log('🌐 Respuesta RAW del backend:', response);
-        console.log('🌐 Tipo de respuesta:', typeof response);
-        console.log('🌐 ¿Tiene propiedad data?', 'data' in response);
-        console.log('🌐 ¿Es array directamente?', Array.isArray(response));
-
-        // Si la respuesta tiene una propiedad 'data', es un IResponse
         if (response && response.data) {
-          console.log('🌐 Respuesta tipo IResponse, retornando response.data');
           return response.data;
         }
         // Si la respuesta es directamente un array
         else if (Array.isArray(response)) {
-          console.log('🌐 Respuesta directa array, retornando response');
           return response as EspecieCicloDTO[];
         }
 
-        console.log('🌐 Respuesta no reconocida, retornando array vacío');
         return [];
       }));
+  }
+
+  getEspecieCiclobyId(id: number): Observable<EspecieCicloDTO | null> {
+    return this.http.get<IResponse<EspecieCicloDTO>>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.getById(id)}`)
+      .pipe(map(r => r.data || null));
+  }
+
+  private unwrapData<T>(response: any): T | null {
+    if (response == null) return null;
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as IResponse<T>).data ?? null;
+    }
+    return response as T;
   }
 
   /**
    * Crear nueva especie ciclo
    */
   create(data: EspecieCicloDTO): Observable<EspecieCicloDTO> {
-    return this.http.post<IResponse<EspecieCicloDTO>>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.create}`, data)
-      .pipe(map(r => r.data!));
+    return this.http.post<any>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.create}`, data)
+      .pipe(map(r => this.unwrapData<EspecieCicloDTO>(r) as EspecieCicloDTO));
   }
 
   /**
    * Actualizar especie ciclo
    */
   update(data: EspecieCicloDTO): Observable<EspecieCicloDTO> {
-    return this.http.put<IResponse<EspecieCicloDTO>>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.update}`, data)
-      .pipe(map(r => r.data!));
+    return this.http.put<any>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.update}`, data)
+      .pipe(map(r => this.unwrapData<EspecieCicloDTO>(r) as EspecieCicloDTO));
   }
 
   /**
@@ -67,10 +70,10 @@ export class EspecieCicloService {
   }
 
   /**
-   * Obtener especies ciclo por ciclo
+   * Obtener especies ciclo por malla
    */
-  getByCiclo(idCiclo: number): Observable<EspecieCicloDTO[]> {
-    return this.http.get<IResponse<EspecieCicloDTO[]>>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.getByCiclo(idCiclo)}`)
+  getByMalla(idMalla: number): Observable<EspecieCicloDTO[]> {
+    return this.http.get<IResponse<EspecieCicloDTO[]>>(`${this.apiUrl}${API_ENDPOINTS.especieCiclo.getByMalla(idMalla)}`)
       .pipe(map(r => r.data || []));
   }
 

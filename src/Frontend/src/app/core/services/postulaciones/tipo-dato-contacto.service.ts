@@ -35,5 +35,11 @@ export class TipoDatoContactoService {
       map(tipos => tipos.filter(t => t.esObligatorio))
     );
   }
+
+  create(data: Partial<TipoDatoContactoDTO>): Observable<TipoDatoContactoDTO> {
+    return this.http.post<IResponse<TipoDatoContactoDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.tipoDatoContacto.create}`, data).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

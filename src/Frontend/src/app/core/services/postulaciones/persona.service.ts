@@ -15,13 +15,18 @@ export class PersonaService {
 
   constructor(private http: HttpClient) { }
 
-  // Obtener todos los períodos lectivos
+  // Obtener persona por documento
   getPersonaByDocumento(documento: string): Observable<PersonaDTO[]> {
     return this.http.get<IResponse<PersonaDTO[]>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.persona.getByDocumento(documento)}`).pipe(
       map(response => response.data)
     );
   }
 
-  
+  // Obtener persona por ID
+  getPersonaByIdPersona(idPersona: number): Observable<PersonaDTO[]> {
+    return this.http.get<IResponse<PersonaDTO[]>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.persona.getByIdPersona(idPersona)}`).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

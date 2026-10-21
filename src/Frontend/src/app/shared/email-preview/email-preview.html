@@ -1,0 +1,33 @@
+<div class="email-preview-container" style="padding: 20px; font-family: Arial, sans-serif;">
+  <h2>Vista Previa de Plantilla de Email</h2>
+
+  <!-- Selector de plantilla -->
+  <label for="templateSelect">Seleccionar Plantilla:</label>
+  <select id="templateSelect" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
+    <option value="aprobada">Postulación Aprobada</option>
+    <option value="rechazada">Postulación Rechazada</option>
+    <option value="documentoAprobado">Documento Aprobado</option>
+    <option value="documentoRechazado">Documento Rechazado</option>
+    <option value="calificacion">Calificación Notificada</option>
+  </select>
+
+  <!-- Campos editables para los datos -->
+  <div style="margin-top: 20px;">
+    <h3>Editar Datos:</h3>
+    <label>Nombre Estudiante: <input [(ngModel)]="templateData.nombreEstudiante" (input)="updatePreview()" /></label><br>
+    <label>Cédula: <input [(ngModel)]="templateData.cedula" (input)="updatePreview()" /></label><br>
+    <label>Malla: <input [(ngModel)]="templateData.malla" (input)="updatePreview()" /></label><br>
+    <label>Ciclo: <input [(ngModel)]="templateData.ciclo" (input)="updatePreview()" /></label><br>
+    <label>Motivo Rechazo: <input [(ngModel)]="templateData.motivoRechazo" (input)="updatePreview()" /></label><br>
+    <label>Nombre Documento: <input [(ngModel)]="templateData.nombreDocumento" (input)="updatePreview()" /></label><br>
+    <label>Nombre Materia: <input [(ngModel)]="templateData.nombreMateria" (input)="updatePreview()" /></label><br>
+    <label>Nota Final: <input type="number" [(ngModel)]="templateData.notaFinal" (input)="updatePreview()" /></label><br>
+    <label>Estado: <input [(ngModel)]="templateData.estado" (input)="updatePreview()" /></label><br>
+  </div>
+
+  <!-- Vista previa del email -->
+  <div style="margin-top: 30px; border: 1px solid #ccc; padding: 20px; background-color: #f9f9f9;">
+    <h3>Asunto: {{ subject }}</h3>
+    <div [innerHTML]="body"></div>
+  </div>
+</div>
