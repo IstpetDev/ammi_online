@@ -20,14 +20,12 @@ $UrlApi   = 'http://localhost/apiAmmiOnline/'
 
 # Nunca se tocan: configuracion del servidor, datos subidos, logs y publicaciones antiguas.
 $NoTocarArchivos = @('appsettings*.json', 'web.config', 'app_offline.htm')
-# La app (estatica) si recibe su web.config desde el repositorio: lleva la reescritura de rutas de Angular.
-$NoTocarArchivosApp = @('app_offline.htm')
 $NoTocarCarpetas = @('OLD', 'Uploads', 'logs')
 
 function Copiar {
-    param([string]$Origen, [string]$Destino, [bool]$Espejo, [string[]]$ExcluirArchivos = $NoTocarArchivos)
+    param([string]$Origen, [string]$Destino, [bool]$Espejo)
     $modo = if ($Espejo) { '/MIR' } else { '/E' }   # /E no borra nada en el destino
-    robocopy $Origen $Destino $modo /XF @ExcluirArchivos /XD @NoTocarCarpetas /R:2 /W:2 /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy $Origen $Destino $modo /XF @NoTocarArchivos /XD @NoTocarCarpetas /R:2 /W:2 /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy fallo ($LASTEXITCODE): $Origen -> $Destino" }
 }
 
@@ -54,7 +52,7 @@ function Comprobar-Salud {
 function Restaurar {
     param([string]$Carpeta)
     Copiar (Join-Path $Carpeta 'api') $Api $false
-    Copiar (Join-Path $Carpeta 'app') $App $true $NoTocarArchivosApp
+    Copiar (Join-Path $Carpeta 'app') $App $true
 }
 
 function Con-Api-Fuera-De-Linea {
@@ -85,13 +83,13 @@ if (-not (Test-Path (Join-Path $prep 'app\index.html')))             { throw 'El
 # 1. Respaldo del estado actual (codigo, sin Uploads ni logs ni OLD).
 $copia = Join-Path $Respaldo $id
 Copiar $Api (Join-Path $copia 'api') $false
-Copiar $App (Join-Path $copia 'app') $false $NoTocarArchivosApp
+Copiar $App (Join-Path $copia 'app') $false
 Write-Output "Respaldo: $copia"
 
 # 2. Despliegue; si algo falla, se restaura el respaldo.
 try {
     Con-Api-Fuera-De-Linea { Copiar (Join-Path $prep 'api') $Api $false }
-    Copiar (Join-Path $prep 'app') $App $true $NoTocarArchivosApp
+    Copiar (Join-Path $prep 'app') $App $true
     Comprobar-Salud
 } catch {
     Write-Output "FALLO: $($_.Exception.Message). Restaurando $id"
