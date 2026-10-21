@@ -1,10 +1,15 @@
-﻿
+
 
 namespace AMMI_Online_API.Application.DTOs.Postulations;
 
 public record PersonaPostulacionDTO
 {
     public int IdPostulacion { get; set; }
+    public int IdPersona { get; set; }
+    public string? ObservacionesRevision { get; set; }
+    public bool? EsPostulacionRapida { get; set; }
+    public string? ObservacionesPostulante { get; set; }
+    public System.DateTime? FechaPostulacion { get; set; }
     public PersonaSimp personasimple { get; set; }
     public TipoEstadoAprobacionSimp tipoestadoaprobacion { get; set; }
     public MallaSimp malla { get; set; }
@@ -67,7 +72,7 @@ public record PersonaSimp
     public PersonaInformacionSimp pinfo { get; set; }
     public virtual PersonaDiscapacidadSimp pdiscapacidad { get; set; }
     public virtual PersonaActividadEconomicaSimp pactividadeconomica { get; set; }
-    public virtual PersonaContactoSimp pcontacto { get; set;}
+    public virtual List<PersonaContactoSimp> pcontacto { get; set;}
     public virtual PersonaDocumentosSimp pdocumentos { get; set; }
     public virtual PersonaDireccionSimp pdireccion { get; set; }
 }
@@ -105,12 +110,16 @@ public record TipoActividadEconomicaSimp
 
 public record PersonaContactoSimp
 {
+    public int? IdDatosContacto { get; set; }
+    public int? IdTipoDatoContacto { get; set; }
+    public bool? EsPrincipal { get; set; }
     public TipoContactoSimp tipocontacto { get; set; }
     public string Detalle { get; set; }
 }
 
 public record TipoContactoSimp
 {
+    public int? IdTipoDatoContacto { get; set; }
     public string Detalle { get; set; }
 }
 public record PersonaDocumentosSimp
@@ -140,7 +149,6 @@ public record PersonaInformacionSimp
 {
     public DateOnly? FechaNacimiento { get; set; }
     public EstadoCivilSimp estadocivil { get; set;}
-    public TipoSangreSimp sangre { get; set; }
     public NacionalidadSimp nacionalidadetnica { get; set; }
 }
 public record EstadoCivilSimp
@@ -156,10 +164,6 @@ public record NacionalidadSimp
 public record EtniaSimp
 {
     public string Nombre { get; set; }
-}
-public record TipoSangreSimp
-{
-    public string Detalle { get; set; }
 }
 
 public record AdjuntoSimp

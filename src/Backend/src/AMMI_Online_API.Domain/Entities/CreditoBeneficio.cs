@@ -19,6 +19,8 @@ public partial class CreditoBeneficio
 
     public DateTime FechaAplicacion { get; set; }
 
+    public bool? Activo { get; set; }
+
     public virtual Beneficio IdBeneficioNavigation { get; set; }
 
     public virtual Credito IdCreditoNavigation { get; set; }

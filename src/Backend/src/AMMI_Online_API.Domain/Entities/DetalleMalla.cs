@@ -17,7 +17,15 @@ public partial class DetalleMalla
 
     public int IdAreaCompetencia { get; set; }
 
-    public virtual ICollection<ContenidoMalla> ContenidoMalla { get; set; } = new List<ContenidoMalla>();
+    public DateOnly? FechaInicio { get; set; }
+
+    public DateOnly? FechaFin { get; set; }
+
+    public int? Modulo { get; set; }
+
+    public int? DuracionHoras { get; set; }
+
+    public int? DiasGracia { get; set; }
 
     public virtual ICollection<DetalleMatricula> DetalleMatricula { get; set; } = new List<DetalleMatricula>();
 

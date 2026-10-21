@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Catalogs;
 using AMMI_Online_API.Application.Features.Catalogs.Commands;
 using AMMI_Online_API.Application.Features.Catalogs.Queries;
@@ -19,16 +19,16 @@ public class GetParaleloHandler : IRequestHandler<GetParaleloQuery, Response<IEn
     {
         var paralelos = await _repository.FindAsync(
             request.IdParalelo,
-            request.NombreParalelo,
-            request.CupoMaximo,
+            request.Detalle,
+            request.Orden,
             cancellationToken);
         if (!paralelos.Any())
             return Response<IEnumerable<ParaleloDTO>>.Failure("No se encontraron resultados");
         var result = paralelos.Select(n => new ParaleloDTO
         {
             IdParalelo = n.IdParalelo,
-            NombreParalelo = n.NombreParalelo,
-            CupoMaximo = n.CupoMaximo
+            Detalle = n.Detalle,
+            Orden = n.Orden
         });
         return Response<IEnumerable<ParaleloDTO>>.Success(result, "Consulta realizada correctamente");
     }
@@ -45,8 +45,8 @@ public class CreateParaleloHandler : IRequestHandler<CreateParaleloCommand, Resp
     {
         var entity = new Paralelo
         {
-            NombreParalelo = request.NombreParalelo,
-            CupoMaximo = request.CupoMaximo
+            Detalle = request.Detalle,
+            Orden = request.Orden
         };
         await _repository.AddAsync(entity, cancellationToken);
         return Response<int>.Success(entity.IdParalelo, "Paralelo creado exitosamente");
@@ -68,8 +68,8 @@ public class UpdateParaleloHandler : IRequestHandler<UpdateParaleloCommand, Resp
         var entity = new Paralelo
         {
             IdParalelo = request.IdParalelo,
-            NombreParalelo = request.NombreParalelo,
-            CupoMaximo = request.CupoMaximo
+            Detalle = request.Detalle,
+            Orden = request.Orden
         };
         await _repository.UpdateAsync(entity, cancellationToken);
         return Response<bool>.Success(true, "Paralelo actualizado exitosamente");

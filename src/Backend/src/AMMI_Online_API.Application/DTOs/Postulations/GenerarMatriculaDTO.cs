@@ -4,7 +4,7 @@ public record GenerarMatriculaDTO
 {
     public int IdPersona { get; init; }
     public int IdMalla { get; init; }
-    public int IdParalelo { get; init; } = 1;
+    public int IdMallaParalelo { get; init; } = 1;
 }
 
 public class GenerarMatriculaResultDTO
@@ -17,4 +17,10 @@ public class GenerarMatriculaResultDTO
     public int DetallesMatriculaGenerados { get; set; }
     public bool CorreoEnviado { get; set; }
     public string? MensajeUsuario { get; set; }
+}
+
+public record CambiarParaleloResultDTO
+{
+    public bool NotasBorradas { get; init; }
+    public string? Advertencia { get; init; }
 }

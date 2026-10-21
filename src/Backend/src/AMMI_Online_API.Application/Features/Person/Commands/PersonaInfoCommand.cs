@@ -7,15 +7,13 @@ public record CreatePersonaInfoCommand(
     int IdPersona,
     DateOnly FechaNacimiento,
     int IdEstadoCivil,
-    int? IdNacionalidadEtnica,
-    int? IdTipoSangre
+    int? IdNacionalidadEtnica
 ) : IRequest<Response<int>>;
 public record UpdatePersonaInfoCommand(
     int IdPersona,
     DateOnly FechaNacimiento,
-    int IdEstadoCivil,
-    int? IdNacionalidadEtnica,
-    int? IdTipoSangre
+    int? IdEstadoCivil,
+    int? IdNacionalidadEtnica
 ) : IRequest<Response<bool>>;
 public record DeletePersonaInfoCommand(int IdPersona) : IRequest<Response<bool>>;
 

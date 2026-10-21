@@ -15,5 +15,7 @@ public partial class Adjunto
 
     public virtual ICollection<Institucion> Institucion { get; set; } = new List<Institucion>();
 
+    public virtual ICollection<Pago> Pago { get; set; } = new List<Pago>();
+
     public virtual ICollection<PersonaDiscapacidad> PersonaDiscapacidad { get; set; } = new List<PersonaDiscapacidad>();
 }

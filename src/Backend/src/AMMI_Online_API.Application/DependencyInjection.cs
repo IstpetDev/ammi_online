@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Services;
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Application.Services.Implementations;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,9 +16,11 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IOtpService, OtpService>();
         services.AddScoped<IPlantillaEstructuraService, PlantillaEstructuraService>();
         services.AddScoped<IInfraestructuraValidationService, InfraestructuraValidationService>();
         services.AddScoped<INotasCalculoService, NotasCalculoService>();
+        services.AddScoped<IGradeDeadlineService, GradeDeadlineService>();
         return services;
     }
 }

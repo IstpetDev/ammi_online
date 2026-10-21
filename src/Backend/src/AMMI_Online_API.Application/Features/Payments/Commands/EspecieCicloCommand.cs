@@ -5,12 +5,13 @@ using MediatR;
 namespace AMMI_Online_API.Application.Features.Payments.Commands;
 
 public record CreateEspecieCicloCommand(
-    int IdCiclo,
+    int IdMalla,
     int IdEspecie,
     decimal ValorEspecie
 ) : IRequest<Response<EspecieCicloDTO>>;
 
 public record UpdateEspecieCicloValorCommand(
     int IdEspecieCiclo,
+    int IdEspecie,
     decimal ValorEspecie
 ) : IRequest<Response<EspecieCicloDTO>>;

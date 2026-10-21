@@ -72,6 +72,7 @@ public class BeneficioHandler :
         var entity = new Beneficio
         {
             Detalle = request.Beneficio.Detalle,
+            Descripcion = request.Beneficio.Descripcion,
             TipoValor = request.Beneficio.TipoValor,
             Valor = request.Beneficio.Valor,
             AplicaA = request.Beneficio.AplicaA,
@@ -83,6 +84,7 @@ public class BeneficioHandler :
         {
             IdBeneficio = created.IdBeneficio,
             Detalle = created.Detalle,
+            Descripcion = created.Descripcion,
             TipoValor = created.TipoValor,
             Valor = created.Valor,
             AplicaA = created.AplicaA,
@@ -97,6 +99,7 @@ public class BeneficioHandler :
         {
             IdBeneficio = request.Beneficio.IdBeneficio,
             Detalle = request.Beneficio.Detalle,
+            Descripcion = request.Beneficio.Descripcion,
             TipoValor = request.Beneficio.TipoValor,
             Valor = request.Beneficio.Valor,
             AplicaA = request.Beneficio.AplicaA,
@@ -108,6 +111,7 @@ public class BeneficioHandler :
         {
             IdBeneficio = updated.IdBeneficio,
             Detalle = updated.Detalle,
+            Descripcion = request.Beneficio.Descripcion,
             TipoValor = updated.TipoValor,
             Valor = updated.Valor,
             AplicaA = updated.AplicaA,

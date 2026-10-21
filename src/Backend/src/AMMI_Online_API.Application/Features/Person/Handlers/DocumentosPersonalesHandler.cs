@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Person;
 using AMMI_Online_API.Application.Features.Person.Commands;
 using AMMI_Online_API.Application.Features.Person.Queries;
@@ -41,7 +41,8 @@ public class GetDocumentosPersonalesHandler : IRequestHandler<GetByDocumentosPer
             CodigoRequisito = dp.CodigoRequisito,
             Estado = dp.Estado,
             ValorDato = dp.ValorDato,
-            Observacion = dp.Observacion
+            Observacion = dp.Observacion,
+            Path = dp.IdAdjuntoNavigation?.Path
         });
         return Response<IEnumerable<DocumentosPersonalesDTO>>.Success(result, "Consulta realizada correctamente");
     }

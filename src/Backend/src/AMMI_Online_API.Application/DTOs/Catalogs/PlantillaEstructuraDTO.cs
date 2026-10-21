@@ -14,6 +14,11 @@ public record PlantillaEstructuraDTO
     // Datos relacionados
     public string TipoNombre { get; set; } = string.Empty;
 
+    // Regla de calculo configurada para este nodo (null si no tiene)
+    public string? Formula { get; set; }
+    public decimal? NotaMinimaAprobar { get; set; }
+    public decimal? NotaMinimaRecuperar { get; set; }
+
     // Nodos hijos (para estructura de arbol)
     public List<PlantillaEstructuraDTO> Hijos { get; set; } = new();
 }

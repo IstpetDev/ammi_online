@@ -2,8 +2,10 @@ using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Infrastructure;
 using AMMI_Online_API.Application.Features.Infrastructure.Commands;
 using AMMI_Online_API.Application.Features.Infrastructure.Queries;
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Infrastructure;
+using AMMI_Online_API.Domain.Interfaces.Catalogs;
 using MediatR;
 
 namespace AMMI_Online_API.Application.Features.Infrastructure.Handlers;
@@ -15,13 +17,18 @@ public class MallaHandler :
     IRequestHandler<CreateMallaCommand, MallaDTO>,
     IRequestHandler<UpdateMallaCommand, MallaDTO>,
     IRequestHandler<DeleteMallaCommand, bool>,
-    IRequestHandler<GetMallaByTipoOfertaWithActiveCicloQuery, IEnumerable<MallaDTO>>
+    IRequestHandler<GetMallaByTipoOfertaWithActiveCicloQuery, IEnumerable<MallaDTO>>,
+    IRequestHandler<GetConfiguracionCursosQuery, IEnumerable<CursoConfigStatusDTO>>
 {
     private readonly IMallaRepository _repository;
+    private readonly IInfraestructuraValidationService _validationService;
+    private readonly ICurso _cursoRepo;
 
-    public MallaHandler(IMallaRepository repository)
+    public MallaHandler(IMallaRepository repository, IInfraestructuraValidationService validationService, ICurso cursoRepo)
     {
         _repository = repository;
+        _validationService = validationService;
+        _cursoRepo = cursoRepo;
     }
 
     private static MallaDTO MapToDTO(Malla e)
@@ -31,10 +38,9 @@ public class MallaHandler :
             IdMalla = e.IdMalla,
             Detalle = e.Detalle,
             IdCursos = e.IdCursos,
-            IdTipoOferta = e.IdTipoOferta,
             IdCiclo = e.IdCiclo,
             NombreCurso = e.IdCursosNavigation?.Detalle ?? string.Empty,
-            NombreTipoOferta = e.IdTipoOfertaNavigation?.Detalle ?? string.Empty,
+            NombreTipoOferta = e.IdCicloNavigation?.IdTipoOfertaNavigation?.Detalle ?? string.Empty,
             DetalleCiclo = e.IdCicloNavigation?.Detalle ?? string.Empty,
             OrdenCurso = e.IdCursosNavigation?.Orden,
             CicloEsActivo = e.IdCicloNavigation?.EsActivo ?? false,
@@ -42,17 +48,17 @@ public class MallaHandler :
         };
     }
 
-public async Task<PaginatedResult<MallaDTO>> Handle(GetAllMallasQuery request, CancellationToken cancellationToken)
-{
-    var totalCount = await _repository.CountAllAsync(
-        request.IdMalla, request.Detalle, request.IdCursos, request.IdTipoOferta, request.IdCiclo, cancellationToken);
+    public async Task<PaginatedResult<MallaDTO>> Handle(GetAllMallasQuery request, CancellationToken cancellationToken)
+    {
+        var totalCount = await _repository.CountAllAsync(
+            request.IdMalla, request.Detalle, request.IdCursos, request.IdCiclo, cancellationToken);
 
-    var entities = await _repository.GetAllPagedAsync(
-        request.IdMalla, request.Detalle, request.IdCursos, request.IdTipoOferta, request.IdCiclo,
-        request.PageNumber, request.PageSize, cancellationToken);
+        var entities = await _repository.GetAllPagedAsync(
+            request.IdMalla, request.Detalle, request.IdCursos, request.IdCiclo,
+            request.PageNumber, request.PageSize, cancellationToken);
 
-    return new PaginatedResult<MallaDTO>(entities.Select(MapToDTO), totalCount, request.PageNumber, request.PageSize);
-}
+        return new PaginatedResult<MallaDTO>(entities.Select(MapToDTO), totalCount, request.PageNumber, request.PageSize);
+    }
 
     public async Task<MallaDTO?> Handle(GetMallaByIdQuery request, CancellationToken cancellationToken)
     {
@@ -78,7 +84,6 @@ public async Task<PaginatedResult<MallaDTO>> Handle(GetAllMallasQuery request, C
         {
             Detalle = request.Malla.Detalle,
             IdCursos = request.Malla.IdCursos,
-            IdTipoOferta = request.Malla.IdTipoOferta,
             IdCiclo = request.Malla.IdCiclo,
         };
 
@@ -89,19 +94,22 @@ public async Task<PaginatedResult<MallaDTO>> Handle(GetAllMallasQuery request, C
             IdMalla = created.IdMalla,
             Detalle = created.Detalle,
             IdCursos = created.IdCursos,
-            IdTipoOferta = created.IdTipoOferta,
             IdCiclo = created.IdCiclo
         };
     }
 
     public async Task<MallaDTO> Handle(UpdateMallaCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.Malla.IdMalla, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         var entity = new Malla
         {
             IdMalla = request.Malla.IdMalla,
             Detalle = request.Malla.Detalle,
             IdCursos = request.Malla.IdCursos,
-            IdTipoOferta = request.Malla.IdTipoOferta,
             IdCiclo = request.Malla.IdCiclo,
         };
 
@@ -112,13 +120,73 @@ public async Task<PaginatedResult<MallaDTO>> Handle(GetAllMallasQuery request, C
             IdMalla = updated.IdMalla,
             Detalle = updated.Detalle,
             IdCursos = updated.IdCursos,
-            IdTipoOferta = updated.IdTipoOferta,
             IdCiclo = updated.IdCiclo
         };
     }
 
     public async Task<bool> Handle(DeleteMallaCommand request, CancellationToken cancellationToken)
     {
+        var (esValido, mensaje) = await _validationService
+            .ValidarMallaSinMatriculadosAsync(request.Id, cancellationToken);
+        if (!esValido)
+            throw new InvalidOperationException(mensaje);
+
         return await _repository.DeleteAsync(request.Id, cancellationToken);
+    }
+
+    public async Task<IEnumerable<CursoConfigStatusDTO>> Handle(GetConfiguracionCursosQuery request, CancellationToken cancellationToken)
+    {
+        var req = request.Request;
+
+        // Fetch all courses filtered by especialidad (if provided)
+        var courses = await _cursoRepo.FindAsync(null, req.IdEspecialidad, null, cancellationToken);
+
+        // Fetch all mallas for this Ciclo
+        var mallas = await _repository.GetMallasWithRelationsForConfiguracionAsync(req.IdCiclo, cancellationToken);
+        var mallasDict = mallas.ToDictionary(m => m.IdCursos);
+
+        var result = new List<CursoConfigStatusDTO>();
+        foreach (var course in courses)
+        {
+            mallasDict.TryGetValue(course.IdCursos, out var malla);
+
+            var materiasCount = malla?.DetalleMalla?.Count ?? 0;
+            var requisitosCount = malla?.MallaRequisitos?.Count ?? 0;
+            var paralelosCount = malla?.MallaParalelo?.Count ?? 0;
+            var especiesCount = malla?.EspecieCiclo?.Count ?? 0;
+
+            // Determine status
+            string estado = "sin_configurar";
+            if (malla != null)
+            {
+                if (materiasCount > 0 && requisitosCount > 0 && paralelosCount > 0 && especiesCount > 0)
+                {
+                    estado = "completo";
+                }
+                else
+                {
+                    estado = "parcial";
+                }
+            }
+
+            result.Add(new CursoConfigStatusDTO
+            {
+                IdCurso = course.IdCursos,
+                Detalle = course.Detalle,
+                IdEspecialidad = course.IdEspecialidad,
+                IdMalla = malla?.IdMalla,
+                TieneDetalleMalla = materiasCount > 0,
+                TieneRequisitos = requisitosCount > 0,
+                TieneParalelos = paralelosCount > 0,
+                TieneEspecies = especiesCount > 0,
+                Estado = estado,
+                MateriasCount = materiasCount,
+                RequisitosCount = requisitosCount,
+                ParalelosCount = paralelosCount,
+                EspeciesCount = especiesCount
+            });
+        }
+
+        return result;
     }
 }

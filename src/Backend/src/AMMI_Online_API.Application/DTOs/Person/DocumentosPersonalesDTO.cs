@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 
 namespace AMMI_Online_API.Application.DTOs.Person;
 
@@ -17,6 +17,7 @@ public record DocumentosPersonalesDTO
     public bool? Estado { get; set; }
     public bool? ValorDato { get; set; }
     public string Observacion { get; set; }
+    public string? Path { get; set; }
 }
 
 public record CreateDocumentosPersonalesDTO

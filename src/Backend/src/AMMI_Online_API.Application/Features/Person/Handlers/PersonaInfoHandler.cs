@@ -22,7 +22,6 @@ public class GetPersonaInfoHandler : IRequestHandler<GetPersonasInfoQuery, Respo
             request.FechaNacimiento,
             request.IdEstadoCivil,
             request.IdNacionalidadEtnica,
-            request.IdTipoSangre,
             cancellationToken);
         if (!personaInfos.Any())
             return Response<IEnumerable<PersonaInfoDTO>>
@@ -33,7 +32,6 @@ public class GetPersonaInfoHandler : IRequestHandler<GetPersonasInfoQuery, Respo
             FechaNacimiento = p.FechaNacimiento,
             IdEstadoCivil = p.IdEstadoCivil,
             IdNacionalidadEtnica = p.IdNacionalidadEtnica,
-            IdTipoSangre = p.IdTipoSangre
         });
         return Response<IEnumerable<PersonaInfoDTO>>
             .Success(result, "Query executed successfully.");
@@ -55,7 +53,6 @@ public class CreatePersonaInfoHandler : IRequestHandler<CreatePersonaInfoCommand
             FechaNacimiento = request.FechaNacimiento,
             IdEstadoCivil = request.IdEstadoCivil,
             IdNacionalidadEtnica = request.IdNacionalidadEtnica,
-            IdTipoSangre = request.IdTipoSangre
         };
         var createdEntity = await _repository.AddAsync(entity, cancellationToken);
         return Response<int>.Success(createdEntity.IdPersona, "Informacion Adicional de la Persona creada correctamente.");
@@ -78,9 +75,9 @@ public class UpdatePersonaInfoHandler : IRequestHandler<UpdatePersonaInfoCommand
             return Response<bool>.Failure("Informacion Adicional no encontrada");
         }
         existingEntity.FechaNacimiento = request.FechaNacimiento;
-        existingEntity.IdEstadoCivil = request.IdEstadoCivil;
+        if (request.IdEstadoCivil.HasValue)
+            existingEntity.IdEstadoCivil = request.IdEstadoCivil.Value;
         existingEntity.IdNacionalidadEtnica = request.IdNacionalidadEtnica;
-        existingEntity.IdTipoSangre = request.IdTipoSangre;
         await _repository.UpdateAsync(existingEntity, cancellationToken);
         return Response<bool>.Success(true, "Informacion Adicional de la Persona actualizada correctamente.");
     }
@@ -103,3 +100,4 @@ public class DeletePersonaInfoHandler : IRequestHandler<DeletePersonaInfoCommand
         return Response<bool>.Success(true, "Informacion Adicional de la Persona Eliminado Correctamente");
     }
 }
+

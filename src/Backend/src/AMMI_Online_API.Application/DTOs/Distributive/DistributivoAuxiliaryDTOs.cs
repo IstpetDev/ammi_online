@@ -9,8 +9,8 @@ namespace AMMI_Online_API.Application.DTOs.Distributive;
 public record DistributivoMasivoDTO
 {
     public int IdDetalleMalla { get; init; }
-    public int IdPersona { get; init; }
-    public List<int> IdsParalelos { get; init; } = new();
+    public int? IdPersona { get; init; }
+    public List<int> IdsMallaParalelos { get; init; } = new();
 }
 
 /// <summary>
@@ -51,19 +51,25 @@ public record MateriaCargaDTO
     public int IdDetalleMalla { get; init; }
     public string NombreMateria { get; init; } = string.Empty;
     public decimal Horas { get; init; }
+    public int? Modulo { get; init; }
+    public DateOnly? FechaInicio { get; init; }
+    public DateOnly? FechaFin { get; init; }
+    public int? DiasGracia { get; init; }
+    public string StatusPeriodo { get; init; } = string.Empty;
     public List<ParaleloCargaDTO> Paralelos { get; init; } = new();
 }
 
 public record ParaleloCargaDTO
 {
     public int IdDistributivo { get; init; }
+    public int IdMallaParalelo { get; init; }
     public int IdParalelo { get; init; }
     public string NombreParalelo { get; init; } = string.Empty;
     public int CantidadAlumnos { get; init; }
 }
 
 /// <summary>
-/// DTO para listar docentes disponibles (con rol PROFESOR)
+/// DTO para listar docentes disponibles (con rol PROFESOR) — resumen superficial
 /// </summary>
 public record DocenteDisponibleDTO
 {
@@ -71,4 +77,20 @@ public record DocenteDisponibleDTO
     public string NombreCompleto { get; init; } = string.Empty;
     public string Documento { get; init; } = string.Empty;
     public int AsignacionesActuales { get; init; }
+    public decimal TotalHoras { get; init; }
+    public int TotalParalelos { get; init; }
+    public int TotalAlumnos { get; init; }
+}
+
+/// <summary>
+/// DTO para un alumno dentro del detalle de un distributivo
+/// </summary>
+public record AlumnoDistributivoDTO
+{
+    public int IdMatricula { get; init; }
+    public int IdUsuario { get; init; }
+    public string NombreCompleto { get; init; } = string.Empty;
+    public string Documento { get; init; } = string.Empty;
+    public int IdEstadoMatricula { get; init; }
+    public string DetalleEstado { get; init; } = string.Empty;
 }

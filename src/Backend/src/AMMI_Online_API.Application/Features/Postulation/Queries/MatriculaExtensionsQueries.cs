@@ -4,6 +4,6 @@ using MediatR;
 
 namespace AMMI_Online_API.Application.Features.Postulation.Queries;
 
-public record GetMatriculasByParaleloQuery(int IdParalelo) : IRequest<Response<IEnumerable<MatriculaDTO>>>;
+public record GetMatriculasByMallaParaleloQuery(int IdMallaParalelo) : IRequest<Response<IEnumerable<MatriculaDTO>>>;
 public record GetMatriculasByAlumnoQuery(int IdUsuario) : IRequest<Response<IEnumerable<MatriculaDTO>>>;
 public record GetHistorialAcademicoQuery(int IdUsuario) : IRequest<Response<HistorialAcademicoDTO>>;

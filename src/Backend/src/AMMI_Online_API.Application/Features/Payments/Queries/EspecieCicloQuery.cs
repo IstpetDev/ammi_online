@@ -6,6 +6,6 @@ namespace AMMI_Online_API.Application.Features.Payments.Queries;
 
 public record GetAllEspecieCicloQuery() : IRequest<Response<IEnumerable<EspecieCicloDTO>>>;
 
-public record GetEspecieCicloByCicloQuery(int IdCiclo) : IRequest<Response<IEnumerable<EspecieCicloDTO>>>;
+public record GetEspecieCicloByMallaQuery(int IdMalla) : IRequest<Response<IEnumerable<EspecieCicloDTO>>>;
 
 public record GetEspecieCicloByIdQuery(int IdEspecieCiclo) : IRequest<Response<EspecieCicloDTO>>;

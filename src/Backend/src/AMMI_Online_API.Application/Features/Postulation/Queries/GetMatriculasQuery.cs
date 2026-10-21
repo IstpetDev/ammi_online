@@ -4,6 +4,6 @@ using MediatR;
 
 namespace AMMI_Online_API.Application.Features.Postulation.Queries;
 
-public record GetMatriculasQuery(int PageNumber = 1, int PageSize = 10) : IRequest<Response<PaginatedResult<MatriculaDTO>>>;
+public record GetMatriculasQuery(int PageNumber = 1, int PageSize = 10, int? IdCiclo = null, int? IdOfertaAcademica = null, string? DocumentoNombre = null, int? IdMalla = null) : IRequest<Response<PaginatedResult<MatriculaDTO>>>;
 public record GetMatriculasDatosFaltantesPersonaQuery : IRequest<Response<IEnumerable<MatriculaFaltantesDTO>>>;
 public record GetMatriculasByMallaQuery(int IdMalla, int PageNumber = 1, int PageSize = 10) : IRequest<Response<PaginatedResult<MatriculaDTO>>>;

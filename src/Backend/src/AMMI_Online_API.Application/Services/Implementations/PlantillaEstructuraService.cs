@@ -19,18 +19,25 @@ public class PlantillaEstructuraService : IPlantillaEstructuraService
     public async Task<List<PlantillaEstructuraDTO>> GetEstructuraArbolAsync(int idPlantillaEvaluacion, CancellationToken cancellationToken)
     {
         var flatList = await _estructuraRepo.GetByPlantillaIdAsync(idPlantillaEvaluacion, cancellationToken);
-        var dtos = flatList.Select(e => new PlantillaEstructuraDTO
+        var dtos = flatList.Select(e =>
         {
-            IdPlantillaEstructura = e.IdPlantillaEstructura,
-            IdPlantillaEvaluacion = e.IdPlantillaEvaluacion,
-            IdNodoPadre = e.IdNodoPadre,
-            IdNodoHermano = e.IdNodoHermano,
-            NodoNombre = e.NodoNombre,
-            Peso = e.Peso,
-            IdTipoPlantillaEstructura = e.IdTipoPlantillaEstrucutra,
-            Orden = e.Orden,
-            TipoNombre = e.IdTipoPlantillaEstrucutraNavigation?.Detalle ?? "",
-            Hijos = new List<PlantillaEstructuraDTO>()
+            var regla = e.ReglasCalculo?.FirstOrDefault();
+            return new PlantillaEstructuraDTO
+            {
+                IdPlantillaEstructura = e.IdPlantillaEstructura,
+                IdPlantillaEvaluacion = e.IdPlantillaEvaluacion,
+                IdNodoPadre = e.IdNodoPadre,
+                IdNodoHermano = e.IdNodoHermano,
+                NodoNombre = e.NodoNombre,
+                Peso = e.Peso,
+                IdTipoPlantillaEstructura = e.IdTipoPlantillaEstrucutra,
+                Orden = e.Orden,
+                TipoNombre = e.IdTipoPlantillaEstrucutraNavigation?.Detalle ?? "",
+                Formula = regla?.IdTipoReglaCalculoNavigation?.Detalle,
+                NotaMinimaAprobar = regla?.NotaMinimaAprobar,
+                NotaMinimaRecuperar = regla?.NotaMinimaRecuperar,
+                Hijos = new List<PlantillaEstructuraDTO>()
+            };
         }).ToList();
 
         return BuildTree(dtos);

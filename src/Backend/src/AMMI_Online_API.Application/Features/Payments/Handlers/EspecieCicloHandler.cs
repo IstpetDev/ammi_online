@@ -2,6 +2,7 @@ using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Payments;
 using AMMI_Online_API.Application.Features.Payments.Commands;
 using AMMI_Online_API.Application.Features.Payments.Queries;
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Payments;
 using MediatR;
@@ -32,42 +33,44 @@ public class GetAllEspecieCicloHandler
     private static EspecieCicloDTO MapToDTO(EspecieCiclo ec) => new()
     {
         IdEspecieCiclo = ec.IdEspecieCiclo,
-        IdCiclo = ec.IdCiclo,
+        IdMalla = ec.IdMalla,
         IdEspecie = ec.IdEspecie,
         ValorEspecie = ec.ValorEspecie,
-        DetalleCiclo = ec.IdCicloNavigation?.Detalle ?? string.Empty,
+        DetalleMalla = ec.IdMallaNavigation?.Detalle ?? string.Empty,
         DetalleEspecie = ec.IdEspecieNavigation?.Detalle ?? string.Empty,
-        EsDiferible = ec.IdEspecieNavigation?.EsDiferible ?? false,
-        CicloActivo = ec.IdCicloNavigation?.EsActivo ?? false
+        EsPension = ec.IdEspecieNavigation?.EsPension ?? false,
+        EsMatricula = ec.IdEspecieNavigation?.EsMatricula ?? false,
+        CicloActivo = ec.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
     };
 }
 
-public class GetEspecieCicloByCicloHandler
-    : IRequestHandler<GetEspecieCicloByCicloQuery, Response<IEnumerable<EspecieCicloDTO>>>
+public class GetEspecieCicloByMallaHandler
+    : IRequestHandler<GetEspecieCicloByMallaQuery, Response<IEnumerable<EspecieCicloDTO>>>
 {
     private readonly IEspecieCicloRepository _repository;
 
-    public GetEspecieCicloByCicloHandler(IEspecieCicloRepository repository)
+    public GetEspecieCicloByMallaHandler(IEspecieCicloRepository repository)
     {
         _repository = repository;
     }
 
     public async Task<Response<IEnumerable<EspecieCicloDTO>>> Handle(
-        GetEspecieCicloByCicloQuery request,
+        GetEspecieCicloByMallaQuery request,
         CancellationToken cancellationToken)
     {
-        var especiesCiclo = await _repository.GetByCicloAsync(request.IdCiclo, cancellationToken);
+        var especiesCiclo = await _repository.GetByMallaAsync(request.IdMalla, cancellationToken);
 
         var dtos = especiesCiclo.Select(ec => new EspecieCicloDTO
         {
             IdEspecieCiclo = ec.IdEspecieCiclo,
-            IdCiclo = ec.IdCiclo,
+            IdMalla = ec.IdMalla,
             IdEspecie = ec.IdEspecie,
             ValorEspecie = ec.ValorEspecie,
-            DetalleCiclo = ec.IdCicloNavigation?.Detalle ?? string.Empty,
+            DetalleMalla = ec.IdMallaNavigation?.Detalle ?? string.Empty,
             DetalleEspecie = ec.IdEspecieNavigation?.Detalle ?? string.Empty,
-            EsDiferible = ec.IdEspecieNavigation?.EsDiferible ?? false,
-            CicloActivo = ec.IdCicloNavigation?.EsActivo ?? false
+            EsPension = ec.IdEspecieNavigation?.EsPension ?? false,
+            EsMatricula = ec.IdEspecieNavigation?.EsMatricula ?? false,
+            CicloActivo = ec.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
         });
 
         return new Response<IEnumerable<EspecieCicloDTO>>(dtos);
@@ -98,13 +101,14 @@ public class GetEspecieCicloByIdHandler
         var dto = new EspecieCicloDTO
         {
             IdEspecieCiclo = especieCiclo.IdEspecieCiclo,
-            IdCiclo = especieCiclo.IdCiclo,
+            IdMalla = especieCiclo.IdMalla,
             IdEspecie = especieCiclo.IdEspecie,
             ValorEspecie = especieCiclo.ValorEspecie,
-            DetalleCiclo = especieCiclo.IdCicloNavigation?.Detalle ?? string.Empty,
+            DetalleMalla = especieCiclo.IdMallaNavigation?.Detalle ?? string.Empty,
             DetalleEspecie = especieCiclo.IdEspecieNavigation?.Detalle ?? string.Empty,
-            EsDiferible = especieCiclo.IdEspecieNavigation?.EsDiferible ?? false,
-            CicloActivo = especieCiclo.IdCicloNavigation?.EsActivo ?? false
+            EsPension = especieCiclo.IdEspecieNavigation?.EsPension ?? false,
+            EsMatricula = especieCiclo.IdEspecieNavigation?.EsMatricula ?? false,
+            CicloActivo = especieCiclo.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
         };
 
         return new Response<EspecieCicloDTO>(dto);
@@ -115,34 +119,76 @@ public class CreateEspecieCicloHandler
     : IRequestHandler<CreateEspecieCicloCommand, Response<EspecieCicloDTO>>
 {
     private readonly IEspecieCicloRepository _repository;
+    private readonly IInfraestructuraValidationService _validationService;
+    private readonly Domain.Interfaces.Infrastructure.IMallaRepository _mallaRepository;
 
-    public CreateEspecieCicloHandler(IEspecieCicloRepository repository)
+    public CreateEspecieCicloHandler(
+        IEspecieCicloRepository repository,
+        IInfraestructuraValidationService validationService,
+        Domain.Interfaces.Infrastructure.IMallaRepository mallaRepository)
     {
         _repository = repository;
+        _validationService = validationService;
+        _mallaRepository = mallaRepository;
     }
 
     public async Task<Response<EspecieCicloDTO>> Handle(
         CreateEspecieCicloCommand request,
         CancellationToken cancellationToken)
     {
-        // Validar que el ciclo sea activo
-        var cicloActivo = await _repository.EsCicloActivoAsync(request.IdCiclo, cancellationToken);
-        if (!cicloActivo)
+        // Validar que la malla tenga ciclo activo
+        var mallaActiva = await _repository.EsMallaConCicloActivoAsync(request.IdMalla, cancellationToken);
+        if (!mallaActiva)
         {
             return Response<EspecieCicloDTO>.Failure(
-                "Solo se puede crear EspecieCiclo en ciclos activos");
+                "Solo se puede crear EspecieCiclo en mallas cuyo ciclo esté activo");
         }
 
-        // Validar que no exista la misma especie en el ciclo
-        var existeEspecie = await _repository.ExisteEspecieEnCicloAsync(
-            request.IdCiclo,
-            request.IdEspecie,
-            cancellationToken);
-
-        if (existeEspecie)
+        // Si ya existe la misma especie en la malla, procedemos a actualizar su valor
+        var existentes = await _repository.GetByMallaAsync(request.IdMalla, cancellationToken);
+        var existente = existentes.FirstOrDefault(ec => ec.IdEspecie == request.IdEspecie);
+        if (existente != null)
         {
-            return Response<EspecieCicloDTO>.Failure(
-                "Ya existe esta especie en el ciclo seleccionado");
+            // Validar valor positivo
+            if (request.ValorEspecie <= 0)
+            {
+                return Response<EspecieCicloDTO>.Failure(
+                    "El valor de la especie debe ser mayor a 0");
+            }
+
+            // Obtener malla para acceder al ciclo y validar matriculados
+            var malla = await _mallaRepository.GetByIdAsync(request.IdMalla, cancellationToken);
+            if (malla == null)
+            {
+                return Response<EspecieCicloDTO>.Failure("La malla asociada no existe");
+            }
+
+            // Bloquear si el ciclo ya tiene alumnos matriculados
+            var (esValido, mensajeValidacion) = await _validationService
+                .ValidarCicloSinMatriculadosAsync(malla.IdCiclo, cancellationToken);
+            if (!esValido)
+                return Response<EspecieCicloDTO>.Failure(mensajeValidacion);
+
+            var updated = await _repository.UpdateValorAsync(
+                existente.IdEspecieCiclo,
+                request.IdEspecie,
+                request.ValorEspecie,
+                cancellationToken);
+
+            var dtoUpdated = new EspecieCicloDTO
+            {
+                IdEspecieCiclo = updated.IdEspecieCiclo,
+                IdMalla = updated.IdMalla,
+                IdEspecie = updated.IdEspecie,
+                ValorEspecie = updated.ValorEspecie,
+                DetalleMalla = updated.IdMallaNavigation?.Detalle ?? string.Empty,
+                DetalleEspecie = updated.IdEspecieNavigation?.Detalle ?? string.Empty,
+                EsPension = updated.IdEspecieNavigation?.EsPension ?? false,
+                EsMatricula = updated.IdEspecieNavigation?.EsMatricula ?? false,
+                CicloActivo = updated.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
+            };
+
+            return Response<EspecieCicloDTO>.Success(dtoUpdated, "EspecieCiclo actualizado correctamente");
         }
 
         // Validar valor positivo
@@ -154,7 +200,7 @@ public class CreateEspecieCicloHandler
 
         var especieCiclo = new EspecieCiclo
         {
-            IdCiclo = request.IdCiclo,
+            IdMalla = request.IdMalla,
             IdEspecie = request.IdEspecie,
             ValorEspecie = request.ValorEspecie
         };
@@ -164,13 +210,14 @@ public class CreateEspecieCicloHandler
         var dto = new EspecieCicloDTO
         {
             IdEspecieCiclo = created.IdEspecieCiclo,
-            IdCiclo = created.IdCiclo,
+            IdMalla = created.IdMalla,
             IdEspecie = created.IdEspecie,
             ValorEspecie = created.ValorEspecie,
-            DetalleCiclo = created.IdCicloNavigation?.Detalle ?? string.Empty,
+            DetalleMalla = created.IdMallaNavigation?.Detalle ?? string.Empty,
             DetalleEspecie = created.IdEspecieNavigation?.Detalle ?? string.Empty,
-            EsDiferible = created.IdEspecieNavigation?.EsDiferible ?? false,
-            CicloActivo = created.IdCicloNavigation?.EsActivo ?? false
+            EsPension = created.IdEspecieNavigation?.EsPension ?? false,
+            EsMatricula = created.IdEspecieNavigation?.EsMatricula ?? false,
+            CicloActivo = created.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
         };
 
         return Response<EspecieCicloDTO>.Success(dto, "EspecieCiclo creado correctamente");
@@ -181,10 +228,17 @@ public class UpdateEspecieCicloValorHandler
     : IRequestHandler<UpdateEspecieCicloValorCommand, Response<EspecieCicloDTO>>
 {
     private readonly IEspecieCicloRepository _repository;
+    private readonly IInfraestructuraValidationService _validationService;
+    private readonly Domain.Interfaces.Infrastructure.IMallaRepository _mallaRepository;
 
-    public UpdateEspecieCicloValorHandler(IEspecieCicloRepository repository)
+    public UpdateEspecieCicloValorHandler(
+        IEspecieCicloRepository repository,
+        IInfraestructuraValidationService validationService,
+        Domain.Interfaces.Infrastructure.IMallaRepository mallaRepository)
     {
         _repository = repository;
+        _validationService = validationService;
+        _mallaRepository = mallaRepository;
     }
 
     public async Task<Response<EspecieCicloDTO>> Handle(
@@ -198,6 +252,34 @@ public class UpdateEspecieCicloValorHandler
             return Response<EspecieCicloDTO>.Failure("EspecieCiclo no encontrado");
         }
 
+        // Obtener malla para acceder al ciclo y validar matriculados
+        var malla = await _mallaRepository.GetByIdAsync(existing.IdMalla, cancellationToken);
+        if (malla == null)
+        {
+            return Response<EspecieCicloDTO>.Failure("La malla asociada no existe");
+        }
+
+        // Bloquear si el ciclo ya tiene alumnos matriculados
+        var (esValido, mensajeValidacion) = await _validationService
+            .ValidarCicloSinMatriculadosAsync(malla.IdCiclo, cancellationToken);
+        if (!esValido)
+            return Response<EspecieCicloDTO>.Failure(mensajeValidacion);
+
+        // Validar que no exista otra especie igual en la misma malla (si cambió la especie)
+        if (request.IdEspecie != existing.IdEspecie)
+        {
+            var existeEspecie = await _repository.ExisteEspecieEnMallaAsync(
+                existing.IdMalla,
+                request.IdEspecie,
+                cancellationToken);
+
+            if (existeEspecie)
+            {
+                return Response<EspecieCicloDTO>.Failure(
+                    "Ya existe esta especie en la malla seleccionada");
+            }
+        }
+
         // Validar valor positivo
         if (request.ValorEspecie <= 0)
         {
@@ -207,21 +289,23 @@ public class UpdateEspecieCicloValorHandler
 
         var updated = await _repository.UpdateValorAsync(
             request.IdEspecieCiclo,
+            request.IdEspecie,
             request.ValorEspecie,
             cancellationToken);
 
         var dto = new EspecieCicloDTO
         {
             IdEspecieCiclo = updated.IdEspecieCiclo,
-            IdCiclo = updated.IdCiclo,
+            IdMalla = updated.IdMalla,
             IdEspecie = updated.IdEspecie,
             ValorEspecie = updated.ValorEspecie,
-            DetalleCiclo = updated.IdCicloNavigation?.Detalle ?? string.Empty,
+            DetalleMalla = updated.IdMallaNavigation?.Detalle ?? string.Empty,
             DetalleEspecie = updated.IdEspecieNavigation?.Detalle ?? string.Empty,
-            EsDiferible = updated.IdEspecieNavigation?.EsDiferible ?? false,
-            CicloActivo = updated.IdCicloNavigation?.EsActivo ?? false
+            EsPension = updated.IdEspecieNavigation?.EsPension ?? false,
+            EsMatricula = updated.IdEspecieNavigation?.EsMatricula ?? false,
+            CicloActivo = updated.IdMallaNavigation?.IdCicloNavigation?.EsActivo ?? false
         };
 
-        return Response<EspecieCicloDTO>.Success(dto, "Valor actualizado correctamente");
+        return Response<EspecieCicloDTO>.Success(dto, "EspecieCiclo actualizado correctamente");
     }
 }

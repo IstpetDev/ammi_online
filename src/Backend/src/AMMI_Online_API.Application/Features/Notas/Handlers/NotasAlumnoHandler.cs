@@ -23,10 +23,11 @@ public class NotasAlumnoHandler :
     IRequestHandler<GetNotasByMatriculaQuery, Response<IEnumerable<NotasAlumnoDTO>>>,
     IRequestHandler<GetNotasByMatriculaAndPlantillaQuery, Response<IEnumerable<NotasAlumnoDTO>>>,
     IRequestHandler<GetBoletinQuery, Response<BoletinAlumnoDTO>>,
-    IRequestHandler<GetNotasByParaleloAndEstructuraQuery, Response<IEnumerable<NotaAlumnoParaleloDTO>>>,
-    IRequestHandler<GetResumenNotasParaleloQuery, Response<ResumenNotasParaleloDTO>>,
+    IRequestHandler<GetNotasByMallaParaleloAndEstructuraQuery, Response<IEnumerable<NotaAlumnoParaleloDTO>>>,
     IRequestHandler<GetNotasByDetalleMatriculaQuery, Response<IEnumerable<NotasAlumnoDTO>>>,
-    IRequestHandler<GetNotasByMatriculaYMateriaQuery, Response<IEnumerable<NotasAlumnoDTO>>>
+    IRequestHandler<GetNotasByMatriculaYMateriaQuery, Response<IEnumerable<NotasAlumnoDTO>>>,
+    IRequestHandler<GetNotasByParaleloQuery, Response<IEnumerable<NotasAlumnoDTO>>>,
+    IRequestHandler<GetActasParaleloQuery, Response<IEnumerable<ActaAlumnoDTO>>>
 {
     private readonly INotasAlumnoRepository _repository;
     private readonly INotasCalculoService _calculoService;
@@ -36,6 +37,8 @@ public class NotasAlumnoHandler :
     private readonly IDetalleMallaRepository _detalleMallaRepo;
     private readonly IDistributivoRepository _distributivoRepo;
     private readonly IReglasCalculoRepository _reglasRepo;
+    private readonly IMallaParaleloRepository _mallaParaleloRepo;
+    private readonly IGradeDeadlineService _deadlineService;
 
     public NotasAlumnoHandler(
         INotasAlumnoRepository repository,
@@ -45,7 +48,9 @@ public class NotasAlumnoHandler :
         IParalelo paraleloRepo,
         IDetalleMallaRepository detalleMallaRepo,
         IDistributivoRepository distributivoRepo,
-        IReglasCalculoRepository reglasRepo)
+        IReglasCalculoRepository reglasRepo,
+        IMallaParaleloRepository mallaParaleloRepo,
+        IGradeDeadlineService deadlineService)
     {
         _repository = repository;
         _calculoService = calculoService;
@@ -55,15 +60,23 @@ public class NotasAlumnoHandler :
         _detalleMallaRepo = detalleMallaRepo;
         _distributivoRepo = distributivoRepo;
         _reglasRepo = reglasRepo;
+        _mallaParaleloRepo = mallaParaleloRepo;
+        _deadlineService = deadlineService;
     }
 
-    public async Task<Response<IEnumerable<NotaAlumnoParaleloDTO>>> Handle(GetNotasByParaleloAndEstructuraQuery request, CancellationToken ct)
+    private async Task<DetalleMalla?> GetDetalleMallaFromNota(int idDetalleMatricula, CancellationToken ct)
+    {
+        var detalleMatricula = await _matriculaRepo.GetDetalleMatriculaByIdAsync(idDetalleMatricula, ct);
+        return detalleMatricula?.IdDetalleMallaNavigation;
+    }
+
+    public async Task<Response<IEnumerable<NotaAlumnoParaleloDTO>>> Handle(GetNotasByMallaParaleloAndEstructuraQuery request, CancellationToken ct)
     {
         // 1. Get all students in parallel
-        var matriculas = await _matriculaRepo.GetByParaleloAsync(request.IdParalelo, ct);
+        var matriculas = await _matriculaRepo.GetByMallaParaleloAsync(request.IdMallaParalelo, ct);
         
         // 2. Get existing notes
-        var notas = await _repository.GetByParaleloAndEstructuraAsync(request.IdParalelo, request.IdPlantillaEstructura, ct);
+        var notas = await _repository.GetByMallaParaleloAndEstructuraAsync(request.IdMallaParalelo, request.IdPlantillaEstructura, ct);
         
         // 3. Merge
         var result = matriculas.Select(m => {
@@ -73,7 +86,9 @@ public class NotasAlumnoHandler :
             return new NotaAlumnoParaleloDTO
             {
                 IdMatricula = m.IdMatricula,
-                NombreAlumno = persona != null ? $"{persona.PrimerApellido} {persona.PrimerNombre}" : "Sin Nombre",
+                NombreAlumno = persona != null
+                    ? string.Join(" ", new[] { persona.PrimerApellido, persona.SegundoApellido, persona.PrimerNombre, persona.SegundoNombre }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim()
+                    : "Sin Nombre",
                 NumeroDocumento = persona?.Documento ?? string.Empty,
                 ValorNota = nota?.ValorNota,
                 Observacion = nota?.Observacion,
@@ -82,112 +97,6 @@ public class NotasAlumnoHandler :
         }).OrderBy(x => x.NombreAlumno);
 
         return Response<IEnumerable<NotaAlumnoParaleloDTO>>.Success(result, "Notas del paralelo listadas");
-    }
-
-    public async Task<Response<ResumenNotasParaleloDTO>> Handle(GetResumenNotasParaleloQuery request, CancellationToken ct)
-    {
-        // 1. Obtener información del paralelo
-        var paralelo = await _paraleloRepo.GetByIdAsync(request.IdParalelo, ct);
-        if (paralelo == null)
-            return Response<ResumenNotasParaleloDTO>.Failure("Paralelo no encontrado");
-
-        // 2. Obtener información del detalle de malla (materia)
-        var detalleMalla = await _detalleMallaRepo.GetByIdAsync(request.IdDetalleMalla, ct);
-        if (detalleMalla == null)
-            return Response<ResumenNotasParaleloDTO>.Failure("Detalle de malla no encontrado");
-
-        var nombreMateria = detalleMalla.IdMateriaNavigation?.Detalle ?? "Sin nombre";
-
-        // 3. Obtener el docente del distributivo (paralelo + detalle malla)
-        var distributivos = await _distributivoRepo.GetByDetalleMallaAsync(request.IdDetalleMalla, ct);
-        var distributivo = distributivos.FirstOrDefault(d => d.IdParalelo == request.IdParalelo);
-        var nombreDocente = "Sin asignar";
-        if (distributivo?.IdPersonaNavigation?.IdPersonaNavigation != null)
-        {
-            var persona = distributivo.IdPersonaNavigation.IdPersonaNavigation;
-            nombreDocente = $"{persona.PrimerApellido} {persona.PrimerNombre}";
-        }
-
-        // 4. Obtener todas las matrículas del paralelo
-        var matriculas = await _matriculaRepo.GetByParaleloAsync(request.IdParalelo, ct);
-        var totalAlumnos = matriculas.Count();
-
-        // 5. Obtener el nodo raíz de la plantilla de evaluación para calcular nota final
-        var idPlantillaEvaluacion = detalleMalla.IdPlantillaEvaluacion;
-        var estructuras = await _plantillaRepo.GetByPlantillaIdAsync(idPlantillaEvaluacion, ct);
-        var nodoRaiz = estructuras.FirstOrDefault(e => e.IdNodoPadre == null);
-
-        if (nodoRaiz == null)
-        {
-            return Response<ResumenNotasParaleloDTO>.Success(new ResumenNotasParaleloDTO
-            {
-                IdParalelo = request.IdParalelo,
-                NombreParalelo = paralelo.NombreParalelo,
-                IdDetalleMalla = request.IdDetalleMalla,
-                NombreMateria = nombreMateria,
-                NombreDocente = nombreDocente,
-                TotalAlumnos = totalAlumnos,
-                AlumnosConNotas = 0,
-                AlumnosAprobados = 0,
-                AlumnosReprobados = 0,
-                AlumnosPendientes = totalAlumnos,
-                PromedioGeneral = 0,
-                NotaMaxima = 0,
-                NotaMinima = 0
-            }, "Resumen generado (sin estructura de evaluación)");
-        }
-
-        // 6. Obtener las notas finales (nodo raíz) PARA ESTA MATERIA (filtrando por DetalleMalla indirectamente)
-        // La implementacion antigua GetByPlantillaEstructuraAsync traia TODAS las notas de ese nodo estructura.
-        // Pero ahora IdPlantillaEstructura pertenece a NotasAlumno, que tiene IdDetalleMatricula, que tiene IdDetalleMalla.
-        // Como IdPlantillaEstructura pertenece a un IdPlantillaEvaluacion especifico, y IdPlantillaEvaluacion esta ligado a DetalleMalla,
-        // al filtrar por IdPlantillaEstructura YA estamos filtrando por "Tipo de Evaluacion".
-        // SIN EMBARGO, si mismo IdPlantillaEvaluacion se usa en VARIAS materias (reuso de plantilla),
-        // NotasAlumno tendria notas de multiples materias para el mismo alumno.
-        // AQUI ESTA EL ERROR DE DISEÑO ORIGINAL QUE ESTAMOS CORRIGIENDO.
-        
-        // Usamos GetByParaleloAndDetalleMallaAsync que ya filtra correctamente
-        var notasMateriaParalelo = await _repository.GetByParaleloAndDetalleMallaAsync(request.IdParalelo, request.IdDetalleMalla, ct);
-        
-        // Filtramos solo las que corresponden al nodo raiz
-        var notasRaiz = notasMateriaParalelo.Where(n => n.IdPlantillaEstructura == nodoRaiz.IdPlantillaEstructura).ToList();
-
-        var alumnosConNotas = notasRaiz.Count; // Assuming distinct per student
-        var alumnosPendientes = totalAlumnos - alumnosConNotas;
-
-        var reglaRaiz = nodoRaiz != null
-            ? await _reglasRepo.GetByPlantillaEstructuraAsync(nodoRaiz.IdPlantillaEstructura, ct)
-            : null;
-        var notaAprobatoria = reglaRaiz?.NotaMinimaAprobar ?? 7.0m;
-        var alumnosAprobados = notasRaiz.Count(n => n.ValorNota >= notaAprobatoria);
-        var alumnosReprobados = notasRaiz.Count(n => n.ValorNota < notaAprobatoria);
-
-        var promedioGeneral = notasRaiz.Any()
-            ? Math.Round(notasRaiz.Average(n => n.ValorNota ?? 0), 2)
-            : 0m;
-        var notaMaxima = notasRaiz.Any()
-            ? notasRaiz.Max(n => n.ValorNota ?? 0)
-            : 0m;
-        var notaMinima = notasRaiz.Any()
-            ? notasRaiz.Min(n => n.ValorNota ?? 0)
-            : 0m;
-
-        return Response<ResumenNotasParaleloDTO>.Success(new ResumenNotasParaleloDTO
-        {
-            IdParalelo = request.IdParalelo,
-            NombreParalelo = paralelo.NombreParalelo,
-            IdDetalleMalla = request.IdDetalleMalla,
-            NombreMateria = nombreMateria,
-            NombreDocente = nombreDocente,
-            TotalAlumnos = totalAlumnos,
-            AlumnosConNotas = alumnosConNotas,
-            AlumnosAprobados = alumnosAprobados,
-            AlumnosReprobados = alumnosReprobados,
-            AlumnosPendientes = alumnosPendientes,
-            PromedioGeneral = promedioGeneral,
-            NotaMaxima = notaMaxima,
-            NotaMinima = notaMinima
-        }, "Resumen generado exitosamente");
     }
 
     public async Task<Response<int>> Handle(CreateNotaAlumnoCommand request, CancellationToken ct)
@@ -200,6 +109,10 @@ public class NotasAlumnoHandler :
         var hijos = await _plantillaRepo.GetHijosAsync(request.IdPlantillaEstructura, ct);
         if (hijos.Any())
             return Response<int>.Failure("No se puede asignar nota a un componente calculado (debe ser hoja)");
+
+        var dm = await GetDetalleMallaFromNota(request.IdDetalleMatricula, ct);
+        if (!_deadlineService.CanSubmitGrades(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia))
+            return Response<int>.Failure(_deadlineService.GetStatusMessage(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia));
 
         if (await _repository.ExisteNotaAsync(request.IdDetalleMatricula, request.IdPlantillaEstructura, ct))
         {
@@ -231,6 +144,10 @@ public class NotasAlumnoHandler :
         var entity = await _repository.GetByIdAsync(request.IdNotasAlumno, ct);
         if (entity == null) return Response<bool>.Failure("Nota no encontrada");
 
+        var dm = await GetDetalleMallaFromNota(entity.IdDetaleMatricula, ct);
+        if (!_deadlineService.CanSubmitGrades(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia))
+            return Response<bool>.Failure(_deadlineService.GetStatusMessage(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia));
+
         entity.ValorNota = request.ValorNota;
         entity.Observacion = request.Observacion;
 
@@ -246,6 +163,10 @@ public class NotasAlumnoHandler :
     {
         var entity = await _repository.GetByIdAsync(request.IdNotasAlumno, ct);
         if (entity == null) return Response<bool>.Failure("Nota no encontrada");
+
+        var dm = await GetDetalleMallaFromNota(entity.IdDetaleMatricula, ct);
+        if (!_deadlineService.CanSubmitGrades(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia))
+            return Response<bool>.Failure(_deadlineService.GetStatusMessage(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia));
 
         // Guardar datos para propagacion antes de borrar
         int idPlantilla = entity.IdPlantillaEstructura;
@@ -265,16 +186,25 @@ public class NotasAlumnoHandler :
         var hijos = await _plantillaRepo.GetHijosAsync(request.Data.IdPlantillaEstructura, ct);
         if (hijos.Any())
             return Response<bool>.Failure("No se puede asignar nota masiva a componente calculado");
-        
-        // Optimization: Get all IdMatriculas needed
-        var idsDetalle = request.Data.Notas.Select(n => n.IdDetalleMatricula).Distinct().ToList();
-        
-        foreach(var item in request.Data.Notas)
+
+        if (request.Data.Notas.Any())
         {
-             await _repository.UpsertAsync(request.Data.IdPlantillaEstructura, item.IdDetalleMatricula, item.ValorNota, item.Observacion, ct);
-             
-             // Propagate one by one... SLOW but correct
-             await _calculoService.PropagarCalculoAsync(request.Data.IdPlantillaEstructura, item.IdDetalleMatricula, ct);
+            var firstItem = request.Data.Notas.First();
+            var dm = await GetDetalleMallaFromNota(firstItem.IdDetalleMatricula, ct);
+            if (!_deadlineService.CanSubmitGrades(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia))
+                return Response<bool>.Failure(_deadlineService.GetStatusMessage(dm?.FechaInicio, dm?.FechaFin, dm?.DiasGracia));
+        }
+
+        // Paso 1: Insertar/actualizar todas las notas primero
+        foreach (var item in request.Data.Notas)
+        {
+            await _repository.UpsertAsync(request.Data.IdPlantillaEstructura, item.IdDetalleMatricula, item.ValorNota, item.Observacion, ct);
+        }
+
+        // Paso 2: Propagar cálculo una sola vez por alumno (no por nodo)
+        foreach (var item in request.Data.Notas)
+        {
+            await _calculoService.PropagarCalculoAsync(request.Data.IdPlantillaEstructura, item.IdDetalleMatricula, ct);
         }
 
         return Response<bool>.Success(true, "Notas registradas");
@@ -325,21 +255,65 @@ public class NotasAlumnoHandler :
         return Response<BoletinAlumnoDTO>.Success(boletin, "Boletin generado");
     }
 
-    private static NotasAlumnoDTO MapToDTO(NotasAlumno entity)
+    private static NotasAlumnoDTO MapToDTO(NotasAlumno entity) => new()
     {
-         return new NotasAlumnoDTO
+        IdNotasAlumno         = entity.IdNotasAlumno,
+        IdDetalleMatricula    = entity.IdDetaleMatricula,
+        IdPlantillaEstructura = entity.IdPlantillaEstructura,
+        ValorNota             = entity.ValorNota,
+        Observacion           = entity.Observacion,
+        NombreComponente      = entity.IdPlantillaEstructuraNavigation?.NodoNombre ?? string.Empty,
+        PesoComponente        = entity.IdPlantillaEstructuraNavigation?.Peso ?? 0,
+        IdMatricula           = entity.IdDetaleMatriculaNavigation?.IdMatricula,
+        NombreMateria         = entity.IdDetaleMatriculaNavigation?.IdDetalleMallaNavigation?.IdMateriaNavigation?.Detalle ?? string.Empty,
+        ExamenRemedial        = entity.IdDetaleMatriculaNavigation?.ExamenRemedial
+    };
+
+    public async Task<Response<IEnumerable<NotasAlumnoDTO>>> Handle(GetNotasByParaleloQuery request, CancellationToken ct)
+    {
+        var notas = await _repository.GetByParaleloAsync(request.IdMallaParalelo, request.IdDetalleMatricula, request.IdDetalleMalla, request.IdMatricula, ct);
+        return Response<IEnumerable<NotasAlumnoDTO>>.Success(notas.Select(MapToDTO), "Notas del paralelo obtenidas correctamente");
+    }
+
+    public async Task<Response<IEnumerable<ActaAlumnoDTO>>> Handle(GetActasParaleloQuery request, CancellationToken ct)
+    {
+        var matriculas = await _matriculaRepo.GetByMallaParaleloAsync(request.IdMallaParalelo, ct);
+
+        var actas = new List<ActaAlumnoDTO>();
+
+        foreach (var m in matriculas)
         {
-            IdNotasAlumno = entity.IdNotasAlumno,
-            IdDetalleMatricula = entity.IdDetaleMatricula,
-            IdPlantillaEstructura = entity.IdPlantillaEstructura,
-            ValorNota = entity.ValorNota,
-            Observacion = entity.Observacion,
-            NombreComponente = entity.IdPlantillaEstructuraNavigation?.NodoNombre ?? string.Empty,
-            PesoComponente = entity.IdPlantillaEstructuraNavigation?.Peso ?? 0,
-            
-            // Datos derivados seguros
-            IdMatricula = entity.IdDetaleMatriculaNavigation?.IdMatricula,
-            NombreMateria = entity.IdDetaleMatriculaNavigation?.IdDetalleMallaNavigation?.IdMateriaNavigation?.Detalle ?? string.Empty
-        };
+            var persona = m.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
+            var nombreAlumno = persona != null
+                ? string.Join(" ", new[] { persona.PrimerApellido, persona.SegundoApellido, persona.PrimerNombre, persona.SegundoNombre }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim()
+                : "Sin Nombre";
+            var documento = persona?.Documento ?? string.Empty;
+
+            var detalles = m.DetalleMatricula
+                .Where(dm => !request.IdDetalleMalla.HasValue || dm.IdDetalleMalla == request.IdDetalleMalla.Value)
+                .ToList();
+
+            foreach (var dm in detalles)
+            {
+                var estado = dm.Aprobado == true ? "Aprobado"
+                           : dm.Aprobado == false ? "Reprobado"
+                           : "Pendiente";
+
+                actas.Add(new ActaAlumnoDTO
+                {
+                    NombreAlumno      = nombreAlumno,
+                    NumeroDocumento   = documento,
+                    IdDetalleMatricula = dm.IdDetalleMatricula,
+                    NotaFinal         = dm.NotaFinal,
+                    ExamenRemedial    = dm.ExamenRemedial,
+                    Aprobado          = dm.Aprobado,
+                    Estado            = estado
+                });
+            }
+        }
+
+        return Response<IEnumerable<ActaAlumnoDTO>>.Success(
+            actas.OrderBy(a => a.NombreAlumno),
+            "Actas del paralelo obtenidas correctamente");
     }
 }
