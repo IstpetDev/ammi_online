@@ -37,12 +37,20 @@ function Copiar {
 }
 
 function Detalle-Http {
-    param($Respuesta)
+    # El log de Actions es publico en este repositorio: al log solo van identificadores del error
+    # (codigo HTTP.subcodigo, codigo hexadecimal y modulo). El texto completo se guarda en un
+    # archivo que solo leen SYSTEM y los administradores.
+    param($Respuesta, [string]$Etiqueta)
     try {
         $lector = New-Object System.IO.StreamReader($Respuesta.GetResponseStream())
         $texto = $lector.ReadToEnd()
         $texto = $texto -replace '(?s)<style.*?</style>', '' -replace '<[^>]+>', ' ' -replace '&nbsp;', ' ' -replace '\s+', ' '
-        return $texto.Substring(0, [Math]::Min(500, $texto.Length))
+        Add-Content -Path (Join-Path $Respaldo 'ultimo-error-iis.txt') -Value "[$(Get-Date -Format s)] $Etiqueta`n$texto`n" -Encoding ascii -ErrorAction SilentlyContinue
+        $ids = @()
+        $ids += [regex]::Matches($texto, '\b[1-5]\d\d\.\d{1,3}\b') | ForEach-Object { $_.Value }
+        $ids += [regex]::Matches($texto, '0x[0-9A-Fa-f]{8}') | ForEach-Object { $_.Value }
+        $ids += [regex]::Matches($texto, 'AspNetCoreModuleV2|RewriteModule|StaticFileModule|ManagedPipelineHandler') | ForEach-Object { $_.Value }
+        return (($ids | Select-Object -Unique) -join ' ')
     } catch { return '' }
 }
 
@@ -54,7 +62,7 @@ function Estado-Http {
         if ($_.Exception.Response) {
             $codigo = [int]$_.Exception.Response.StatusCode
             # Write-Host y no Write-Output: la salida de una funcion es su valor de retorno.
-            if ($codigo -ge 500) { Write-Host "Detalle de IIS ($Etiqueta $codigo): $(Detalle-Http $_.Exception.Response)" }
+            if ($codigo -ge 500) { Write-Host "IIS ($Etiqueta $codigo), identificadores: $(Detalle-Http $_.Exception.Response $Etiqueta). Detalle completo en $Respaldo\ultimo-error-iis.txt" }
             return $codigo
         }
         return 0
