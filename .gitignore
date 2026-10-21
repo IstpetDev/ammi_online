@@ -19,3 +19,10 @@
 *.user
 *.suo
 *.log
+
+# Diseño fuente y archivos públicos que no deben entrar al paquete web.
+src/Frontend/public/*.psd
+src/Frontend/public/*.ai
+src/Frontend/public/.htaccess
+src/Frontend/public/tracking.js
+src/Frontend/public/web.config
