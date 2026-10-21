@@ -28,5 +28,11 @@ export class EtniaService {
       map(etnias => etnias.find(e => e.idEtnia === id))
     );
   }
+
+  create(data: Partial<EtniaDTO>): Observable<EtniaDTO> {
+    return this.http.post<IResponse<EtniaDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.etnia.create}`, data).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

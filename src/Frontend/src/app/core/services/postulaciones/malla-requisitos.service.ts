@@ -29,10 +29,16 @@ export class MallaRequisitosService {
     );
   }
 
-  // Obtener malla requisitos por malla
+  // Obtener malla requisitos por malla (API directa - retorna array directo)
   getMallaRequisitosByMalla(idMalla: number): Observable<MallaRequisitosDTO[]> {
-    return this.getMallaRequisitos().pipe(
-      map(mallaRequisitos => mallaRequisitos.filter(m => m.idMalla === idMalla))
+    return this.http.get<MallaRequisitosDTO[] | IResponse<MallaRequisitosDTO[]>>(
+      `${this.apiUrl}${API_ENDPOINTS.postulaciones.mallaRequisitos.getByMalla(idMalla)}`
+    ).pipe(
+      map(response => {
+        // El endpoint retorna el array directamente, no envuelto en IResponse
+        if (Array.isArray(response)) return response;
+        return (response as IResponse<MallaRequisitosDTO[]>).data || [];
+      })
     );
   }
 }

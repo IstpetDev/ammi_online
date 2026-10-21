@@ -28,5 +28,13 @@ export class PeriodoLectivoService {
       map(periodos => periodos.find(p => p.idPeriodoLectivo === id))
     );
   }
+
+  // Obtener períodos lectivos filtrados por régimen
+  getPeriodosByRegimen(idRegimen: number): Observable<PeriodoLectivoDTO[]> {
+    const url = `${this.apiUrl}${API_ENDPOINTS.postulaciones.periodosLectivos.getAll}?IdRegimen=${idRegimen}`;
+    return this.http.get<IResponse<PeriodoLectivoDTO[]>>(url).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

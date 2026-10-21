@@ -1,38 +1,21 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ThemeToggleComponent } from '../theme/theme-toggle.component';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [ThemeToggleComponent, CommonModule, RouterLink],
+  imports: [ThemeToggleComponent, RouterLink],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent {
-  showModalidades = false;
-  mobileMenuOpen = false;
-  private hideTimeout: any;
+  constructor(private readonly themeService: ThemeService) {}
 
-  toggleMobileMenu() {
-    this.mobileMenuOpen = !this.mobileMenuOpen;
-  }
-
-  closeMobileMenu() {
-    this.mobileMenuOpen = false;
-  }
-
-  showModalidadesDropdown() {
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout);
-    }
-    this.showModalidades = true;
-  }
-
-  hideModalidadesDropdown() {
-    this.hideTimeout = setTimeout(() => {
-      this.showModalidades = false;
-    }, 300); // 300ms delay
-  }
+  logoSrc = computed(() => {
+    return this.themeService.isDarkTheme()
+      ? 'assets/shared/Logo-sin-fondo-oscuro.png'
+      : 'assets/shared/Logo-sin-fondo.png';
+  });
 }

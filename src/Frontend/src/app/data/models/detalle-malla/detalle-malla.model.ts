@@ -8,12 +8,38 @@ export interface DetalleMallaDTO {
   idMateria: number;
   idPlantillaEvaluacion: number;
   idAreaCompetencia: number;
+  modulo: number;
+  fechaInicio: string;
+  fechaFin: string;
+  duracionHoras: number;
+  diasGracia?: number;
 
   // Datos enriquecidos (viene del backend con joins)
   nombreMateria: string;
   horasMateria: number;
   nombrePlantilla: string;
   nombreAreaCompetencia: string;
+
+  paralelo?: {
+    idMallaParalelo?: number;
+    idMalla?: number;
+    idParalelo: number;
+    nombreParalelo: string;
+    idTipoJornada?: number;
+    cupoMaximo: number;
+    esActivo?: boolean;
+    alumnosMatriculados?: number;
+    nombreDocente?: string;
+  }[];
+}
+
+export interface DetalleMallaDTOResponse{
+  hasNextPage : boolean;
+  hasPreviousPage : boolean;
+  pageNumber : number;
+  pageSize : number;
+  totalCount : number;
+  items : DetalleMallaDTO[];
 }
 
 /**
@@ -24,6 +50,11 @@ export interface DetalleMallaCreateDTO {
   idMateria: number;
   idPlantillaEvaluacion: number;
   idAreaCompetencia: number;
+  modulo: number;
+  fechaInicio: string;
+  fechaFin: string;
+  duracionHoras: number;
+  diasGracia?: number;
 }
 
 /**
@@ -35,13 +66,11 @@ export interface DetalleMallaUpdateDTO {
   idMateria: number;
   idPlantillaEvaluacion: number;
   idAreaCompetencia: number;
-}
-
-/**
- * DTO para creacion masiva de DetalleMalla
- */
-export interface DetalleMallaBulkDTO {
-  detalles: DetalleMallaCreateDTO[];
+  modulo: number;
+  fechaInicio: string;
+  fechaFin: string;
+  duracionHoras: number;
+  diasGracia?: number;
 }
 
 /**
@@ -52,3 +81,11 @@ export interface DetalleMallaSimpleDTO {
   nombreMateria: string;
   horasMateria: number;
 }
+
+export interface FechasSugeridasModuloDTO {
+  tieneFechasSugeridas: boolean;
+  modulo: number;
+  fechaInicio?: string | null;
+  fechaFin?: string | null;
+}
+

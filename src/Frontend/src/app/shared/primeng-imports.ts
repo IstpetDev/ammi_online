@@ -14,6 +14,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageModule } from 'primeng/message';
 import { DatePickerModule } from 'primeng/datepicker';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { PasswordModule } from 'primeng/password';
+import { TabsModule } from 'primeng/tabs';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
 
 export const PRIMENG_MODULES = [
   ButtonModule,
@@ -32,5 +36,9 @@ export const PRIMENG_MODULES = [
   MessageModule,
   DatePickerModule,
   AutoCompleteModule,
+  PasswordModule,
+  TabsModule,
+  SelectModule,
+  TagModule,
 ];
 

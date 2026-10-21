@@ -1,0 +1,96 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="closeModal()">
+      <i class="pi pi-times"></i>
+    </button>
+
+    <!-- Estado: Enviando -->
+    <div *ngIf="currentStep === 'sending'" class="modal-content">
+      <div class="loader-container">
+        <div class="spinner"></div>
+        <h3>Enviando email de verificación...</h3>
+        <p>Por favor espera un momento</p>
+      </div>
+    </div>
+
+    <!-- Estado: Esperando verificación -->
+    <div *ngIf="currentStep === 'waiting'" class="modal-content">
+      <div class="icon-header success">
+        <i class="pi pi-envelope"></i>
+      </div>
+      <h2>Revisa tu correo electrónico</h2>
+      <p class="email-sent-message">
+        Hemos enviado un email de verificación a <strong>{{ email }}</strong>
+      </p>
+      
+      <div class="waiting-indicator">
+        <div class="pulse-dot"></div>
+        <p class="waiting-text">Esperando que verifiques tu email...</p>
+      </div>
+
+      <div class="instruction-box">
+        <i class="pi pi-arrow-right"></i>
+        <div>
+          <p><strong>¿Qué sigue?</strong></p>
+          <ol>
+            <li>Abre tu bandeja de entrada</li>
+            <li>Busca el email de "AMMI Online - Verificación de Correo"</li>
+            <li>Haz clic en el botón <strong>"🔐 Verificar mi Email"</strong></li>
+            <li>Esta ventana se cerrará automáticamente</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <p><strong>Importante:</strong></p>
+          <ul>
+            <li>El enlace expirará en <strong>10 minutos</strong></li>
+            <li>Revisa también tu carpeta de spam si no lo encuentras</li>
+            <li>Detectaremos automáticamente cuando hagas clic en el enlace</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="resend-section">
+        <p *ngIf="!canResend" class="cooldown-message">
+          <i class="pi pi-clock"></i>
+          Podrás reenviar el email en {{ resendCooldownSeconds }} segundos
+        </p>
+        <button 
+          *ngIf="canResend"
+          type="button"
+          class="btn-link"
+          (click)="resendOtp()"
+        >
+          <i class="pi pi-refresh"></i>
+          ¿No recibiste el email? Reenviar
+        </button>
+      </div>
+    </div>
+
+    <!-- Estado: Verificado -->
+    <div *ngIf="currentStep === 'verified'" class="modal-content">
+      <div class="icon-header verified">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <h2>¡Email verificado!</h2>
+      <p class="success-message">{{ successMessage }}</p>
+      <p>Puedes continuar con tu postulación</p>
+    </div>
+
+    <!-- Estado: Error -->
+    <div *ngIf="currentStep === 'error'" class="modal-content">
+      <div class="icon-header error">
+        <i class="pi pi-times-circle"></i>
+      </div>
+      <h2>Error al enviar el código</h2>
+      <p class="error-message">{{ errorMessage }}</p>
+      <div class="action-buttons">
+        <button class="btn-secondary" (click)="closeModal()">Cerrar</button>
+        <button class="btn-primary" (click)="sendOtp()">Reintentar</button>
+      </div>
+    </div>
+  </div>
+</div>

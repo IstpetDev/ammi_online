@@ -31,11 +31,15 @@ export class NacionalidadEtnicaService {
 
   // Obtener nacionalidad étnica por ID
   getNacionalidadEtnicaById(id: number): Observable<NacionalidadEtnicaDTO | undefined> {
-    // This would need a specific endpoint, for now returning undefined
-    return new Observable(observer => {
-      observer.next(undefined);
-      observer.complete();
-    });
+    return this.getNacionalidadesEtnicas().pipe(
+      map(list => list.find(n => n.idnacionalidadEtnica === id))
+    );
+  }
+
+  create(data: Partial<NacionalidadEtnicaDTO>): Observable<any> {
+    return this.http.post<IResponse<any>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.nacionalidadEtnica.create}`, { nacionalidadEtnicaDTO: data }).pipe(
+      map(response => response.data)
+    );
   }
 }
 
