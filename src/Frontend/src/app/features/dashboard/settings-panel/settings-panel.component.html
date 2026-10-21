@@ -1,0 +1,97 @@
+<!-- Backdrop -->
+@if (visible) {
+<div class="settings-backdrop" (click)="close.emit(); showProfileView = false"></div>
+}
+
+<!-- Panel -->
+<div class="settings-panel" [class.open]="visible">
+
+  <!-- Header -->
+  <div class="settings-header">
+    <div class="settings-title">
+      <i class="pi pi-cog"></i>
+      <span>Configuración</span>
+    </div>
+    <button class="settings-close-btn" (click)="close.emit(); showProfileView = false" title="Cerrar">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  <!-- ─── Vista principal ─── -->
+  @if (!showProfileView) {
+
+    <!-- Perfil del usuario -->
+    @if (user) {
+    <div class="settings-profile">
+      <div class="profile-avatar-wrap">
+        @if (fotoPerfilUrl && !isPdf) {
+          <img [src]="fotoPerfilUrl" class="profile-avatar-img" alt="Foto de perfil" />
+        } @else {
+          <div class="profile-avatar-placeholder">
+            <i class="pi pi-user"></i>
+          </div>
+        }
+      </div>
+      <div class="profile-info">
+        <span class="profile-username">{{ user.username }}</span>
+        <span class="profile-role">{{ getRoleLabel(user.roles) }}</span>
+      </div>
+    </div>
+    <p-divider />
+    }
+
+    <!-- Secciones -->
+    <div class="settings-body">
+
+      <!-- Cuenta -->
+      <div class="settings-section">
+        <span class="settings-section-label">Cuenta</span>
+        <div class="settings-row clickable" (click)="showProfileView = true">
+          <div class="settings-row-info">
+            <i class="pi pi-user-edit"></i>
+            <span>Mi Perfil</span>
+          </div>
+          <i class="pi pi-chevron-right row-arrow"></i>
+        </div>
+      </div>
+
+      <p-divider />
+
+      <!-- Apariencia -->
+      <div class="settings-section">
+        <span class="settings-section-label">Apariencia</span>
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <i class="pi pi-palette"></i>
+            <span>Tema</span>
+          </div>
+          <app-theme-toggle />
+        </div>
+      </div>
+
+      <p-divider />
+
+      <!-- Sesión -->
+      <div class="settings-section">
+        <span class="settings-section-label">Sesión</span>
+        <div class="settings-row clickable" (click)="logoutRequested.emit()">
+          <div class="settings-row-info logout">
+            <i class="pi pi-sign-out"></i>
+            <span>Cerrar sesión</span>
+          </div>
+          <i class="pi pi-chevron-right row-arrow"></i>
+        </div>
+      </div>
+
+    </div>
+
+  }
+
+  <!-- ─── Vista: Mi Perfil ─── -->
+  @if (showProfileView && user) {
+  <div class="settings-body">
+    <app-user-profile [userId]="user.id" [userRole]="getRoleLabel(user.roles)" (back)="showProfileView = false" />
+  </div>
+  }
+
+</div>
