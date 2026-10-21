@@ -1,0 +1,342 @@
+<div class="menu-container">
+  <!-- Toast -->
+  <app-shared-toast></app-shared-toast>
+
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="title-icon">
+          <i class="pi pi-chart-line"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Reportes</h1>
+          <p class="page-subtitle">Genera y descarga reportes del sistema</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de Reportes -->
+  <div class="actions-grid">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Sábana de Notas (todas las materias del paralelo)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="action-card action-card--form">
+      <div class="action-card-icon-wrapper icon--sabana">
+        <i class="pi pi-list action-icon"></i>
+      </div>
+      <h4>Sábana de Notas</h4>
+      <p>Cuadro macro final: nota final, supletorio y promedio por materia y alumno</p>
+
+      <div class="reporte-form">
+
+        <!-- Periodo -->
+        <div class="form-group">
+          <label for="periodo-sabana">Periodo Lectivo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="periodo-sabana"
+                    [(ngModel)]="sabSelectedPeriodo"
+                    (ngModelChange)="onSabPeriodoChange()"
+                    class="form-control">
+              <option [ngValue]="null">Seleccione un periodo...</option>
+              <option *ngFor="let p of sabPeriodos" [ngValue]="p.idPeriodoLectivo">{{ p.detalle }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ciclo -->
+        <div class="form-group mt-3">
+          <label for="ciclo-sabana">Ciclo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="ciclo-sabana"
+                    [(ngModel)]="sabSelectedCiclo"
+                    (ngModelChange)="onSabCicloChange()"
+                    class="form-control"
+                    [disabled]="!sabSelectedPeriodo || sabLoadingCiclos">
+              <option [ngValue]="null">
+                {{ sabLoadingCiclos ? 'Cargando...' : 'Seleccione un ciclo...' }}
+              </option>
+              <option *ngFor="let c of sabCiclos" [ngValue]="c.idCiclo">{{ c.detalle }}</option>
+            </select>
+            <i *ngIf="sabLoadingCiclos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Nivel / Malla -->
+        <div class="form-group mt-3">
+          <label for="malla-sabana">Nivel / Malla <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="malla-sabana"
+                    [(ngModel)]="sabSelectedMalla"
+                    (ngModelChange)="onSabMallaChange()"
+                    class="form-control"
+                    [disabled]="!sabSelectedCiclo || sabLoadingMallas">
+              <option [ngValue]="null">
+                {{ sabLoadingMallas ? 'Cargando...' : 'Seleccione un nivel...' }}
+              </option>
+              <option *ngFor="let m of sabMallas" [ngValue]="m.idMalla">{{ m.detalle }}</option>
+            </select>
+            <i *ngIf="sabLoadingMallas" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Paralelo -->
+        <div class="form-group mt-3">
+          <label for="paralelo-sabana">Paralelo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="paralelo-sabana"
+                    [(ngModel)]="sabSelectedParalelo"
+                    class="form-control"
+                    [disabled]="!sabSelectedMalla || sabLoadingParalelos">
+              <option [ngValue]="null">
+                {{ sabLoadingParalelos ? 'Cargando...' : 'Seleccione un paralelo...' }}
+              </option>
+              <option *ngFor="let p of sabParalelos" [ngValue]="p.idMallaParalelo">
+                {{ p.nombreParalelo ?? ('Paralelo ' + p.idMallaParalelo) }}
+              </option>
+            </select>
+            <i *ngIf="sabLoadingParalelos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Columnas del reporte (informativo) -->
+        <div *ngIf="sabSelectedParalelo" class="reporte-preview">
+          <span class="preview-col">N°</span>
+          <span class="preview-col">Cédula</span>
+          <span class="preview-col">Nombre</span>
+          <span class="preview-col highlight">Nota Final</span>
+          <span class="preview-col highlight">Supletorio</span>
+          <span class="preview-col highlight">Promedio</span>
+          <span class="preview-col">Estado</span>
+        </div>
+
+        <div class="btn-group mt-4">
+          <button class="btn-generar btn-excel"
+                  (click)="generarSabanaExcel()"
+                  [disabled]="loadingSabanaExcel || !sabSelectedParalelo">
+            <i class="pi" [class.pi-file-excel]="!loadingSabanaExcel" [class.pi-spin]="loadingSabanaExcel" [class.pi-spinner]="loadingSabanaExcel"></i>
+            {{ loadingSabanaExcel ? 'Generando...' : 'Descargar Excel' }}
+          </button>
+          <button class="btn-generar btn-pdf"
+                  (click)="generarSabanaPDF()"
+                  [disabled]="loadingSabanaPDF || !sabSelectedParalelo">
+            <i class="pi" [class.pi-file-pdf]="!loadingSabanaPDF" [class.pi-spin]="loadingSabanaPDF" [class.pi-spinner]="loadingSabanaPDF"></i>
+            {{ loadingSabanaPDF ? 'Generando...' : 'Descargar PDF' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         REPORTE 4 — Reporte de Notas
+         (Una fila por materia-alumno: materia, promedio, recuperación, promedio final, condición)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="action-card action-card--form">
+      <div class="action-card-icon-wrapper icon--quimestre">
+        <i class="pi pi-file-excel action-icon"></i>
+      </div>
+      <h4>Reporte de Notas</h4>
+      <p>Reporte consolidado: materia, promedio, recuperación, promedio final y condición por alumno</p>
+
+      <div class="reporte-form">
+
+        <!-- Periodo -->
+        <div class="form-group">
+          <label for="periodo-rn">Periodo Lectivo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="periodo-rn"
+                    [(ngModel)]="rnSelectedPeriodo"
+                    (ngModelChange)="onRnPeriodoChange()"
+                    class="form-control">
+              <option [ngValue]="null">Seleccione un periodo...</option>
+              <option *ngFor="let p of rnPeriodos" [ngValue]="p.idPeriodoLectivo">{{ p.detalle }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ciclo -->
+        <div class="form-group mt-3">
+          <label for="ciclo-rn">Ciclo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="ciclo-rn"
+                    [(ngModel)]="rnSelectedCiclo"
+                    (ngModelChange)="onRnCicloChange()"
+                    class="form-control"
+                    [disabled]="!rnSelectedPeriodo || rnLoadingCiclos">
+              <option [ngValue]="null">
+                {{ rnLoadingCiclos ? 'Cargando...' : 'Seleccione un ciclo...' }}
+              </option>
+              <option *ngFor="let c of rnCiclos" [ngValue]="c.idCiclo">{{ c.detalle }}</option>
+            </select>
+            <i *ngIf="rnLoadingCiclos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Nivel / Malla -->
+        <div class="form-group mt-3">
+          <label for="malla-rn">Nivel / Malla <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="malla-rn"
+                    [(ngModel)]="rnSelectedMalla"
+                    (ngModelChange)="onRnMallaChange()"
+                    class="form-control"
+                    [disabled]="!rnSelectedCiclo || rnLoadingMallas">
+              <option [ngValue]="null">
+                {{ rnLoadingMallas ? 'Cargando...' : 'Seleccione un nivel...' }}
+              </option>
+              <option *ngFor="let m of rnMallas" [ngValue]="m.idMalla">{{ m.detalle }}</option>
+            </select>
+            <i *ngIf="rnLoadingMallas" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Paralelo -->
+        <div class="form-group mt-3">
+          <label for="paralelo-rn">Paralelo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="paralelo-rn"
+                    [(ngModel)]="rnSelectedParalelo"
+                    class="form-control"
+                    [disabled]="!rnSelectedMalla || rnLoadingParalelos">
+              <option [ngValue]="null">
+                {{ rnLoadingParalelos ? 'Cargando...' : 'Seleccione un paralelo...' }}
+              </option>
+              <option *ngFor="let p of rnParalelos" [ngValue]="p.idMallaParalelo">
+                {{ p.nombreParalelo ?? ('Paralelo ' + p.idMallaParalelo) }}
+              </option>
+            </select>
+            <i *ngIf="rnLoadingParalelos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Columnas del reporte (informativo) -->
+        <div *ngIf="rnSelectedParalelo" class="reporte-preview">
+          <span class="preview-col">Estudiante</span>
+          <span class="preview-col">Documento</span>
+          <span class="preview-col highlight">Materia</span>
+          <span class="preview-col highlight">Prom. Materia</span>
+          <span class="preview-col highlight">Recuperación</span>
+          <span class="preview-col highlight">Prom. Final</span>
+          <span class="preview-col">Condición</span>
+        </div>
+
+        <div class="btn-group mt-4">
+          <button class="btn-generar btn-excel"
+                  (click)="generarReporteNotasExcel()"
+                  [disabled]="loadingReporteNotasExcel || !rnSelectedParalelo">
+            <i class="pi" [class.pi-file-excel]="!loadingReporteNotasExcel" [class.pi-spin]="loadingReporteNotasExcel" [class.pi-spinner]="loadingReporteNotasExcel"></i>
+            {{ loadingReporteNotasExcel ? 'Generando...' : 'Descargar Excel' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Notas Detalladas por Materia
+         (Una hoja por materia, todas las notas individuales de cada evaluación)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="action-card action-card--form">
+      <div class="action-card-icon-wrapper icon--sabana">
+        <i class="pi pi-table action-icon"></i>
+      </div>
+      <h4>Notas Detalladas por Materia</h4>
+      <p>Todas las notas individuales de cada evaluación, desglosadas por materia y alumno</p>
+
+      <div class="reporte-form">
+
+        <!-- Periodo -->
+        <div class="form-group">
+          <label for="periodo-nd">Periodo Lectivo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="periodo-nd"
+                    [(ngModel)]="ndSelectedPeriodo"
+                    (ngModelChange)="onNdPeriodoChange()"
+                    class="form-control">
+              <option [ngValue]="null">Seleccione un periodo...</option>
+              <option *ngFor="let p of ndPeriodos" [ngValue]="p.idPeriodoLectivo">{{ p.detalle }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ciclo -->
+        <div class="form-group mt-3">
+          <label for="ciclo-nd">Ciclo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="ciclo-nd"
+                    [(ngModel)]="ndSelectedCiclo"
+                    (ngModelChange)="onNdCicloChange()"
+                    class="form-control"
+                    [disabled]="!ndSelectedPeriodo || ndLoadingCiclos">
+              <option [ngValue]="null">
+                {{ ndLoadingCiclos ? 'Cargando...' : 'Seleccione un ciclo...' }}
+              </option>
+              <option *ngFor="let c of ndCiclos" [ngValue]="c.idCiclo">{{ c.detalle }}</option>
+            </select>
+            <i *ngIf="ndLoadingCiclos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Nivel / Malla -->
+        <div class="form-group mt-3">
+          <label for="malla-nd">Nivel / Malla <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="malla-nd"
+                    [(ngModel)]="ndSelectedMalla"
+                    (ngModelChange)="onNdMallaChange()"
+                    class="form-control"
+                    [disabled]="!ndSelectedCiclo || ndLoadingMallas">
+              <option [ngValue]="null">
+                {{ ndLoadingMallas ? 'Cargando...' : 'Seleccione un nivel...' }}
+              </option>
+              <option *ngFor="let m of ndMallas" [ngValue]="m.idMalla">{{ m.detalle }}</option>
+            </select>
+            <i *ngIf="ndLoadingMallas" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Paralelo -->
+        <div class="form-group mt-3">
+          <label for="paralelo-nd">Paralelo <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select id="paralelo-nd"
+                    [(ngModel)]="ndSelectedParalelo"
+                    class="form-control"
+                    [disabled]="!ndSelectedMalla || ndLoadingParalelos">
+              <option [ngValue]="null">
+                {{ ndLoadingParalelos ? 'Cargando...' : 'Seleccione un paralelo...' }}
+              </option>
+              <option *ngFor="let p of ndParalelos" [ngValue]="p.idMallaParalelo">
+                {{ p.nombreParalelo ?? ('Paralelo ' + p.idMallaParalelo) }}
+              </option>
+            </select>
+            <i *ngIf="ndLoadingParalelos" class="pi pi-spin pi-spinner select-spinner"></i>
+          </div>
+        </div>
+
+        <!-- Columnas del reporte (informativo) -->
+        <div *ngIf="ndSelectedParalelo" class="reporte-preview">
+          <span class="preview-col">N°</span>
+          <span class="preview-col">Cédula</span>
+          <span class="preview-col">Nombre</span>
+          <span class="preview-col highlight">Evaluaciones</span>
+          <span class="preview-col highlight">N. Final</span>
+          <span class="preview-col highlight">Suple.</span>
+          <span class="preview-col highlight">Prom.</span>
+          <span class="preview-col">Estado</span>
+        </div>
+
+        <div class="btn-group mt-4">
+          <button class="btn-generar btn-excel"
+                  (click)="generarNotasDetalladasExcel()"
+                  [disabled]="loadingNotasDetalladasExcel || !ndSelectedParalelo">
+            <i class="pi" [class.pi-file-excel]="!loadingNotasDetalladasExcel" [class.pi-spin]="loadingNotasDetalladasExcel" [class.pi-spinner]="loadingNotasDetalladasExcel"></i>
+            {{ loadingNotasDetalladasExcel ? 'Generando...' : 'Descargar Excel' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

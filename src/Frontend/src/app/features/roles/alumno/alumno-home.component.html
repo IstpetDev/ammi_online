@@ -1,0 +1,353 @@
+<div class="alumno-dashboard">
+
+  <!-- ══════════ HERO BANNER PRINCIPAL ══════════ -->
+  <div class="hero-banner">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-greeting">
+        <div class="greeting-badges">
+          <span class="badge-pill badge-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            Portal Estudiantil
+          </span>
+          <span class="badge-pill badge-subtle" *ngIf="carreraActual">
+            {{ carreraActual }}
+          </span>
+          <span class="badge-pill badge-subtle" *ngIf="cicloActual">
+            {{ cicloActual }}{{ paraleloActual ? ' • ' + paraleloActual : '' }}
+          </span>
+        </div>
+
+        <h1>¡Hola, <span class="hero-name">{{ userName || 'Estudiante' }}</span>!</h1>
+        <p>Centro de control académico: consulta tus asignaturas activas, notas y estado de cuenta.</p>
+      </div>
+
+      <div class="hero-status-box">
+        <div class="status-indicator" [class.status-active]="kpis.matriculasActivas > 0">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ estadoMatricula }}</span>
+        </div>
+        <div class="status-meta" *ngIf="porcentajeAvanceMalla > 0">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" [style.width.%]="porcentajeAvanceMalla"></div>
+          </div>
+          <span class="progress-label">{{ porcentajeAvanceMalla }}% de la carrera completada</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SKELETON LOADING ══════════ -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="loading-grid">
+      <div class="skeleton-card" style="height: 100px;"></div>
+      <div class="skeleton-card" style="height: 100px;"></div>
+      <div class="skeleton-card" style="height: 100px;"></div>
+      <div class="skeleton-card" style="height: 100px;"></div>
+    </div>
+    <div class="skeleton-main">
+      <div class="skeleton-card" style="height: 350px;"></div>
+      <div class="skeleton-card" style="height: 350px;"></div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- ══════════ ALERTA CRÍTICA DE PAGOS (SI APLICA) ══════════ -->
+    <div class="alert-banner" *ngIf="kpis.cuotasVencidas > 0">
+      <div class="alert-icon-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="alert-svg"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="alert-body">
+        <strong>Atención: Tienes {{ kpis.cuotasVencidas }} cuota(s) vencida(s)</strong>
+        <span>Mantén tus aportes al día para no registrar bloqueos en la visualización de tus calificaciones oficiales.</span>
+      </div>
+      <a routerLink="/dashboard/mis-pagos" class="alert-btn">Ver Pagos y Pagar</a>
+    </div>
+
+    <!-- ══════════ 4 KPIS ESTRATÉGICOS ══════════ -->
+    <div class="kpis-grid">
+      
+      <!-- KPI 1: Materias Activas -->
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-number">{{ kpis.totalMateriasEnCurso }}</div>
+          <div class="kpi-title">Materias en Curso</div>
+          <div class="kpi-subtext">{{ cicloActual || 'Ciclo activo' }}</div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Rendimiento / Promedio -->
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-emerald">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-number">
+            {{ promedioCiclo !== null ? (promedioCiclo | number:'1.2-2') : '--' }}
+            <span class="kpi-scale" *ngIf="promedioCiclo !== null">/ 10</span>
+          </div>
+          <div class="kpi-title">Promedio del Ciclo</div>
+          <div class="kpi-subtext">Rendimiento acumulado</div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Progreso de Malla -->
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-number">{{ totalMateriasAprobadas }} <span class="kpi-scale">/ {{ totalMateriasMalla }}</span></div>
+          <div class="kpi-title">Materias Aprobadas</div>
+          <div class="kpi-subtext">{{ porcentajeAvanceMalla }}% del plan</div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Estado Financiero -->
+      <div class="kpi-card" [class.kpi-card-alert]="kpis.cuotasVencidas > 0">
+        <div class="kpi-icon" [class.kpi-red]="kpis.cuotasVencidas > 0" [class.kpi-amber]="kpis.cuotasVencidas === 0 && kpis.cuotasPendientes > 0" [class.kpi-green]="kpis.cuotasPendientes === 0">
+          <svg *ngIf="kpis.cuotasVencidas > 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg *ngIf="kpis.cuotasVencidas === 0 && kpis.cuotasPendientes > 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          <svg *ngIf="kpis.cuotasPendientes === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-number" *ngIf="kpis.totalDeuda > 0">{{ kpis.totalDeuda | currency:'USD':'symbol':'1.2-2' }}</div>
+          <div class="kpi-number text-success" *ngIf="kpis.totalDeuda === 0">Al Día</div>
+          <div class="kpi-title">Estado de Cuenta</div>
+          <div class="kpi-subtext" *ngIf="kpis.cuotasPendientes > 0">{{ kpis.cuotasPendientes }} cuota(s) pendiente(s)</div>
+          <div class="kpi-subtext" *ngIf="kpis.cuotasPendientes === 0">Sin pagos pendientes</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════ MAIN BENTO GRID (2 COLUMNAS) ══════════ -->
+    <div class="dashboard-bento">
+
+      <!-- ─── COLUMNA IZQUIERDA: CONTENIDO ACADÉMICO (65%) ─── -->
+      <div class="bento-main-col">
+
+        <!-- WIDGET: MIS MATERIAS EN CURSO (COMPACTO) -->
+        <div class="bento-card materias-widget">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon-tag bg-blue-subtle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+              </div>
+              <div>
+                <h3 class="card-title">Mis Materias en Curso</h3>
+                <p class="card-subtitle">{{ materiasEnCurso.length }} asignaturas inscritas</p>
+              </div>
+            </div>
+            <a routerLink="/dashboard/mis-materias" class="btn-link-action">
+              Ver Contenidos
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-inline"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+
+          <!-- LISTADO COMPACTO DE MATERIAS -->
+          <div class="materias-container-scroll" *ngIf="materiasEnCurso.length > 0">
+            <div class="materia-row-compact" *ngFor="let m of materiasEnCurso">
+              
+              <!-- Info Materia -->
+              <div class="materia-main-info">
+                <div class="materia-name-line">
+                  <span class="materia-name">{{ m.nombreMateria }}</span>
+                  <span class="materia-hours-tag" *ngIf="m.duracionHoras">{{ m.duracionHoras }}h</span>
+                  <span class="materia-area-tag" *ngIf="m.areaCompetencia">{{ m.areaCompetencia }}</span>
+                </div>
+                <div class="materia-docente-sub">
+                  <span class="docente-label">Docente:</span>
+                  <span class="docente-name">{{ m.docente || 'Por asignar' }}</span>
+                </div>
+              </div>
+
+              <!-- Estado / Calificación -->
+              <div class="materia-side-data">
+                <span class="status-pill" [ngClass]="getNotaBadgeClass(m.notaFinal)">
+                  {{ m.estado || (m.notaFinal !== null ? 'Nota: ' + (m.notaFinal | number:'1.2-2') : 'En Curso') }}
+                </span>
+
+                <div class="materia-actions-compact">
+                  <a routerLink="/dashboard/mis-calificaciones" class="btn-icon-link" title="Ver calificaciones">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  </a>
+                  <a routerLink="/dashboard/mis-materias" class="btn-icon-link" title="Ver material de estudio">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- EMPTY STATE DE MATERIAS -->
+          <div class="empty-materias" *ngIf="materiasEnCurso.length === 0">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+            </div>
+            <h4>Sin materias registradas aún</h4>
+            <p>Tus asignaturas aparecerán aquí una vez matriculado en el paralelo.</p>
+          </div>
+        </div>
+
+        <!-- WIDGET: AVISOS INSTITUCIONALES -->
+        <div class="bento-card avisos-widget">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon-tag bg-purple-subtle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div>
+                <h3 class="card-title">Avisos y Comunicados</h3>
+                <p class="card-subtitle">Información clave y recordatorios</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="avisos-grid">
+            <div class="aviso-card" *ngFor="let aviso of avisos">
+              <div class="aviso-top">
+                <span class="aviso-badge" [ngClass]="aviso.tagClass">{{ aviso.tag }}</span>
+                <span class="aviso-date">{{ aviso.fecha }}</span>
+              </div>
+              <h5 class="aviso-title">{{ aviso.titulo }}</h5>
+              <p class="aviso-desc">{{ aviso.descripcion }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── COLUMNA DERECHA: PAGOS & ACCESOS RÁPIDOS (35%) ─── -->
+      <div class="bento-side-col">
+
+        <!-- WIDGET: PRÓXIMO PAGO O ESTADO DE CUENTA -->
+        <div class="bento-card payment-widget" [class.payment-widget-alert]="proximoPago?.estaVencida">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon-tag bg-emerald-subtle" [class.bg-red-subtle]="proximoPago?.estaVencida">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+              </div>
+              <div>
+                <h3 class="card-title">Estado Financiero</h3>
+                <p class="card-subtitle">Próximo vencimiento</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SI TIENE PRÓXIMO PAGO -->
+          <div class="payment-box" *ngIf="proximoPago">
+            <div class="payment-amount-row">
+              <span class="payment-concept">{{ proximoPago.concepto }}</span>
+              <span class="payment-amount">{{ proximoPago.monto | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+
+            <div class="payment-due-date">
+              <div class="due-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              </div>
+              <div class="due-details">
+                <span class="due-label">Fecha límite:</span>
+                <span class="due-val">{{ proximoPago.fechaLimite | date:'dd/MMM/yyyy' }}</span>
+              </div>
+              <span class="due-badge" [class.due-badge-danger]="proximoPago.estaVencida" [class.due-badge-warning]="!proximoPago.estaVencida">
+                {{ proximoPago.estaVencida ? 'Vencida' : (proximoPago.diasRestantes !== null ? 'En ' + proximoPago.diasRestantes + ' días' : 'Pendiente') }}
+              </span>
+            </div>
+
+            <a routerLink="/dashboard/mis-pagos" class="btn-payment-action">
+              <span>Gestionar Pago</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-inline"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+            </a>
+          </div>
+
+          <!-- SI NO TIENE PAGOS PENDIENTES (AL DÍA) -->
+          <div class="payment-clean-state" *ngIf="!proximoPago && kpis.totalDeuda === 0">
+            <div class="clean-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h4>¡Estás al día!</h4>
+            <p>No registras cuotas pendientes en tu matrícula activa.</p>
+            <a routerLink="/dashboard/mis-pagos" class="btn-subtle-full">Historial de Pagos</a>
+          </div>
+        </div>
+
+        <!-- WIDGET: ACCESOS RÁPIDOS Y TRÁMITES -->
+        <div class="bento-card quick-access-widget">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon-tag bg-amber-subtle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+              </div>
+              <div>
+                <h3 class="card-title">Accesos Rápidos</h3>
+                <p class="card-subtitle">Trámites y herramientas</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-links-list">
+            
+            <a routerLink="/dashboard/mis-calificaciones" class="quick-link-item">
+              <div class="link-icon-circle bg-amber-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+              </div>
+              <div class="link-info">
+                <span class="link-title">Mis Calificaciones</span>
+                <span class="link-desc">Boletín de notas y aportes</span>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+
+            <a routerLink="/dashboard/mis-materias" class="quick-link-item">
+              <div class="link-icon-circle bg-blue-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+              </div>
+              <div class="link-info">
+                <span class="link-title">Plan de Estudios</span>
+                <span class="link-desc">Malla curricular y sílabos</span>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+
+            <a routerLink="/dashboard/mis-pagos" class="quick-link-item">
+              <div class="link-icon-circle bg-green-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+              </div>
+              <div class="link-info">
+                <span class="link-title">Comprobantes y Pagos</span>
+                <span class="link-desc">Estado de cuenta y facturación</span>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+
+            <!-- CANAL DE ATENCIÓN DIRECTA WHATSAPP -->
+            <a [href]="whatsappSupportUrl" target="_blank" rel="noopener noreferrer" class="quick-link-item link-whatsapp">
+              <div class="link-icon-circle bg-whatsapp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </div>
+              <div class="link-info">
+                <span class="link-title">Secretaría y Soporte</span>
+                <span class="link-desc">Atención estudiantil vía WhatsApp</span>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </ng-container>
+</div>

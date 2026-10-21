@@ -1,239 +1,508 @@
-<p-toast></p-toast>
+<app-shared-toast></app-shared-toast>
 
-<div class="mis-calificaciones-container">
-  <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <div class="title-icon">
-          <i class="pi pi-graduation-cap"></i>
-        </div>
-        <div>
-          <h1 class="page-title">Mis Calificaciones</h1>
-          <p class="page-subtitle">
-            @if (historial) {
-              {{ historial.nombreAlumno }} - {{ historial.numeroDocumento }}
-            } @else {
-              Consulta tu historial academico completo
-            }
-          </p>
-        </div>
-      </div>
-      @if (vistaActual === 'detalle-materia') {
-        <button pButton
-                label="Volver"
-                icon="pi pi-arrow-left"
-                class="p-button-outlined"
-                (click)="volverAHistorial()">
-        </button>
-      }
+<div class="calificaciones-page">
+
+  <!-- Header -->
+  <app-shared-header materialIcon="school" title="Mis Calificaciones" subtitle="Consulta tu historial académico y el desglose detallado de tus notas">
+    @if (historial) {
+    <div header-actions class="user-info-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      <span>{{ historial.nombreAlumno }} &mdash; {{ historial.numeroDocumento }}</span>
     </div>
-  </div>
+    }
+  </app-shared-header>
 
-  <!-- Loading State -->
+  <!-- Loading -->
   @if (loading) {
-    <div class="loading-container">
-      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
-      <p>Cargando tu historial academico...</p>
+    <div class="mp-loading-initial">
+      <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+          stroke-dasharray="31.4 31.4" />
+      </svg>
+      <span>Cargando tu historial académico...</span>
     </div>
   }
 
-  <!-- Error State -->
-  @if (error && !loading) {
-    <div class="error-container">
-      <i class="pi pi-exclamation-triangle"></i>
-      <p>{{ error }}</p>
-      <button pButton label="Reintentar" icon="pi pi-refresh" (click)="cargarHistorial()"></button>
-    </div>
-  }
-
-  <!-- Vista: Historial -->
-  @if (!loading && !error && vistaActual === 'historial' && historial) {
-    <!-- Filtros -->
-    <div class="filtros-section">
-      <div class="filtro-item">
-        <label for="malla">Carrera / Malla:</label>
-        <p-select
-          id="malla"
-          [options]="mallasOptions"
-          [(ngModel)]="mallaSeleccionada"
-          (onChange)="seleccionarMalla($event.value)"
-          placeholder="Selecciona una malla"
-          styleClass="w-full">
-        </p-select>
+  <!-- Bloqueado por falta de pago -->
+  @if (!loading && bloqueadoPorPago) {
+    <div class="bloqueo-container">
+      <div class="bloqueo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; color: #dc3545;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
       </div>
-      @if (mallaSeleccionada && ciclosOptions.length > 0) {
-        <div class="filtro-item">
-          <label for="ciclo">Ciclo / Periodo:</label>
-          <p-select
-            id="ciclo"
-            [options]="ciclosOptions"
-            [(ngModel)]="cicloSeleccionado"
-            (onChange)="seleccionarCiclo($event.value)"
-            placeholder="Selecciona un ciclo"
-            styleClass="w-full">
-          </p-select>
-        </div>
-      }
-    </div>
+      <h2>Acceso bloqueado por falta de pago</h2>
+      <p>No puedes consultar tus calificaciones porque tienes cuotas vencidas sin pagar. Regulariza tu situación para acceder a esta función.</p>
 
-    <!-- Info del Ciclo Seleccionado -->
-    @if (cicloSeleccionado) {
-      <p-card styleClass="ciclo-info-card">
-        <div class="ciclo-info">
-          <div class="info-item">
-            <i class="pi pi-calendar"></i>
-            <span>{{ cicloSeleccionado.nombreCiclo }}</span>
-          </div>
-          @if (cicloSeleccionado.fechaInicio) {
-            <div class="info-item">
-              <i class="pi pi-clock"></i>
-              <span>{{ cicloSeleccionado.fechaInicio | date:'mediumDate' }} - {{ cicloSeleccionado.fechaFin | date:'mediumDate' }}</span>
-            </div>
-          }
-          <div class="info-item promedio">
-            <span class="label">Promedio General:</span>
-            <p-tag [value]="formatearNota(cicloSeleccionado.promedioGeneral)"
-                   [severity]="getColorNota(cicloSeleccionado.promedioGeneral)">
-            </p-tag>
-          </div>
-        </div>
-      </p-card>
-    }
-
-    <!-- Loading Boletin -->
-    @if (loadingBoletin) {
-      <div class="loading-container small">
-        <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
-        <p>Cargando notas...</p>
-      </div>
-    }
-
-    <!-- Lista de Materias -->
-    @if (!loadingBoletin && boletinActual && boletinActual.materias && boletinActual.materias.length > 0) {
-      <div class="materias-grid">
-        @for (materia of boletinActual.materias; track materia.idDetalleMalla) {
-          <p-card styleClass="materia-card" (click)="verDetalleMateria(materia)">
-            <div class="materia-content">
-              <div class="materia-header">
-                <h3 class="materia-nombre">{{ materia.nombreMateria }}</h3>
-                <p-tag [value]="materia.estado" [severity]="getSeverityEstado(materia.estado)"></p-tag>
+      <div class="cuotas-vencidas-list">
+        <h4>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--brand-yellow-dark); margin-right: 6px; display: inline-block; vertical-align: middle;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+          Cuotas vencidas
+        </h4>
+        @for (cuota of cuotasVencidas; track cuota.fechaLimite) {
+          <div class="cuota-vencida-item">
+            <div class="cuota-info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: var(--text-color-secondary); margin-right: 8px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              <div>
+                <span class="cuota-nombre">{{ cuota.nombre }}</span>
+                <span class="cuota-fecha">Venció el {{ cuota.fechaLimite | date:'longDate' }}</span>
               </div>
-              <div class="materia-nota">
-                <span class="nota-label">Nota Final:</span>
-                <span class="nota-valor" [ngClass]="'nota-' + getColorNota(materia.notaFinal)">
-                  {{ formatearNota(materia.notaFinal) }}
+            </div>
+            <span class="cuota-monto">{{ cuota.pendiente | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="bloqueo-footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #3b82f6; margin-right: 6px; display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+        <span>Para realizar pagos, comunícate con secretaría académica o utiliza los canales oficiales de pago.</span>
+      </div>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error && !loading && !bloqueadoPorPago) {
+    <div class="state-container error">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #dc3545; margin-bottom: 8px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+      <p>{{ error }}</p>
+      <button class="mp-btn-clear" (click)="cargarHistorial()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 4px;"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (!loading && !error && !bloqueadoPorPago && historial) {
+
+    <!-- Filtro: solo malla -->
+    <div class="filtros-bar">
+      <div class="filtro-item">
+        <label class="mp-filter-label">Carrera / Malla</label>
+        <app-custom-select
+          [items]="mallasOptions"
+          labelField="label"
+          valueField="value"
+          [(selectedValue)]="mallaSeleccionada"
+          (selectedValueChange)="seleccionarMalla($event)"
+          placeholder="Selecciona una malla"
+          [searchable]="false">
+        </app-custom-select>
+      </div>
+    </div>
+
+    <!-- Contenido de la malla seleccionada -->
+    @if (mallaSeleccionada && ciclos.length > 0) {
+
+      <!-- Resumen global de la malla -->
+      <div class="resumen-cards">
+        <div class="resumen-card total">
+          <div class="resumen-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+          </div>
+          <div class="resumen-data">
+            <span class="resumen-valor">{{ totalMaterias }}</span>
+            <span class="resumen-label">Materias</span>
+          </div>
+        </div>
+        <div class="resumen-card aprobadas">
+          <div class="resumen-icon success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: #28a745;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+          </div>
+          <div class="resumen-data">
+            <span class="resumen-valor">{{ materiasAprobadas }}</span>
+            <span class="resumen-label">Aprobadas</span>
+          </div>
+        </div>
+        @if (materiasEnCurso > 0) {
+          <div class="resumen-card en-curso">
+            <div class="resumen-icon info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: #3b82f6;"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            </div>
+            <div class="resumen-data">
+              <span class="resumen-valor">{{ materiasEnCurso }}</span>
+              <span class="resumen-label">En Curso</span>
+            </div>
+          </div>
+        }
+        @if (materiasReprobadas > 0) {
+          <div class="resumen-card reprobadas">
+            <div class="resumen-icon danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: #dc3545;"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+            </div>
+            <div class="resumen-data">
+              <span class="resumen-valor">{{ materiasReprobadas }}</span>
+              <span class="resumen-label">Reprobadas</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Ciclos de la malla -->
+      @for (ciclo of ciclos; track ciclo.idCiclo) {
+        <div class="ciclo-section">
+          <!-- Cabecera del ciclo con soporte de acordeón click -->
+          <div class="ciclo-header clickable" (click)="toggleCiclo(ciclo.idCiclo!)">
+            <div class="ciclo-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--text-color-secondary); margin-right: 6px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              <div>
+                <h3>{{ ciclo.nombreCiclo }}</h3>
+                @if (ciclo.fechaInicio) {
+                  <span class="ciclo-fechas">{{ ciclo.fechaInicio | date:'longDate' }} — {{ ciclo.fechaFin | date:'longDate' }}</span>
+                }
+              </div>
+            </div>
+            
+            <div class="ciclo-right-section" style="display: flex; align-items: center; gap: 1rem;">
+              <div class="ciclo-promedio">
+                <span class="promedio-label">Promedio</span>
+                <span class="promedio-valor" [ngClass]="getNotaClass(ciclo.promedioGeneral)">
+                  {{ formatNota(ciclo.promedioGeneral) }}
                 </span>
               </div>
-              <p class="nota-descripcion">{{ getDescripcionNota(materia.notaFinal) }}</p>
-              <button pButton
-                      label="Ver Detalle"
-                      icon="pi pi-eye"
-                      class="p-button-sm p-button-outlined w-full">
-              </button>
+              <span class="chevron-icon" [style.transform]="isCicloExpandido(ciclo.idCiclo!) ? 'rotate(180deg)' : 'none'" style="transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><polyline points="6 9 12 15 18 9" /></svg>
+              </span>
             </div>
-          </p-card>
-        }
-      </div>
-    }
-
-    <!-- Sin Materias -->
-    @if (!loadingBoletin && (!boletinActual || !boletinActual.materias || boletinActual.materias.length === 0)) {
-      <div class="empty-state">
-        <i class="pi pi-inbox"></i>
-        <h3>Sin notas registradas</h3>
-        <p>No hay calificaciones disponibles para este periodo.</p>
-      </div>
-    }
-  }
-
-  <!-- Vista: Detalle Materia -->
-  @if (vistaActual === 'detalle-materia' && materiaDetalle) {
-    <div class="detalle-materia-container">
-      <!-- Header Materia -->
-      <p-card styleClass="materia-detalle-header">
-        <div class="header-info">
-          <div class="info-principal">
-            <h2>{{ materiaDetalle.nombreMateria }}</h2>
-            <p-tag [value]="materiaDetalle.estado" [severity]="getSeverityEstado(materiaDetalle.estado)"></p-tag>
           </div>
-          <div class="nota-final-grande">
-            <span class="label">Nota Final</span>
-            <span class="valor" [ngClass]="'nota-' + getColorNota(materiaDetalle.notaFinal)">
-              {{ formatearNota(materiaDetalle.notaFinal) }}
-            </span>
-            <span class="descripcion">{{ getDescripcionNota(materiaDetalle.notaFinal) }}</span>
-          </div>
-        </div>
-      </p-card>
 
-      <!-- Estructura de Notas -->
-      <p-card>
-        <ng-template pTemplate="header">
-          <div class="card-header">
-            <h3>Desglose de Calificaciones</h3>
-          </div>
-        </ng-template>
-
-        @if (notasTree.length > 0) {
-          <p-tree [value]="notasTree" styleClass="notas-tree">
-            <ng-template let-node pTemplate="default">
-              <div class="tree-node-content">
-                <div class="node-info">
-                  <span class="node-nombre">{{ node.label }}</span>
-                  @if (node.data.peso) {
-                    <span class="node-peso">({{ node.data.peso }}%)</span>
-                  }
+          <!-- Tabla de materias del ciclo -->
+          @if (isCicloExpandido(ciclo.idCiclo!)) {
+            @if (getMateriasCiclo(ciclo).length > 0) {
+              
+              <!-- Toolbar del ciclo: expandir / colapsar todos los desgloses -->
+              <div class="ciclo-toolbar">
+                <div class="ciclo-toolbar-hint">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--primary-color, #3b82f6);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span>Haz clic en <strong>Ver desglose</strong> o en la materia para consultar todas tus actividades y criterios.</span>
                 </div>
-                <div class="node-nota">
-                  @if (node.data.valorNota !== null) {
-                    <p-tag [value]="formatearNota(node.data.valorNota)"
-                           [severity]="getColorNota(node.data.valorNota)">
-                    </p-tag>
-                  } @else {
-                    <span class="sin-nota">--</span>
-                  }
-                  @if (node.data.esCalculada) {
-                    <i class="pi pi-calculator" pTooltip="Calculada automaticamente"></i>
-                  }
+                <div class="ciclo-toolbar-actions">
+                  <button type="button" class="btn-toggle-all" (click)="expandirTodasMaterias(ciclo)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+                    Expandir todo
+                  </button>
+                  <button type="button" class="btn-toggle-all" (click)="colapsarTodasMaterias(ciclo)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+                    Colapsar todo
+                  </button>
                 </div>
               </div>
-            </ng-template>
-          </p-tree>
-        } @else {
-          <div class="no-estructura">
-            <i class="pi pi-info-circle"></i>
-            <p>No hay estructura de notas disponible para esta materia.</p>
-          </div>
-        }
-      </p-card>
 
-      <!-- Escala de Calificaciones -->
-      <p-card styleClass="escala-card">
-        <ng-template pTemplate="header">
-          <div class="card-header">
-            <h3>Escala de Calificaciones</h3>
-          </div>
-        </ng-template>
-        <div class="escala-grid">
-          <div class="escala-item escala-success">
-            <span class="rango">9.00 - 10.00</span>
-            <span class="descripcion">Domina los aprendizajes</span>
-          </div>
-          <div class="escala-item escala-info">
-            <span class="rango">7.00 - 8.99</span>
-            <span class="descripcion">Alcanza los aprendizajes</span>
-          </div>
-          <div class="escala-item escala-warning">
-            <span class="rango">4.01 - 6.99</span>
-            <span class="descripcion">Proximo a alcanzar</span>
-          </div>
-          <div class="escala-item escala-danger">
-            <span class="rango">0.00 - 4.00</span>
-            <span class="descripcion">No alcanza los aprendizajes</span>
-          </div>
+              <div class="materias-table-wrapper">
+                <table class="materias-table">
+                  <thead>
+                    <tr>
+                      <th class="col-expand"></th>
+                      <th class="col-materia">Materia</th>
+                      <th class="col-nota">Nota Final</th>
+                      <th class="col-remedial">Remedial</th>
+                      <th class="col-estado">Estado</th>
+                      <th class="col-desc">Nivel de Aprendizaje</th>
+                      <th class="col-accion">Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (materia of getMateriasCiclo(ciclo); track materia.idDetalleMalla) {
+                      <!-- Fila principal de la materia -->
+                      <tr class="materia-main-row" 
+                          [class.row-expanded]="isMateriaExpandida(materia.idDetalleMalla)"
+                          [class.row-en-curso]="getEstadoMostrar(materia).toLowerCase() === 'en curso'"
+                          (click)="toggleMateria(materia, ciclo.idMatricula)">
+                        <td class="col-expand">
+                          <button type="button" class="btn-expand-icon" [class.expanded]="isMateriaExpandida(materia.idDetalleMalla)" aria-label="Expandir desglose">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                          </button>
+                        </td>
+                        <td class="col-materia">
+                          <div class="materia-name">
+                            <span class="materia-title-text">{{ materia.nombreMateria }}</span>
+                          </div>
+                        </td>
+                        <td class="col-nota">
+                          <span class="nota-badge" [ngClass]="getNotaClass(materia.notaFinal)">
+                            {{ formatNota(materia.notaFinal) }}
+                          </span>
+                        </td>
+                        <td class="col-remedial">
+                          @if (materia.examenRemedial !== null && materia.examenRemedial !== undefined) {
+                            <span class="nota-badge" [ngClass]="getNotaClass(materia.examenRemedial)">
+                              {{ formatNota(materia.examenRemedial) }}
+                            </span>
+                          } @else {
+                            <span class="no-aplica">—</span>
+                          }
+                        </td>
+                        <td class="col-estado">
+                          <span class="custom-tag"
+                            [class.tag-success]="getEstadoMostrar(materia).toLowerCase() === 'aprobado'"
+                            [class.tag-danger]="getEstadoMostrar(materia).toLowerCase() === 'reprobado'"
+                            [class.tag-warn]="getEstadoMostrar(materia).toLowerCase() === 'recuperación' || getEstadoMostrar(materia).toLowerCase() === 'recuperacion' || getEstadoMostrar(materia).toLowerCase() === 'remedial'"
+                            [class.tag-info]="getEstadoMostrar(materia).toLowerCase() === 'en curso'"
+                            [class.tag-secondary]="getEstadoMostrar(materia).toLowerCase() === 'pendiente'">
+                            {{ getEstadoMostrar(materia) }}
+                          </span>
+                        </td>
+                        <td class="col-desc">
+                          <span class="desc-text">{{ getNotaDescripcion(materia.notaFinal) }}</span>
+                        </td>
+                        <td class="col-accion" (click)="$event.stopPropagation()">
+                          <button type="button" class="btn-ver-desglose" 
+                                  [class.active]="isMateriaExpandida(materia.idDetalleMalla)"
+                                  (click)="toggleMateria(materia, ciclo.idMatricula)">
+                            @if (isMateriaExpandida(materia.idDetalleMalla)) {
+                              <span>Ocultar</span>
+                            } @else {
+                              <span>Ver desglose</span>
+                            }
+                          </button>
+                        </td>
+                      </tr>
+
+                      <!-- Fila expandible con el desglose completo de calificaciones -->
+                      @if (isMateriaExpandida(materia.idDetalleMalla)) {
+                        <tr class="desglose-row">
+                          <td colspan="7" class="desglose-cell">
+                            <div class="desglose-panel">
+
+                              <!-- Loading state for breakdown -->
+                              @if (loadingDesglose[materia.idDetalleMalla]) {
+                                <div class="desglose-loading">
+                                  <svg class="mp-spinner-small" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+                                  </svg>
+                                  <span>Cargando desglose de notas de <strong>{{ materia.nombreMateria }}</strong>...</span>
+                                </div>
+                              }
+
+                              <!-- Error state for breakdown -->
+                              @if (errorDesglose[materia.idDetalleMalla] && !loadingDesglose[materia.idDetalleMalla]) {
+                                <div class="desglose-error">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: #dc3545;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                  <span>{{ errorDesglose[materia.idDetalleMalla] }}</span>
+                                  <button type="button" class="btn-retry-desglose" (click)="cargarDesgloseMateria(materia, ciclo.idMatricula)">Reintentar</button>
+                                </div>
+                              }
+
+                              <!-- Loaded breakdown -->
+                              @if (!loadingDesglose[materia.idDetalleMalla] && !errorDesglose[materia.idDetalleMalla] && desglosePorMateria[materia.idDetalleMalla]) {
+                                @let desglose = desglosePorMateria[materia.idDetalleMalla];
+                                
+                                <div class="desglose-content">
+                                  
+                                  <!-- Encabezado informativo del desglose -->
+                                  <div class="desglose-header">
+                                    <div class="desglose-header-left">
+                                      <h4>Desglose de Calificaciones &mdash; {{ materia.nombreMateria }}</h4>
+                                    </div>
+                                    <div class="desglose-header-stats">
+                                      <div class="desglose-stat-item">
+                                        <span class="stat-lbl">Progreso:</span>
+                                        <span class="stat-val">{{ desglose.actividadesCalificadas }} de {{ desglose.totalActividades }} evaluadas</span>
+                                      </div>
+                                      <div class="desglose-stat-item">
+                                        <span class="stat-lbl">Nota calculada:</span>
+                                        <span class="nota-badge" [ngClass]="getNotaClass(desglose.notaFinalCalculada)">
+                                          {{ formatNota(desglose.notaFinalCalculada) }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <!-- Grupos / Categorías de evaluación (Gestión Formativa, Práctica, Acreditación, etc.) -->
+                                  @if (desglose.grupos.length > 0) {
+                                    <div class="grupos-grid">
+                                      @for (grupo of desglose.grupos; track grupo.idPlantillaEstructura) {
+                                        <div class="grupo-card">
+                                          <!-- Header del Grupo con peso y subtotal -->
+                                          <div class="grupo-card-header">
+                                            <div class="grupo-header-info">
+                                              <span class="grupo-tag-peso">{{ grupo.peso }}%</span>
+                                              <h5 class="grupo-title">{{ grupo.nombre }}</h5>
+                                            </div>
+                                            <div class="grupo-subtotal-badge">
+                                              <div class="subtotal-calc">
+                                                <span class="subtotal-label">Subtotal:</span>
+                                                <span class="subtotal-nota" [ngClass]="getNotaClass(grupo.subtotal)">
+                                                  {{ formatNota(grupo.subtotal) }}
+                                                </span>
+                                              </div>
+                                              @if (grupo.aporteFinal !== null && grupo.aporteFinal !== undefined) {
+                                                <span class="aporte-final-label">Aporte: <strong>{{ formatNota(grupo.aporteFinal) }} pts</strong></span>
+                                              }
+                                            </div>
+                                          </div>
+
+                                          <!-- Lista / Tabla de actividades dentro del grupo -->
+                                          <div class="actividades-table-wrapper">
+                                            <table class="actividades-table">
+                                              <thead>
+                                                <tr>
+                                                  <th class="col-act-nombre">Actividad / Criterio</th>
+                                                  <th class="col-act-peso">Peso</th>
+                                                  <th class="col-act-nota">Nota (0-10)</th>
+                                                  <th class="col-act-obs">Retroalimentación del Docente</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                @for (act of grupo.actividades; track act.idPlantillaEstructura) {
+                                                  <tr class="actividad-row">
+                                                    <td class="col-act-nombre">
+                                                      <div class="act-name-container">
+                                                        <span class="act-name">{{ act.nombre }}</span>
+                                                        @if (act.ruta && act.ruta !== act.nombre) {
+                                                          <span class="act-ruta">{{ act.ruta }}</span>
+                                                        }
+                                                      </div>
+                                                    </td>
+                                                    <td class="col-act-peso">
+                                                      <div class="peso-pill-group">
+                                                        <span class="peso-pill" title="Peso en la categoría">{{ act.pesoEnGrupo }}%</span>
+                                                        @if (act.pesoEfectivo !== act.pesoEnGrupo) {
+                                                          <span class="peso-efectivo-pill" title="Peso efectivo en nota final">({{ act.pesoEfectivo }}% final)</span>
+                                                        }
+                                                      </div>
+                                                    </td>
+                                                    <td class="col-act-nota">
+                                                      <span class="nota-badge-act" [ngClass]="getNotaClass(act.valorNota)">
+                                                        {{ formatNota(act.valorNota) }}
+                                                      </span>
+                                                    </td>
+                                                    <td class="col-act-obs">
+                                                      @if (act.observacion) {
+                                                        <div class="docente-comment-box" title="Comentario del docente">
+                                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="comment-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                                          <span>"{{ act.observacion }}"</span>
+                                                        </div>
+                                                      } @else {
+                                                        <span class="sin-observacion">Sin observaciones</span>
+                                                      }
+                                                    </td>
+                                                  </tr>
+                                                }
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  } @else {
+                                    <div class="desglose-empty">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 36px; height: 36px; color: var(--text-color-secondary); margin-bottom: 8px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                      <p>Esta materia cuenta con calificación directa general registrada por el docente.</p>
+                                    </div>
+                                  }
+
+                                  <!-- Sección de Examen Remedial si existe -->
+                                  @if (desglose.examenRemedial !== null && desglose.examenRemedial !== undefined) {
+                                    <div class="remedial-alert-card">
+                                      <div class="remedial-alert-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                      </div>
+                                      <div class="remedial-alert-content">
+                                        <h5>Examen de Recuperación / Remedial Registrado</h5>
+                                        <p>Se ha registrado un examen remedial con nota de <strong>{{ formatNota(desglose.examenRemedial) }}</strong>. @if (desglose.examenRemedial >= 7) { <span>(Aprobado con nota final ajustada a 7.00)</span> } @else { <span>(No supera el mínimo requerido de 7.00)</span> }</p>
+                                      </div>
+                                      <div class="remedial-alert-badge">
+                                        <span class="nota-badge" [ngClass]="getNotaClass(desglose.examenRemedial)">{{ formatNota(desglose.examenRemedial) }}</span>
+                                      </div>
+                                    </div>
+                                  }
+
+                                  <!-- Resumen de Cierre de Materia -->
+                                  <div class="desglose-footer-summary">
+                                    <div class="summary-left">
+                                      <span class="summary-title">Estado de la Materia:</span>
+                                      <span class="custom-tag"
+                                        [class.tag-success]="desglose.estado.toLowerCase() === 'aprobado'"
+                                        [class.tag-danger]="desglose.estado.toLowerCase() === 'reprobado'"
+                                        [class.tag-warn]="desglose.estado.toLowerCase() === 'recuperación' || desglose.estado.toLowerCase() === 'recuperacion' || desglose.estado.toLowerCase() === 'remedial'"
+                                        [class.tag-info]="desglose.estado.toLowerCase() === 'en curso'"
+                                        [class.tag-secondary]="desglose.estado.toLowerCase() === 'pendiente'">
+                                        {{ desglose.estado }}
+                                      </span>
+                                      <span class="summary-desc">&mdash; {{ getNotaDescripcion(desglose.notaFinalCalculada) }}</span>
+                                    </div>
+                                    <div class="summary-right">
+                                      <span class="summary-nota-label">Nota Final:</span>
+                                      <span class="summary-nota-val" [ngClass]="getNotaClass(desglose.notaFinalCalculada)">
+                                        {{ formatNota(desglose.notaFinalCalculada) }}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                </div>
+                              }
+
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="ciclo-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: var(--text-color-secondary); margin-bottom: 8px;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
+                <span>Sin calificaciones registradas en este periodo.</span>
+              </div>
+            }
+          }
         </div>
-      </p-card>
+      }
+    }
+
+    <!-- Malla sin ciclos -->
+    @if (mallaSeleccionada && ciclos.length === 0) {
+      <div class="state-container">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; color: var(--text-color-secondary); margin-bottom: 8px;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
+        <h3>Sin periodos</h3>
+        <p>No hay ciclos registrados para esta malla.</p>
+      </div>
+    }
+
+    <!-- No seleccionó malla -->
+    @if (!mallaSeleccionada) {
+      <div class="state-container">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; color: var(--text-color-secondary); margin-bottom: 8px;"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>
+        <h3>Selecciona una malla</h3>
+        <p>Escoge una carrera para ver tus calificaciones.</p>
+      </div>
+    }
+
+    <!-- Escala de calificaciones Legend -->
+    <div class="escala-section" style="margin-top: 1.5rem;">
+      <h4>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 6px; color: var(--text-color-secondary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Escala de Calificación
+      </h4>
+      <div class="escala-items">
+        <div class="escala-item">
+          <span class="escala-dot nota-domina"></span>
+          <span class="escala-range">9.00 – 10.00</span>
+          <span class="escala-desc">Domina los aprendizajes</span>
+        </div>
+        <div class="escala-item">
+          <span class="escala-dot nota-alcanza"></span>
+          <span class="escala-range">7.00 – 8.99</span>
+          <span class="escala-desc">Alcanza los aprendizajes (Aprobado)</span>
+        </div>
+        <div class="escala-item">
+          <span class="escala-dot nota-proximo"></span>
+          <span class="escala-range">4.01 – 6.99</span>
+          <span class="escala-desc">Próximo a alcanzar (Recuperación)</span>
+        </div>
+        <div class="escala-item">
+          <span class="escala-dot nota-no-alcanza"></span>
+          <span class="escala-range">0.00 – 4.00</span>
+          <span class="escala-desc">No alcanza los aprendizajes</span>
+        </div>
+      </div>
     </div>
+
   }
 </div>

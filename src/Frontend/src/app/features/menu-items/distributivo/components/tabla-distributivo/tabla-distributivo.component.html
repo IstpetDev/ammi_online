@@ -1,115 +1,286 @@
+<!-- ═══════════════════════════════════════════
+     VISTA POR CURSO (default)
+     ═══════════════════════════════════════════ -->
+@if (tipoVisualizacion === 'curso') {
+  <div class="distributivo-lista">
+    @for (curso of cursosAgrupados; track curso.idMalla) {
+      <div class="curso-card">
 
-<div class="tabla-card">
-  <p-table 
-    [value]="distributivos" 
-    [paginator]="true" 
-    [rows]="10" 
-    [showCurrentPageReport]="true" 
-    [rowsPerPageOptions]="[10, 25, 50]"
-    currentPageReportTemplate="{first}-{last} de {totalRecords}"
-    [showGridlines]="false"
-    [scrollable]="true"
-    [tableStyle]="{'min-width': '50rem'}">
-    
-    <ng-template pTemplate="header">
-      <tr>
-        <th pSortableColumn="nombreMalla" style="min-width: 10rem">
-          Malla <p-sortIcon field="nombreMalla"></p-sortIcon>
-        </th>
-        <th pSortableColumn="nombreMateria" style="min-width: 10rem">
-          Materia <p-sortIcon field="nombreMateria"></p-sortIcon>
-        </th>
-        <th pSortableColumn="nombreParalelo" style="min-width: 6rem">
-          Paralelo <p-sortIcon field="nombreParalelo"></p-sortIcon>
-        </th>
-        <th pSortableColumn="nombreDocente" style="min-width: 10rem">
-          Docente <p-sortIcon field="nombreDocente"></p-sortIcon>
-        </th>
-        <th style="min-width: 7rem" class="text-center">
-          Acciones
-        </th>
-      </tr>
-    </ng-template>
-    
-    <ng-template pTemplate="body" let-item>
-      <tr>
-        <!-- Malla -->
-        <td>
-          <span class="text-sm font-medium">{{ item.nombreMalla }}</span>
-        </td>
-        
-        <!-- Materia -->
-        <td>
-          <div class="materia-info">
-            <span class="materia-nombre">{{ item.nombreMateria }}</span>
-            <span class="materia-horas">
-              <i class="pi pi-clock"></i>
-              {{ item.horasMateria }}h
-            </span>
+        <!-- Header del Curso — Level 1 acordeón -->
+        <div class="curso-header" (click)="toggleCursoAccordion(curso.idMalla)" style="cursor:pointer;">
+          <div class="curso-info">
+
+            <!-- Nombre del curso -->
+            <div class="curso-title">
+              <i class="pi pi-graduation-cap"></i>
+              <span class="docente-nombre">{{ curso.nombreCurso }}</span>
+              @if (curso.sinParalelos) {
+                <p-tag value="Sin paralelos configurados" severity="warn" [rounded]="true"></p-tag>
+              }
+            </div>
+
+            @if (!curso.sinParalelos) {
+              <!-- Chips rápidos por paralelo -->
+              <div class="paralelos-summary">
+                @for (paralelo of curso.paralelos; track paralelo.nombreParalelo) {
+                  <span class="paralelo-chip"
+                    [class.chip-completo]="paralelo.sinAsignar === 0"
+                    [class.chip-incompleto]="paralelo.sinAsignar > 0">
+                    <span class="chip-label">Paralelo {{ paralelo.nombreParalelo }}</span>
+                    <span class="chip-sep">|</span>
+                    <span>{{ paralelo.total }} mat.</span>
+                    <span class="chip-sep">·</span>
+                    <span class="chip-asignadas">{{ paralelo.asignadas }} asig.</span>
+                    @if (paralelo.sinAsignar > 0) {
+                      <span class="chip-sep">·</span>
+                      <span class="chip-pendiente">{{ paralelo.sinAsignar }} pend.</span>
+                    }
+                  </span>
+                }
+              </div>
+
+              <!-- Totales globales del curso -->
+              <div class="docente-stats">
+                <span class="stat-item">
+                  <i class="pi pi-book"></i>
+                  {{ curso.totalMaterias }} materia{{ curso.totalMaterias !== 1 ? 's' : '' }}
+                </span>
+                <span class="stat-item stat-asignadas">
+                  <i class="pi pi-check-circle"></i>
+                  {{ curso.asignadas }} asignada{{ curso.asignadas !== 1 ? 's' : '' }}
+                </span>
+                @if (curso.sinAsignar > 0) {
+                  <span class="stat-item stat-pendiente">
+                    <i class="pi pi-exclamation-circle"></i>
+                    {{ curso.sinAsignar }} sin docente
+                  </span>
+                }
+                <span class="stat-item">
+                  <i class="pi pi-clock"></i>
+                  {{ curso.totalHoras }}h total
+                </span>
+              </div>
+            }
           </div>
-        </td>
-        
-        <!-- Paralelo -->
-        <td>
-          <p-tag [value]="item.nombreParalelo" severity="secondary" [rounded]="true"></p-tag>
-        </td>
-        
-        <!-- Docente -->
-        <td>
-          @if (item.nombreDocente) {
-            <div class="docente-info">
-              <span class="docente-nombre">{{ item.nombreDocente }}</span>
-              <p-button 
-                label="Ver Carga" 
-                icon="pi pi-chart-pie" 
-                [text]="true"
-                size="small"
-                (onClick)="onVerCarga(item.idPersona)">
+
+          <i class="pi"
+            [class.pi-chevron-down]="!cursoAccordion[curso.idMalla]"
+            [class.pi-chevron-up]="cursoAccordion[curso.idMalla]"
+            style="flex-shrink:0; margin-top:0.2rem;">
+          </i>
+        </div>
+
+        <!-- Contenido expandido del curso -->
+        @if (cursoAccordion[curso.idMalla]) {
+          @if (curso.sinParalelos) {
+            <div class="no-paralelos-msg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <i class="pi pi-info-circle"></i>
+                <span>Sin paralelos configurados para este curso.</span>
+              </div>
+              <p-button label="Crear Paralelo" icon="pi pi-plus-circle" size="small"
+                (onClick)="crearParalelo.emit()">
               </p-button>
             </div>
           } @else {
-            <span class="sin-asignar">
-              <i class="pi pi-exclamation-circle"></i>
-              Sin asignar
-            </span>
+            <!-- Lista de paralelos — Level 2 acordeón -->
+            <div class="paralelos-lista">
+              @for (paralelo of curso.paralelos; track paralelo.nombreParalelo) {
+                <div class="paralelo-section">
+                  <div class="paralelo-header" (click)="toggleParaleloAccordion(curso.idMalla, paralelo.nombreParalelo)">
+                    <div class="paralelo-header-info">
+                      <i class="pi pi-tag"></i>
+                      <span class="paralelo-titulo">Paralelo {{ paralelo.nombreParalelo }}</span>
+                      <div class="paralelo-mini-stats">
+                        <span class="mini-stat">{{ paralelo.total }} mat.</span>
+                        <span class="mini-sep">·</span>
+                        <span class="mini-stat asig">{{ paralelo.asignadas }} asig.</span>
+                        @if (paralelo.sinAsignar > 0) {
+                          <span class="mini-sep">·</span>
+                          <span class="mini-stat pend">{{ paralelo.sinAsignar }} pend.</span>
+                        }
+                      </div>
+                    </div>
+                    <i class="pi"
+                      [class.pi-chevron-down]="!paraleloAccordion[paraleloKey(curso.idMalla, paralelo.nombreParalelo)]"
+                      [class.pi-chevron-up]="paraleloAccordion[paraleloKey(curso.idMalla, paralelo.nombreParalelo)]"
+                      style="flex-shrink:0; font-size:0.8rem;">
+                    </i>
+                  </div>
+
+                  <!-- Materias del paralelo — Level 3 -->
+                  @if (paraleloAccordion[paraleloKey(curso.idMalla, paralelo.nombreParalelo)]) {
+                    <div class="materias-lista">
+                      @for (materia of paralelo.materias; track materia.idDistributivo) {
+                        <div class="materia-item" [class.materia-sin-docente]="!tieneDocente(materia)">
+                          <div class="materia-row">
+                            <div class="materia-row-left">
+                              <div class="materia-icon" [class.materia-icon-pendiente]="!tieneDocente(materia)">
+                                <i class="pi pi-book"></i>
+                              </div>
+                              <div class="materia-info">
+                                <span class="materia-nombre">{{ materia.nombreMateria }}</span>
+                                <div class="materia-meta">
+                                  <span class="meta-item" [class.pendiente-text]="!tieneDocente(materia)">
+                                    <i class="pi pi-user"></i>
+                                    {{ tieneDocente(materia) ? materia.nombreDocente : 'Sin asignar' }}
+                                  </span>
+                                  <span class="meta-item">
+                                    <i class="pi pi-clock"></i>
+                                    {{ materia.horasMateria }}h
+                                  </span>
+                                  @if (materia.fechaInicio && materia.fechaFin) {
+                                    <p-tag [value]="'Notas: ' + getStatusLabel(materia.statusPeriodo)"
+                                      [severity]="getStatusSeverity(materia.statusPeriodo)"
+                                      [rounded]="true"
+                                      [pTooltip]="'Ingreso de notas: ' + materia.fechaInicio + ' al ' + materia.fechaFin + (materia.diasGracia ? ' (+' + materia.diasGracia + 'd gracia)' : '')">
+                                    </p-tag>
+                                  } @else {
+                                    <p-tag value="Notas: Sin fechas" severity="secondary" [rounded]="true"
+                                      pTooltip="No se han configurado fechas de ingreso de notas">
+                                    </p-tag>
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                            <div class="materia-row-right">
+                              <p-button icon="pi pi-calendar" [text]="true" [rounded]="true" size="small"
+                                pTooltip="Editar fechas de notas" (onClick)="onEditarFechas(materia)">
+                              </p-button>
+                              <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" size="small"
+                                pTooltip="Editar asignación" (onClick)="onEditar(materia)">
+                              </p-button>
+                              <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" size="small"
+                                pTooltip="Eliminar asignación" (onClick)="onEliminar(materia.idDistributivo)">
+                              </p-button>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
           }
-        </td>
-        
-        <!-- Acciones -->
-        <td>
-          <div class="actions-cell">
-            <p-button 
-              icon="pi pi-pencil" 
-              [rounded]="true"
-              [text]="true"
-              severity="warn"
-              pTooltip="Editar"
-              tooltipPosition="top"
-              (onClick)="onEditar(item)">
-            </p-button>
-            <p-button 
-              icon="pi pi-trash" 
-              [rounded]="true"
-              [text]="true"
-              severity="danger"
-              pTooltip="Eliminar"
-              tooltipPosition="top"
-              (onClick)="onEliminar(item.idDistributivo)">
-            </p-button>
+        }
+
+      </div>
+    }
+  </div>
+}
+
+
+<!-- ═══════════════════════════════════════════
+     VISTA POR DOCENTE
+     ═══════════════════════════════════════════ -->
+@if (tipoVisualizacion === 'docente') {
+  <div class="distributivo-lista">
+    @for (docente of docentesAgrupados; track docente.nombreDocente) {
+      <div class="docente-card" [class.docente-sin-asignaciones]="docente.sinAsignaciones">
+
+        <!-- Header del Docente -->
+        <div class="docente-header"
+          [style.cursor]="!docente.sinAsignaciones ? 'pointer' : 'default'"
+          (click)="!docente.sinAsignaciones && toggleDocenteAccordion(docente.nombreDocente)">
+
+          <div class="docente-info">
+            <div class="docente-title">
+              <i class="pi"
+                [class.pi-user]="!docente.esPendiente && !docente.sinAsignaciones"
+                [class.pi-exclamation-triangle]="docente.esPendiente"
+                [class.pi-user-minus]="docente.sinAsignaciones">
+              </i>
+              <span class="docente-nombre">{{ docente.nombreDocente }}</span>
+              @if (docente.sinAsignaciones) {
+                <p-tag value="Sin asignaciones" severity="warn" [rounded]="true"></p-tag>
+              }
+              @if (docente.esPendiente) {
+                <p-tag value="Sin docente asignado" severity="warn" [rounded]="true"></p-tag>
+              }
+            </div>
+
+            <div class="docente-stats">
+              @if (!docente.sinAsignaciones) {
+                <span class="stat-item">
+                  <i class="pi pi-book"></i>
+                  {{ docente.materias.length }} materia{{ docente.materias.length !== 1 ? 's' : '' }}
+                </span>
+                <span class="stat-item">
+                  <i class="pi pi-clock"></i>
+                  {{ docente.totalHoras }}h total
+                </span>
+              } @else {
+                <span class="stat-item stat-sinasig">
+                  <i class="pi pi-info-circle"></i>
+                  Sin materias asignadas en este ciclo
+                </span>
+              }
+            </div>
           </div>
-        </td>
-      </tr>
-    </ng-template>
-    
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="5">
-          <div class="empty-message">
-            <i class="pi pi-inbox"></i>
-            <p>No hay asignaciones registradas</p>
+
+          @if (!docente.sinAsignaciones) {
+            <i class="pi"
+              [class.pi-chevron-down]="!docenteAccordion[docente.nombreDocente]"
+              [class.pi-chevron-up]="docenteAccordion[docente.nombreDocente]"
+              style="flex-shrink:0; margin-top:0.2rem;">
+            </i>
+          }
+        </div>
+
+        <!-- Materias (expandidas) — sólo si tiene asignaciones -->
+        @if (!docente.sinAsignaciones && docenteAccordion[docente.nombreDocente]) {
+          <div class="materias-lista">
+            @for (materia of docente.materias; track materia.idDistributivo) {
+              <div class="materia-item" [class.materia-sin-docente]="docente.esPendiente">
+                <div class="materia-row">
+                  <div class="materia-row-left">
+                    <div class="materia-info-principal">
+                      <div class="materia-detalle">
+                        <span class="materia-nombre">{{ materia.nombreMateria }}</span>
+                        <div class="materia-meta">
+                          <span class="meta-item">
+                            <i class="pi pi-graduation-cap"></i>
+                            {{ materia.nombreMalla }}
+                          </span>
+                          <p-tag [value]="'Paralelo ' + getNombreParalelo(materia.idParalelo)" severity="secondary" [rounded]="true"></p-tag>
+                          <span class="meta-item">
+                            <i class="pi pi-clock"></i>
+                            {{ materia.horasMateria }}h
+                          </span>
+                          @if (materia.fechaInicio && materia.fechaFin) {
+                            <p-tag [value]="'Notas: ' + getStatusLabel(materia.statusPeriodo)"
+                              [severity]="getStatusSeverity(materia.statusPeriodo)"
+                              [rounded]="true"
+                              [pTooltip]="'Ingreso de notas: ' + materia.fechaInicio + ' al ' + materia.fechaFin + (materia.diasGracia ? ' (+' + materia.diasGracia + 'd gracia)' : '')">
+                            </p-tag>
+                          } @else {
+                            <p-tag value="Notas: Sin fechas" severity="secondary" [rounded]="true"
+                              pTooltip="No se han configurado fechas de ingreso de notas">
+                            </p-tag>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="materia-actions">
+                    <p-button icon="pi pi-calendar" [text]="true" [rounded]="true" size="small"
+                      pTooltip="Editar fechas de notas" (onClick)="onEditarFechas(materia)">
+                    </p-button>
+                    <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" size="small"
+                      pTooltip="Editar" (onClick)="onEditar(materia)">
+                    </p-button>
+                    <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" size="small"
+                      pTooltip="Eliminar" (onClick)="onEliminar(materia.idDistributivo)">
+                    </p-button>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-</div>
+        }
+
+      </div>
+    }
+  </div>
+}

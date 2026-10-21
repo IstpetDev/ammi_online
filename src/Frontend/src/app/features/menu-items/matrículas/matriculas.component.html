@@ -14,8 +14,29 @@
     </div>
   </div>
 
+  <!-- Tabs Navigation Bar -->
+  <div class="matriculas-tabs-bar">
+    <button type="button" class="tab-item-btn" [class.active]="activeTab === 'matriculas'" (click)="activeTab = 'matriculas'">
+      <i class="pi pi-users tab-item-icon"></i>
+      <span>Matrículas Activas</span>
+    </button>
+    
+    @if (mostrarCostosExtras) {
+    <button type="button" class="tab-item-btn" [class.active]="activeTab === 'costos-extras'" (click)="activeTab = 'costos-extras'">
+      <i class="pi pi-dollar tab-item-icon"></i>
+      <span>Costos Extras</span>
+    </button>
+    }
+  </div>
+
   <!-- Main Content -->
   <div class="main-content">
-    <app-manage-approved></app-manage-approved>
+    @if (activeTab === 'matriculas') {
+      <app-manage-approved></app-manage-approved>
+    }
+
+    @if (activeTab === 'costos-extras' && mostrarCostosExtras) {
+      <app-costos-extras></app-costos-extras>
+    }
   </div>
 </div>

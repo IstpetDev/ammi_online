@@ -1,0 +1,114 @@
+<div class="profesor-dashboard">
+
+  <!-- Header de Bienvenida estilo Postulaciones / Admin -->
+  <div class="welcome-banner">
+    <div class="welcome-content">
+      <div class="welcome-text">
+        <h1>¡Bienvenido, {{ userName }}!</h1>
+        <p>Portal docente — gestiona tus cursos y registra calificaciones</p>
+      </div>
+      <div class="welcome-badges">
+        <div class="badge badge-green">
+          <i class="pi pi-circle-fill"></i>
+          Docente Activo
+        </div>
+        <div class="badge badge-blue">
+          <i class="pi pi-id-card"></i>
+          Carga Asignada
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <p>Cargando información docente...</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <div *ngIf="alerts.length > 0" class="alerts-section">
+      <div *ngFor="let alert of alerts" class="alert-banner" [ngClass]="'alert-' + alert.type">
+        {{ alert.message }}
+      </div>
+    </div>
+
+    <!-- KPIs de Postulaciones / Dashboard -->
+    <div class="kpis-section">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-book"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.materiasAsignadas }}</div>
+          <div class="kpi-label">Materias Asignadas</div>
+          <div class="kpi-sub">Ciclo Lectivo Actual</div>
+        </div>
+        <div class="kpi-trend">
+          <i class="pi pi-list"></i>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-users"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.totalAlumnos }}</div>
+          <div class="kpi-label">Alumnos a Cargo</div>
+          <div class="kpi-sub">Total inscritos</div>
+        </div>
+        <div class="kpi-trend">
+          <i class="pi pi-user"></i>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-clock"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.totalHoras }}</div>
+          <div class="kpi-label">Horas Totales</div>
+          <div class="kpi-sub">Horas semanales</div>
+        </div>
+        <div class="kpi-trend up">
+          <i class="pi pi-check"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="actions-section">
+      <h3>Acciones Rápidas</h3>
+      <div class="actions-grid">
+        <a *ngFor="let action of quickActions" 
+           [routerLink]="action.route" 
+           class="action-card" 
+           [ngClass]="'action-' + action.color">
+          <div class="action-icon">
+            <i class="pi" [ngClass]="action.icon"></i>
+          </div>
+          <div class="action-content">
+            <h4>{{ action.title }}</h4>
+            <p>{{ action.description }}</p>
+          </div>
+          <div class="action-arrow">
+            <i class="pi pi-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Sin asignaciones -->
+    <div class="empty-state" *ngIf="!cargaDocente?.mallas || cargaDocente.mallas.length === 0">
+      <i class="pi pi-inbox"></i>
+      <h4>Sin asignaciones activas</h4>
+      <p>No tienes materias asignadas en el ciclo actual.</p>
+    </div>
+
+  </ng-container>
+</div>

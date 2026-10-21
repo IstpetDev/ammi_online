@@ -1,0 +1,256 @@
+<app-shared-toast></app-shared-toast>
+
+<!-- Loading State -->
+@if (loading) {
+<div class="loading-container">
+  <svg class="spinner-big" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+      stroke-dasharray="31.4 31.4" />
+  </svg>
+  <span>Cargando datos...</span>
+</div>
+}
+
+@if (error && !loading) {
+<app-shared-empty-state icon="pi pi-exclamation-triangle" title="Error" [description]="error" actionText="Reintentar"
+  actionIcon="pi pi-refresh" (action)="cargarAsignacionesDocente()">
+</app-shared-empty-state>
+}
+
+<!-- Vista Docente -->
+@if (!loading && !error && esDocente && !esAdmin) {
+@if (cargaDocente?.mallas?.length > 0) {
+<div class="filtros-section">
+  <div class="filtros-grid">
+    <div class="filtro-group">
+      <label>Buscar materia:</label>
+      <input type="text" [(ngModel)]="docenteSearchTerm" placeholder="Escribe el nombre de la materia..."
+        class="filtro-input">
+    </div>
+    <div class="filtro-group">
+      <label>Filtrar por malla:</label>
+      <app-custom-select
+        [items]="mallasDisponibles"
+        [(selectedValue)]="docenteSelectedMalla"
+        placeholder="Todas las mallas"
+        [searchable]="true">
+      </app-custom-select>
+    </div>
+    <div class="filtro-group">
+      <label>Filtrar por paralelo:</label>
+      <app-custom-select
+        [items]="paralelosDisponibles"
+        [(selectedValue)]="docenteSelectedParalelo"
+        placeholder="Todos los paralelos"
+        [searchable]="true">
+      </app-custom-select>
+    </div>
+    @if (docenteSearchTerm || docenteSelectedMalla || docenteSelectedParalelo) {
+    <div class="filtro-group button-group">
+      <button (click)="limpiarFiltrosDocente()" class="btn-clear">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="btn-icon-clear">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
+    }
+  </div>
+</div>
+
+<div class="mallas-container">
+  @for (malla of getMallasFiltradasDocente(); track malla.idMalla) {
+  <div class="malla-section-compact">
+    <h3 class="malla-title-compact">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="malla-title-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+      {{ malla.nombreMalla }}
+    </h3>
+    <div class="materias-grid">
+      @for (materia of malla.materias; track materia.idDetalleMalla) {
+      <div class="materia-card">
+        <div class="materia-card-header">
+          <div class="materia-card-titulo">
+            <h4 class="materia-card-nombre">{{ materia.nombreMateria }}</h4>
+            <span class="materia-card-sub">{{ materia.horas }}h &middot; {{ getTotalAlumnosMateria(materia) }} alumno{{ getTotalAlumnosMateria(materia) !== 1 ? 's' : '' }}</span>
+          </div>
+          <span class="materia-status-badge {{ getStatusMateria(materia) }}">
+            {{ getStatusMateria(materia) === 'InProgress' ? 'En curso' : getStatusMateria(materia) === 'GracePeriod' ? 'Gracia' : 'Vencido' }}
+          </span>
+        </div>
+        <div class="paralelos-lista">
+          @for (p of getParalelosVisibles(materia); track p.idParalelo ?? $index) {
+          <div class="paralelo-row {{ getEstadoParalelo(materia, p).clase }}"
+            (click)="seleccionarMateriaParaleloDocente(materia, p)">
+            <div class="par-row-left">
+              <span class="par-row-nombre">{{ p.nombreParalelo }}</span>
+              <span class="par-row-docente">
+                <i class="pi pi-user" style="font-size: 0.7rem;"></i>
+                {{ getDocenteLabel(materia, p) }}
+              </span>
+            </div>
+            <div class="par-row-right">
+              <span class="par-row-alumnos">
+                <i class="pi pi-users" style="font-size: 0.7rem;"></i>
+                {{ p.cantidadAlumnos }} alum{{ p.cantidadAlumnos === 1 ? 'no' : 'nos' }}
+              </span>
+              <span class="par-row-fecha">
+                <i class="pi pi-calendar" style="font-size: 0.7rem;"></i>
+                Fin: {{ formatFecha(materia.fechaFin) }}
+              </span>
+            </div>
+          </div>
+          }
+        </div>
+        @if (isGracePeriodMateria(materia)) {
+        <div class="gracia-row">
+          Calificados: <strong>{{ getTotalCalificadosMateria(materia) }}</strong>
+          &middot; Sin calificar: <strong>{{ getTotalAlumnosMateria(materia) - getTotalCalificadosMateria(materia) }}</strong>
+          &middot; Total: <strong>{{ getTotalAlumnosMateria(materia) }}</strong>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+@if (cargaDocente?.mallas?.length > 0 && getMallasFiltradasDocente().length === 0) {
+<app-shared-empty-state icon="pi pi-search" title="No se encontraron materias"
+  description="No hay materias o paralelos que coincidan con los filtros aplicados."
+  minHeight="max(360px, calc(100vh - 400px))">
+  <button type="button" class="btn-clear" (click)="limpiarFiltrosDocente()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round" class="btn-icon-clear">
+      <line x1="4" y1="4" x2="20" y2="20" />
+      <line x1="20" y1="4" x2="4" y2="20" />
+    </svg>
+    Limpiar filtros
+  </button>
+</app-shared-empty-state>
+}
+}
+
+@if (!cargaDocente?.mallas || cargaDocente.mallas.length === 0) {
+<app-shared-empty-state icon="pi pi-inbox" title="Asignaturas asignadas"
+  description="No tienes asignaciones de materias/paralelos activas." minHeight="max(360px, calc(100vh - 400px))">
+</app-shared-empty-state>
+}
+}
+
+<!-- Vista Admin -->
+@if (!loading && !error && esAdmin) {
+<div class="filtros-section">
+  <div class="filtros-grid">
+    <div class="filtro-group">
+      <label>Período Lectivo:</label>
+      <app-custom-select [items]="periodosLectivos" labelField="detalle" valueField="idPeriodoLectivo"
+        [(selectedValue)]="selectedPeriodo" placeholder="Seleccione un período"
+        (selectedValueChange)="onPeriodoChange($event)">
+      </app-custom-select>
+    </div>
+
+    <div class="filtro-group">
+      <label>Ciclo:</label>
+      <app-custom-select [items]="ciclos" labelField="detalle" valueField="idCiclo" [(selectedValue)]="selectedCiclo"
+        placeholder="Seleccione un ciclo" [disabled]="!filtroPeriodoLectivo"
+        (selectedValueChange)="onCicloChange($event)">
+      </app-custom-select>
+    </div>
+
+    <div class="filtro-group">
+      <label>Curso/Malla:</label>
+      <app-custom-select [items]="mallas" labelField="detalle" valueField="idMalla" [(selectedValue)]="selectedMalla"
+        placeholder="Seleccione una malla" [disabled]="!filtroCiclo" (selectedValueChange)="onMallaChange($event)">
+      </app-custom-select>
+    </div>
+
+    <div class="filtro-group">
+      <label>Materia:</label>
+      <app-custom-select [items]="detallesMalla" labelField="nombreMateria" valueField="idDetalleMalla"
+        [(selectedValue)]="selectedMateria" placeholder="Seleccione una materia" [disabled]="!filtroMalla"
+        (selectedValueChange)="onMateriaChange($event)">
+      </app-custom-select>
+    </div>
+
+    @if (selectedPeriodo || selectedCiclo || selectedMalla || selectedMateria) {
+    <div class="filtro-group button-group">
+      <button class="btn-clear" type="button" (click)="limpiarFiltrosAdmin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="btn-icon-clear">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
+    }
+  </div>
+</div>
+
+@if (!filtroPeriodoLectivo) {
+<app-shared-empty-state icon="pi pi-calendar" title="Seleccione un período lectivo"
+  description="Debe seleccionar un período lectivo para comenzar a filtrar." minHeight="max(360px, calc(100vh - 400px))">
+</app-shared-empty-state>
+}
+
+@if (filtroPeriodoLectivo && !filtroCiclo) {
+<app-shared-empty-state icon="pi pi-bookmark" title="Seleccione un ciclo"
+  description="Debe seleccionar un ciclo lectivo para continuar con el filtrado." minHeight="max(360px, calc(100vh - 400px))">
+</app-shared-empty-state>
+}
+
+@if (filtroPeriodoLectivo && filtroCiclo && !filtroMalla) {
+<app-shared-empty-state icon="pi pi-graduation-cap" title="Seleccione un curso o malla"
+  description="Debe seleccionar un curso o malla para visualizar las materias asignadas." minHeight="max(360px, calc(100vh - 400px))">
+</app-shared-empty-state>
+}
+
+@if (filtroMalla && detallesMalla.length > 0) {
+<div class="admin-materias-header">
+  <h3><i class="pi pi-book"></i> Materias del curso</h3>
+  <span class="materias-count">{{ detallesMalla.length }} materia(s)</span>
+</div>
+
+<div class="materias-grid">
+  @for (dm of getMateriasConParalelos(); track dm.idDetalleMalla) {
+  <div class="materia-card">
+    <div class="materia-card-header">
+      <div class="materia-card-titulo">
+        <h4 class="materia-card-nombre">{{ dm.nombreMateria }}</h4>
+        <span class="materia-card-sub">{{ dm.paralelos.length }} paralelo{{ dm.paralelos.length !== 1 ? 's' : '' }}</span>
+      </div>
+    </div>
+    <div class="paralelos-lista">
+      @for (p of dm.paralelos; track p.idParalelo ?? p.idMallaParalelo) {
+      <div class="paralelo-row {{ getEstadoAdmin(p).clase }}"
+        (click)="seleccionarParaleloAdmin(dm, p)">
+        <div class="par-row-left">
+          <span class="par-row-nombre">{{ p.nombreParalelo || 'Paralelo' }}</span>
+          <span class="par-row-docente">
+            <i class="pi pi-user" style="font-size: 0.7rem;"></i>
+            {{ p.nombreDocente || 'Sin docente' }}
+          </span>
+        </div>
+        <div class="par-row-right">
+          <span class="par-row-alumnos">
+            <i class="pi pi-users" style="font-size: 0.7rem;"></i>
+            {{ p.alumnosMatriculados ?? p.cantidadAlumnos ?? 0 }} alum{{ (p.alumnosMatriculados ?? p.cantidadAlumnos ?? 0) === 1 ? 'no' : 'nos' }}
+          </span>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+}
+
+@if (filtroMalla && detallesMalla.length === 0 && !loading) {
+<app-shared-empty-state icon="pi pi-inbox" title="Sin materias" description="No hay materias registradas en esta malla."
+  minHeight="max(360px, calc(100vh - 400px))">
+</app-shared-empty-state>
+}
+}

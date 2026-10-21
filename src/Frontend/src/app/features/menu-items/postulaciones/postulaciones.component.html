@@ -1,35 +1,57 @@
 <div class="menu-container">
-  <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <div class="title-icon">
-          <i class="pi pi-id-card"></i>
-        </div>
-        <div>
-          <h1 class="page-title">Gestión de Postulaciones</h1>
-          <p class="page-subtitle">Administra y controla las postulaciones de estudiantes</p>
-        </div>
-      </div>
-    </div>
+  <app-shared-header icon="pi pi-id-card" title="Gestión de Postulaciones"
+    subtitle="Administra y controla las postulaciones de estudiantes">
+    @if (isManageRoute()) {
+      <ng-container header-actions>
+        <app-shared-new-button label="Nueva Postulación" (click)="abrirNuevaPostulacion()"></app-shared-new-button>
+        <button class="btn-gestionar-requisitos" (click)="abrirGestionRequisitos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-gestionar-icon">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Gestionar Requisitos
+        </button>
+      </ng-container>
+    }
+  </app-shared-header>
+
+  <div class="layout-content">
+    <router-outlet></router-outlet>
   </div>
 
-  <!-- Main Content -->
-  <div class="card-grid">
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" routerLink="/dashboard/create-postulation-manual">
-      <div class="text-center mb-4">
-        <i class="pi pi-plus-circle text-6xl"></i>
-      </div>
-      <h2 class="card-title text-xl font-semibold text-center">Crear Postulación Manual</h2>
-      <p class="card-description text-center">Crear una nueva postulación manualmente</p>
-    </div>
+  @if (drawerVisible) {
+    <app-shared-drawer
+      [(visible)]="drawerVisible" title="Nueva Postulación Manual"
+      [position]="'right'" [size]="'xl'"
+      [showCloseButton]="true" [closeOnOverlayClick]="false"
+      [showFooter]="false" [noContentPadding]="true"
+      (cancel)="cerrarDrawer()">
 
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" routerLink="/dashboard/manage-postulations">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-list text-6xl"></i>
-      </div>
-      <h2 class="card-title text-xl font-semibold text-center">Gestionar Postulaciones</h2>
-      <p class="card-description text-center">Administrar postulaciones existentes</p>
-    </div>
-  </div>
+      <div drawer-title></div>
+
+      <app-create-postulation-manual></app-create-postulation-manual>
+    </app-shared-drawer>
+  }
+
+  @if (drawerRapidoVisible) {
+    <app-create-postulation-rapida
+      [(visible)]="drawerRapidoVisible"
+      (close)="cerrarDrawerRapido()">
+    </app-create-postulation-rapida>
+  }
+
+  @if (drawerRequisitosVisible) {
+    <app-shared-drawer
+      [(visible)]="drawerRequisitosVisible" title="Gestión de Requisitos de Postulación"
+      [position]="'right'" [size]="'xl'"
+      [showCloseButton]="true" [closeOnOverlayClick]="false"
+      [showFooter]="false" [noContentPadding]="false"
+      (cancel)="cerrarDrawerRequisitos()">
+
+      <div drawer-title></div>
+
+      <app-requisitos-postulacion></app-requisitos-postulacion>
+    </app-shared-drawer>
+  }
+
+  <app-shared-toast></app-shared-toast>
 </div>

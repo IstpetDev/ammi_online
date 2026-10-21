@@ -1,0 +1,271 @@
+<app-shared-toast></app-shared-toast>
+
+<div class="mis-materias-container">
+  <!-- Header -->
+  <app-shared-header materialIcon="book" title="Mis Materias" subtitle="Consulta las asignaturas de tu matrícula y el avance académico"></app-shared-header>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="mp-loading-initial">
+      <svg class="mp-spinner-big" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+          stroke-dasharray="31.4 31.4" />
+      </svg>
+      <span>Cargando materias...</span>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error && !loading) {
+    <div class="state-container error">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #dc3545; margin-bottom: 8px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+      <p>{{ error }}</p>
+      <button class="mp-btn-clear" (click)="cargarMaterias()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 4px;"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  <!-- Contenido principal -->
+  @if (!loading && !error) {
+    <div class="content-section">
+      <!-- Barra de búsqueda y acciones -->
+      @if (getTotalMaterias() > 0) {
+        <div class="mp-filters">
+          <div class="mp-filter-group">
+            <label class="mp-filter-label">Buscar materia:</label>
+            <div class="mp-search-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mp-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input
+                type="text"
+                [(ngModel)]="searchTerm"
+                placeholder="Buscar por nombre de materia..."
+                class="mp-search-input" />
+              @if (searchTerm) {
+                <button class="mp-search-clear" type="button" (click)="searchTerm = ''" title="Limpiar búsqueda">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              }
+            </div>
+          </div>
+          <div class="mp-filter-actions">
+            <button class="mp-btn-action" type="button" (click)="expandirTodas()" title="Expandir todas las materias">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mp-btn-icon"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></svg>
+              Expandir todo
+            </button>
+            <button class="mp-btn-action" type="button" (click)="colapsarTodas()" title="Colapsar todas las materias">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mp-btn-icon"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></svg>
+              Colapsar todo
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="card-wrapper">
+        <!-- Sin historial -->
+        @if (!historial || getTotalMaterias() === 0) {
+          <div class="state-container">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: var(--text-color-secondary); margin-bottom: 8px;"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+            <p>No tienes materias registradas en el historial académico.</p>
+          </div>
+        }
+
+        <!-- Sin resultados del filtro -->
+        @if (getMallasFiltradas().length === 0 && getTotalMaterias() > 0) {
+          <div class="state-container">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: var(--text-color-secondary); margin-bottom: 8px;"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <p>No se encontraron materias que coincidan con "{{ searchTerm }}".</p>
+          </div>
+        }
+
+        <!-- Lista agrupada: malla → ciclo → materias -->
+        @for (malla of getMallasFiltradas(); track malla.idMalla) {
+          <div class="matricula-group">
+            <div class="matricula-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; color: var(--brand-yellow-dark); margin-right: 8px; flex-shrink: 0;"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>
+              <div>
+                <h4>{{ malla.nombreMalla }}</h4>
+                <span class="matricula-meta">{{ malla.tipoOferta }}</span>
+              </div>
+            </div>
+
+            @for (ciclo of malla.ciclos; track ciclo.idCiclo) {
+              <div class="ciclo-section">
+                <!-- Cabecera del ciclo colapsable -->
+                <div class="ciclo-header-box" (click)="toggleCiclo(ciclo.idCiclo)">
+                  <div class="ciclo-header-left">
+                    <h5 class="ciclo-title">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ciclo-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                      {{ ciclo.nombreCiclo }}
+                    </h5>
+                    <div class="ciclo-badges">
+                      @if (ciclo.nombreParalelo) {
+                        <span class="ciclo-badge paralelo-badge">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                          {{ ciclo.nombreParalelo }}
+                        </span>
+                      }
+                      @if (ciclo.fechaInicio || ciclo.fechaFin) {
+                        <span class="ciclo-badge dates-badge">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          {{ ciclo.fechaInicio | date:'dd/MM/yyyy' }} - {{ ciclo.fechaFin | date:'dd/MM/yyyy' }}
+                        </span>
+                      }
+                      @if (ciclo.promedioGeneral !== null && ciclo.promedioGeneral !== undefined) {
+                        <span class="ciclo-badge promedio-badge">
+                          Promedio: {{ ciclo.promedioGeneral | number:'1.2-2' }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="ciclo-toggle-btn" [class.rotated]="!isCicloExpanded(ciclo.idCiclo)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </div>
+
+                <!-- Grid de materias del ciclo -->
+                @if (isCicloExpanded(ciclo.idCiclo)) {
+                  <div class="materias-grid">
+                    @for (materia of ciclo.materias; track materia.idDetalleMalla) {
+                      <div class="materia-card" [class.is-expanded]="isMateriaExpanded(materia.idDetalleMalla)">
+                        
+                        <!-- Encabezado de la tarjeta (Click para abrir / cerrar) -->
+                        <div class="materia-card-header" (click)="toggleMateria(materia.idDetalleMalla)">
+                          <div class="materia-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                          </div>
+                          
+                          <div class="materia-info">
+                            <div class="materia-title-row">
+                              <h5 class="materia-nombre">{{ materia.nombreMateria }}</h5>
+                              <span class="custom-tag"
+                                [class.tag-success]="getEstadoMostrar(materia).toLowerCase() === 'aprobado'"
+                                [class.tag-danger]="getEstadoMostrar(materia).toLowerCase() === 'reprobado'"
+                                [class.tag-warn]="getEstadoMostrar(materia).toLowerCase() === 'recuperación' || getEstadoMostrar(materia).toLowerCase() === 'recuperacion'"
+                                [class.tag-info]="getEstadoMostrar(materia).toLowerCase() === 'en curso'"
+                                [class.tag-secondary]="getEstadoMostrar(materia).toLowerCase() === 'pendiente'">
+                                {{ getEstadoMostrar(materia) }}
+                              </span>
+                            </div>
+
+                            <div class="materia-tags">
+                              @if (materia.modulo) {
+                                <span class="materia-pill">Módulo {{ materia.modulo }}</span>
+                              }
+                              @if (materia.duracionHoras) {
+                                <span class="materia-pill">{{ materia.duracionHoras }}h</span>
+                              }
+                              @if (!isMateriaExpanded(materia.idDetalleMalla) && materia.docente) {
+                                <span class="materia-pill-docente">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                  {{ materia.docente }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+
+                          <!-- Botón / Indicador de acordeón -->
+                          <div class="materia-chevron" [class.open]="isMateriaExpanded(materia.idDetalleMalla)" title="Click para ver más detalles">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                          </div>
+                        </div>
+
+                        <!-- Contenedor desplegable (Acordeón animado) -->
+                        <div class="materia-accordion-wrapper" [class.expanded]="isMateriaExpanded(materia.idDetalleMalla)">
+                          <div class="materia-accordion-content">
+                            <!-- Información complementaria (Docente, Fechas, Área) -->
+                            <div class="materia-body-details">
+                              <!-- Docente -->
+                              <div class="materia-detail-row">
+                                <div class="row-icon-wrapper">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                </div>
+                                <div class="row-content">
+                                  <span class="row-label">Docente</span>
+                                  <span class="row-value doc-value" [class.no-doc]="!materia.docente">
+                                    {{ materia.docente || 'Docente por definir' }}
+                                  </span>
+                                  @if (materia.emailDocente) {
+                                    <span class="doc-email">{{ materia.emailDocente }}</span>
+                                  }
+                                </div>
+                              </div>
+
+                              <!-- Fechas de la materia -->
+                              @if (materia.fechaInicio || materia.fechaFin) {
+                                <div class="materia-detail-row">
+                                  <div class="row-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                  </div>
+                                  <div class="row-content">
+                                    <span class="row-label">Periodo de clases</span>
+                                    <span class="row-value">
+                                      @if (materia.fechaInicio && materia.fechaFin) {
+                                        {{ materia.fechaInicio | date:'dd/MM/yyyy' }} — {{ materia.fechaFin | date:'dd/MM/yyyy' }}
+                                      } @else if (materia.fechaInicio) {
+                                        Desde {{ materia.fechaInicio | date:'dd/MM/yyyy' }}
+                                      } @else {
+                                        Hasta {{ materia.fechaFin | date:'dd/MM/yyyy' }}
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                              }
+
+                              <!-- Área de competencia -->
+                              @if (materia.areaCompetencia) {
+                                <div class="materia-detail-row">
+                                  <div class="row-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                  </div>
+                                  <div class="row-content">
+                                    <span class="row-label">Área de formación</span>
+                                    <span class="row-value">{{ materia.areaCompetencia }}</span>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Footer con Nota Final / Remedial (Siempre visible o en resumen) -->
+                        <div class="materia-card-footer">
+                          @if (materia.notaFinal !== null && materia.notaFinal !== undefined) {
+                            <div class="materia-nota">
+                              <span class="nota-label">Nota final:</span>
+                              <span class="nota-valor"
+                                [class.nota-aprobado]="materia.notaFinal >= 7"
+                                [class.nota-reprobado]="materia.notaFinal < 7">
+                                {{ materia.notaFinal | number:'1.2-2' }}
+                              </span>
+                            </div>
+                          } @else {
+                            <div class="materia-nota sin-nota">
+                              <span class="nota-label">Calificación:</span>
+                              <span class="nota-pendiente">Pendiente de registro</span>
+                            </div>
+                          }
+
+                          @if (materia.examenRemedial !== null && materia.examenRemedial !== undefined) {
+                            <div class="materia-nota remedial">
+                              <span class="nota-label">Examen remedial:</span>
+                              <span class="nota-valor nota-remedial">
+                                {{ materia.examenRemedial | number:'1.2-2' }}
+                              </span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
