@@ -1,11 +1,12 @@
-# Despliegue a produccion (AMMI Online). Primera version: SOLO MANUAL.
-# Tras un primer despliegue correcto y verificado se puede anadir el disparo al fusionar en main:
-#   push:
-#     branches: [main]
+# Despliegue a produccion (AMMI Online).
+# Se dispara solo al llegar un commit a main (fusion de un PR, que ya paso el CI exigido por el ruleset)
+# y tambien a mano desde la pestana Actions (workflow_dispatch).
 # Requiere el environment "production" (ramas: main) con sus secretos y variables.
 name: Despliegue
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +28,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Version a desplegar
+        run: echo "Commit ${GITHUB_SHA} de ${GITHUB_REF_NAME} (${GITHUB_EVENT_NAME})" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 8.0.x
