@@ -9,6 +9,6 @@ namespace AMMI_Online_API.Application.Features.Postulation.Queries;
 public record GetDetalleMatriculaByMatriculaYMateriaQuery(int IdMatricula, int IdDetalleMalla)
     : IRequest<Response<DetalleMatriculaConAlumnoDTO>>;
 
-// NUEVO: Por Paralelo y Materia
-public record GetDetallesMatriculaByParaleloYMateriaQuery(int IdParalelo, int IdDetalleMalla)
+// NUEVO: Por MallaParalelo y Materia
+public record GetDetallesMatriculaByMallaParaleloYMateriaQuery(int IdMallaParalelo, int IdDetalleMalla)
     : IRequest<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>>;

@@ -50,7 +50,7 @@ public class RequisitosRepository : IRequisitosRepository
     {
         return await _context.MallaRequisitos
             .AsNoTracking()
-            .Where(e => e.IdMallaNavigation.IdTipoOferta == idTipoOferta)
+            .Where(e => e.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idTipoOferta)
             .Include(e => e.IdRequisitosNavigation)
             .Select(e => e.IdRequisitosNavigation)
             .ToListAsync(cancellationToken);

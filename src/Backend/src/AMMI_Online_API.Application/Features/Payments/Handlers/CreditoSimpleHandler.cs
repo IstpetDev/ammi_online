@@ -21,19 +21,28 @@ public class CreditoSimpleHandler :
     {
         var creditos = await _repository.GetCreditosSimpleByMatriculaAsync(request.IdMatricula, cancellationToken);
 
-        var dtoList = creditos.Select(c => new CreditoSimpleDTO
+        var dtoList = creditos.Select(c =>
         {
-            IdCredito = c.IdCredito,
-            IdMatricula = c.IdMatricula,
-            IdEspecieCiclo = c.IdEspecieCiclo,
-            MontoOriginal = c.MontoOriginal,
-            MontoFinal = c.MontoFinal,
-            SaldoPendiente = c.SaldoPendiente,
-            Estado = c.Estado ?? string.Empty,
-            ValorEspecie = c.IdEspecieCicloNavigation?.ValorEspecie ?? 0,
-            IdEspecie = c.IdEspecieCicloNavigation?.IdEspecie ?? 0,
-            DetalleEspecie = c.IdEspecieCicloNavigation?.IdEspecieNavigation?.Detalle ?? string.Empty,
-            EsDiferible = c.IdEspecieCicloNavigation?.IdEspecieNavigation?.EsDiferible ?? false
+            var especie = c.IdEspecieCicloNavigation?.IdEspecieNavigation;
+            var esPension = especie?.EsPension ?? false;
+            var esMatricula = especie?.EsMatricula ?? false;
+
+            return new CreditoSimpleDTO
+            {
+                IdCredito = c.IdCredito,
+                IdMatricula = c.IdMatricula,
+                IdEspecieCiclo = c.IdEspecieCiclo,
+                MontoOriginal = c.MontoOriginal,
+                MontoFinal = c.MontoFinal,
+                SaldoPendiente = c.SaldoPendiente,
+                Estado = c.Estado ?? string.Empty,
+                ValorEspecie = c.IdEspecieCicloNavigation?.ValorEspecie ?? 0,
+                IdEspecie = c.IdEspecieCicloNavigation?.IdEspecie ?? 0,
+                DetalleEspecie = especie?.Detalle ?? string.Empty,
+                EsDiferible = esPension && !esMatricula,
+                EsPension = esPension,
+                EsMatricula = esMatricula
+            };
         });
 
         return new Response<IEnumerable<CreditoSimpleDTO>>(dtoList);

@@ -1,161 +1,196 @@
-.postulations-container {
-  width: 100%;
-  margin: 0 auto;
-  padding: 1rem;
-}
+﻿/* === DESIGN SYSTEM: Settings Tables & Forms === */
 
-.postulations-header {
-  margin-bottom: 2rem;
-}
+.seasons-container { padding: 0; }
 
-.header-content {
+/* Header */
+.settings-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 2rem;
+  align-items: center;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--brand-yellow-dark);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.header-title h2 {
-  font-size: 1.75rem;
-  font-weight: 600;
+.seasons-header-title h1,
+.seasons-header-title h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--text-color);
-  margin: 0 0 0.5rem 0;
-}
-
-.header-title p {
-  color: var(--text-color-secondary);
   margin: 0;
+  background: none;
+  -webkit-text-fill-color: unset;
 }
 
-.header-actions {
-  flex-shrink: 0;
-}
-
-:host ::ng-deep .header-actions .p-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .header-actions {
-    align-self: flex-start;
-  }
-}
-
-.content-card {
-  background-color: var(--surface-card);
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
-}
-
-/* Estilos para la tabla */
-:host ::ng-deep .p-datatable {
-  width: 100%;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-  background-color: var(--surface-section);
-  color: var(--text-color);
-  font-weight: 600;
-  border-bottom: 2px solid var(--surface-border);
-  padding: 1rem 0.75rem;
-  text-align: left;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-  border-bottom: 1px solid var(--surface-border);
-  padding: 1rem 0.75rem;
-  color: var(--text-color);
-  font-size: 0.9rem;
-}
-
-:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
-  background-color: var(--surface-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td {
-  border-bottom: none;
-}
-
-:host ::ng-deep .p-paginator {
-  background-color: var(--surface-card);
-  color: var(--text-color);
-  border-top: 1px solid var(--surface-border);
-  padding: 1rem;
-  justify-content: space-between;
-}
-
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page {
-  border-radius: 0.375rem;
-  margin: 0 0.125rem;
-  transition: all 0.2s ease;
-}
-
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page:hover {
-  background-color: var(--surface-hover);
-}
-
-:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-/* Botones de acciones */
-.actions-cell {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  align-items: center;
-}
-
-:host ::ng-deep .p-button-rounded {
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-:host ::ng-deep .p-button-rounded .p-button-icon {
-  font-size: 1rem;
-}
-
-:host ::ng-deep .p-button-rounded:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Tabla responsive */
-:host ::ng-deep .p-datatable-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* Mensaje vacío */
-:host ::ng-deep .p-datatable .p-datatable-emptymessage {
-  text-align: center;
+.seasons-header-title p {
+  font-size: 0.85rem;
   color: var(--text-color-secondary);
-  font-style: italic;
-  padding: 2rem;
+  margin: 0.25rem 0 0 0;
+  font-style: normal;
+}
+
+/* Card table */
+.seasons-content-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* First column emphasis */
+.col-primary {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Action buttons container */
+.seasons-actions-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Nuevo button */
+.btn-nuevo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: var(--brand-yellow-dark);
+  color: var(--brand-black);
+  transition: all 0.2s ease;
+}
+
+.btn-nuevo:hover {
+  background: var(--brand-yellow);
+}
+
+.btn-nuevo .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Icon action buttons */
+.btn-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon-action:hover {
+  background: var(--surface-hover);
+  color: var(--text-color);
+}
+
+.btn-icon-danger:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Dialog form */
+.seasons-dialog-content { padding: 0; }
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.seasons-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.seasons-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.seasons-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.seasons-form-control {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+  box-shadow: 0 0 0 3px rgba(233, 185, 2, 0.15);
+}
+
+.seasons-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+/* Make all form controls and PrimeNG inputs full width in this component */
+:host ::ng-deep input.p-inputtext,
+:host ::ng-deep textarea.p-inputtextarea,
+:host ::ng-deep .p-dropdown,
+:host ::ng-deep .p-dropdown .p-inputtext,
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-select .p-select-label,
+:host ::ng-deep .p-inputnumber,
+:host ::ng-deep .p-calendar,
+:host ::ng-deep .p-selectbutton .p-button {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* SelectButton full width */
+:host ::ng-deep .p-selectbutton {
+  width: 100% !important;
+  display: flex !important;
+}
+
+:host ::ng-deep .p-selectbutton .p-button {
+  flex: 1 1 0 !important;
+}
+
+/* Ensure dropdown labels/input have consistent height when full width */
+:host ::ng-deep .p-dropdown .p-dropdown-label,
+:host ::ng-deep .p-dropdown .p-inputtext {
+  height: 40px !important;
+  line-height: 40px !important;
+  padding: 0 0.75rem !important;
 }

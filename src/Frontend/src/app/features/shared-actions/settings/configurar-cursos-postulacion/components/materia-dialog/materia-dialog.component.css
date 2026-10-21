@@ -1,0 +1,35 @@
+.ccp-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.25rem 0;
+}
+
+.ccp-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ccp-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-color, #374151);
+}
+
+.ccp-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--surface-border, #e5e7eb);
+  background: var(--surface-card, #ffffff);
+  color: var(--text-color, #1f2937);
+  font-size: 0.85rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.ccp-input:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark, #eab308);
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+}

@@ -1,4 +1,5 @@
-﻿using AMMI_Online_API.Domain.Interfaces.Adjuntos;
+using AMMI_Online_API.Domain.Interfaces;
+using AMMI_Online_API.Domain.Interfaces.Adjuntos;
 using AMMI_Online_API.Domain.Interfaces.Catalogs;
 using AMMI_Online_API.Domain.Interfaces.Notas;
 using AMMI_Online_API.Domain.Interfaces.Payments;
@@ -22,7 +23,13 @@ using AMMI_Online_API.Infrastructure.Services;
 using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Interfaces.Distributive;
 using AMMI_Online_API.Infrastructure.Persistence.Repositories.Segurity;
+using AMMI_Online_API.Infrastructure.Persistence;
 
+
+using AMMI_Online_API.Infrastructure.Persistence.Interceptors;
+using AMMI_Online_API.Infrastructure.Persistence.Jobs;
+using AMMI_Online_API.Domain.Interfaces.ChatBot;
+using AMMI_Online_API.Infrastructure.Persistence.Repositories.Services;
 
 namespace AMMI_Online_API.Infrastructure;
 
@@ -37,16 +44,16 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 ServerVersion.AutoDetect(
                     configuration.GetConnectionString("DefaultConnection"))
-            ));
+            ).AddInterceptors(new AuditInterceptor()));
 
         services.AddScoped<IPersonaNacionalidad, PersonaNacionalidadRepository>();
         services.AddScoped<IPersonaInfo, PersonaInfoRepository>();
         services.AddScoped<IPersona, PersonaRepository>();
+        services.AddScoped<IDocenteRepository, DocenteRepository>();
         services.AddScoped<IPersonaDiscapacidad, PersonaDiscapacidadRepository>();
         services.AddScoped<IPersonaDireccion, PersonaDireccionRepository>();
         services.AddScoped<IPersonaActividadEconomica, PersonaActividadEconomicaRepository>();
         services.AddScoped<IPersonaPostulacion, PersonaPostulacionRepository>();
-        services.AddScoped<IPersonaAlergias, PersonaAlergiasRepository>();
         services.AddScoped<IParentesco, ParentescoRepository>();
         services.AddScoped<IDocumentosPersonales, DocumentosPersonalesRepository>();
         services.AddScoped<IFotoPerfilRepository, FotoPerfilRepository>();
@@ -92,7 +99,6 @@ public static class DependencyInjection
         services.AddScoped<ITipoEstadoAprobacionRepository, TipoEstadoAprobacionRepository>();
         services.AddScoped<ITipoActividadEconomicaRepository, TipoActividadEconomicaRepository>();
         services.AddScoped<IRequisitosRepository, RequisitosRepository>();
-        services.AddScoped<IContenidoMallaRepository, ContenidoMallaRepository>();
         services.AddScoped<IMallaRepository, MallaRepository>();
         services.AddScoped<IDetalleMallaRepository, DetalleMallaRepository>();
         services.AddScoped<IMallaRequisitosRepository, MallaRequisitosRepository>();
@@ -100,13 +106,15 @@ public static class DependencyInjection
         services.AddScoped<IPlantillaEstructuraRepository, PlantillaEstructuraRepository>();
         services.AddScoped<IArea, AreaRepository>();
         services.AddScoped<IAreaCompetencia, AreaCompetenciaRepository>();
-        services.AddScoped<ITipoSangreRepository, TipoSangreRepository>();
+        services.AddScoped<IEstadoPagoRepository, EstadoPagoRepository>();
+        services.AddScoped<IEstadoMatriculaRepository, EstadoMatriculaRepository>();
 
         //Postulaciones
         services.AddScoped<ICambiarEstadoPostulacion, CambiarEstadoPostulacionRepository>();
         services.AddScoped<IPostulacionRepository, PostulacionRepository>();
         services.AddScoped<IMatriculaRepository, MatriculaRepository>();
         services.AddScoped<IGenerarMatricula, GenerarMatriculaRepository>();
+        services.AddScoped<IReMatriculacionRepository, ReMatriculacionRepository>();
         services.AddScoped<IAdjuntos, IAdjuntosRepository>();
 
         // Notas
@@ -122,6 +130,7 @@ public static class DependencyInjection
         services.AddScoped<IRolOperacionRepository, RolOperacionRepository>();
         services.AddScoped<IRolUsuarioRepository, RolUsuarioRepository>();
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IEmailVerificationOtpRepository, EmailVerificationOtpRepository>();
 
 
         //Pagos
@@ -137,12 +146,21 @@ public static class DependencyInjection
         services.AddScoped<IEstudianteBeneficioRepository, EstudianteBeneficioRepository>();
         services.AddScoped<ITipoCuentaRepository, TipoCuentaRepository>();
         services.AddScoped<ICuentaBancariaRepository, CuentaBancariaRepository>();
+        services.AddScoped<IClienteRepository, ClienteRepository>();
+        services.AddScoped<ICreditoBeneficioRepository, CreditoBeneficioRepository>();
 
 
         //Services
         services.AddScoped<ICicloService, CicloService>();
         services.AddScoped<IDistributivoRepository, DistributivoRepository>();
+        services.AddScoped<IMallaParaleloRepository, MallaParaleloRepository>();
         services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddHostedService<VencimientoCuotasJob>();
+
+
+        //ChatBot
+        services.AddScoped<IChatBotRepository, ChatBotService>();
 
         return services;
     }

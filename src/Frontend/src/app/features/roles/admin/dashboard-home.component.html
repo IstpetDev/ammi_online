@@ -1,100 +1,215 @@
-<div class="welcome-section">
-  <div class="welcome-card">
-    <div class="welcome-header">
-      <h2>¡Bienvenido, {{ user?.username }}! 👋</h2>
-      <p class="welcome-subtitle">Has iniciado sesión exitosamente en AMMI Online</p>
+<!-- Dashboard solo para Administradores -->
+<div class="admin-dashboard" *ngIf="hasRole('ADMINISTRADOR')">
+
+  <!-- ═══════════════════════════════════════════════════════
+       HEADER DE BIENVENIDA
+  ══════════════════════════════════════════════════════════ -->
+  <div class="welcome-banner">
+    <div class="welcome-content">
+      <div class="welcome-text">
+        <h1>¡Bienvenido, {{ userName }}!</h1>
+        <p>Panel de administración del sistema educativo · <span class="month-label">{{ currentMonth }}</span></p>
+      </div>
+        <div class="welcome-badges">
+          <div class="badge badge-green">
+            <i class="pi pi-circle-fill"></i>
+            Sistema Activo
+          </div>
+          <a [routerLink]="'/dashboard/configurar-cursos-postulacion'" class="badge badge-config">
+            <i class="pi pi-sitemap"></i>
+            Configurar Cursos
+          </a>
+          <div class="badge badge-blue">
+            <i class="pi pi-shield"></i>
+            Administrador
+          </div>
+        </div>
     </div>
   </div>
 
-  <div class="dashboard-stats" *ngIf="hasRole('ADMINISTRADOR')">
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="pi pi-users"></i>
-      </div>
-      <div class="stat-content">
-        <h3>156</h3>
-        <p>Usuarios Totales</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="pi pi-book"></i>
-      </div>
-      <div class="stat-content">
-        <h3>24</h3>
-        <p>Cursos Activos</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="pi pi-file"></i>
-      </div>
-      <div class="stat-content">
-        <h3>48</h3>
-        <p>Postulaciones</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="pi pi-chart-line"></i>
-      </div>
-      <div class="stat-content">
-        <h3>92%</h3>
-        <p>Tasa de Aprobación</p>
-      </div>
+  <!-- ═══════════════════════════════════════════════════════
+       LOADING OVERLAY
+  ══════════════════════════════════════════════════════════ -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <p>Cargando métricas...</p>
     </div>
   </div>
 
-  <div class="quick-actions">
-    <h3>Acciones Rápidas</h3>
-    <div class="actions-grid" *ngIf="hasRole('ADMINISTRADOR')">
-      <a routerLink="/dashboard/users" class="action-card">
-        <i class="pi pi-users action-icon"></i>
-        <h4>Gestionar Usuarios</h4>
-        <p>Administrar estudiantes y permisos</p>
-      </a>
-      <a routerLink="/dashboard/courses" class="action-card">
-        <i class="pi pi-book action-icon"></i>
-        <h4>Gestionar Cursos</h4>
-        <p>Crear y modificar programas</p>
-      </a>
-      <a routerLink="/dashboard/create-postulation" class="action-card">
-        <i class="pi pi-plus action-icon"></i>
-        <h4>Crear Postulación</h4>
-        <p>Registrar nueva postulación</p>
-      </a>
-      <a routerLink="/dashboard/manage-postulations" class="action-card">
-        <i class="pi pi-list action-icon"></i>
-        <h4>Gestionar Postulaciones</h4>
-        <p>Ver y administrar postulaciones</p>
-      </a>
+  <div *ngIf="!isLoading">
+
+    <!-- ═══════════════════════════════════════════════════════
+         FILA 1: KPIs PRINCIPALES (4 cards enfocadas en Postulaciones)
+    ══════════════════════════════════════════════════════════ -->
+    <div class="kpis-section">
+
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-file"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.totalPostulaciones }}</div>
+          <div class="kpi-label">Postulaciones Totales</div>
+          <div class="kpi-sub">Historial completo</div>
+        </div>
+        <div class="kpi-trend">
+          <i class="pi pi-list"></i>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-exclamation-circle"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.postulacionesPendientes }}</div>
+          <div class="kpi-label">Pendientes Aprobación</div>
+          <div class="kpi-sub">Requieren revisión</div>
+        </div>
+        <div class="kpi-trend" [class.alert]="kpis.postulacionesPendientes > 0">
+          <i class="pi pi-clock"></i>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.postulacionesAprobadas }}</div>
+          <div class="kpi-label">Aprobadas</div>
+          <div class="kpi-sub">Listas para matrícula</div>
+        </div>
+        <div class="kpi-trend up">
+          <i class="pi pi-arrow-up-right"></i>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-red">
+        <div class="kpi-icon-wrap">
+          <i class="pi pi-times-circle"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ kpis.postulacionesRechazadas }}</div>
+          <div class="kpi-label">Rechazadas</div>
+          <div class="kpi-sub">No cumplen requisitos</div>
+        </div>
+        <div class="kpi-trend">
+          <i class="pi pi-ban"></i>
+        </div>
+      </div>
+
     </div>
 
-    <div class="actions-grid" *ngIf="hasRole('ALUMNO')">
-      <a routerLink="/dashboard/my-courses" class="action-card">
-        <i class="pi pi-graduation-cap action-icon"></i>
-        <h4>Mis Cursos</h4>
-        <p>Ver cursos inscritos</p>
-      </a>
-      <a routerLink="/dashboard/schedule" class="action-card">
-        <i class="pi pi-calendar action-icon"></i>
-        <h4>Horario</h4>
-        <p>Ver clases programadas</p>
-      </a>
-      <a routerLink="/dashboard/progress" class="action-card">
-        <i class="pi pi-trophy action-icon"></i>
-        <h4>Progreso</h4>
-        <p>Ver avances y certificados</p>
-      </a>
+    <!-- ═══════════════════════════════════════════════════════
+         FILA 2: GRÁFICO Estado de Postulaciones (dona visual)
+    ══════════════════════════════════════════════════════════ -->
+    <div class="charts-section-simplified">
+
+      <!-- Estado de Postulaciones -->
+      <div class="chart-card dona-card-centered">
+        <div class="chart-header">
+          <div>
+            <h3>Distribución de Postulaciones</h3>
+            <p class="chart-subtitle">Estado actual de todos los registros</p>
+          </div>
+        </div>
+
+        <div class="dona-visual">
+          <div class="dona-ring-container">
+            <svg viewBox="0 0 120 120" class="dona-svg">
+              <!-- Background -->
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-hover)" stroke-width="14"/>
+              <!-- Aprobadas -->
+              <circle cx="60" cy="60" r="50" fill="none"
+                      stroke="#10b981" stroke-width="14"
+                      [attr.stroke-dasharray]="getProcesoPercentage('postulacionesAprobadas') * 3.14159 + ', 314.159'"
+                      stroke-dashoffset="78.54"
+                      transform="rotate(-90 60 60)"/>
+              <!-- Rechazadas -->
+              <circle cx="60" cy="60" r="50" fill="none"
+                      stroke="#ef4444" stroke-width="14"
+                      [attr.stroke-dasharray]="getProcesoPercentage('postulacionesRechazadas') * 3.14159 + ', 314.159'"
+                      [attr.stroke-dashoffset]="78.54 - getProcesoPercentage('postulacionesAprobadas') * 3.14159"
+                      transform="rotate(-90 60 60)"/>
+              <!-- Centro -->
+              <text x="60" y="56" text-anchor="middle" class="dona-center-num">{{ kpis.totalPostulaciones }}</text>
+              <text x="60" y="70" text-anchor="middle" class="dona-center-lbl">Total</text>
+            </svg>
+          </div>
+
+          <div class="dona-legend">
+            <div class="dona-legend-item">
+              <div class="legend-dot" style="background:#fbbf24"></div>
+              <div class="legend-info">
+                <span class="legend-val">{{ kpis.postulacionesPendientes }}</span>
+                <span class="legend-lbl">Pendientes</span>
+              </div>
+              <span class="legend-pct">{{ getProcesoPercentage('postulacionesPendientes') }}%</span>
+            </div>
+            <div class="dona-legend-item">
+              <div class="legend-dot" style="background:#10b981"></div>
+              <div class="legend-info">
+                <span class="legend-val">{{ kpis.postulacionesAprobadas }}</span>
+                <span class="legend-lbl">Aprobadas</span>
+              </div>
+              <span class="legend-pct">{{ getProcesoPercentage('postulacionesAprobadas') }}%</span>
+            </div>
+            <div class="dona-legend-item">
+              <div class="legend-dot" style="background:#ef4444"></div>
+              <div class="legend-info">
+                <span class="legend-val">{{ kpis.postulacionesRechazadas }}</span>
+                <span class="legend-lbl">Rechazadas</span>
+              </div>
+              <span class="legend-pct">{{ getProcesoPercentage('postulacionesRechazadas') }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de progreso por estado -->
+        <div class="process-bar-slim">
+          <div class="process-seg (pend)" [style.width.%]="getProcesoPercentage('postulacionesPendientes')" title="Pendientes"></div>
+          <div class="process-seg (apro)" [style.width.%]="getProcesoPercentage('postulacionesAprobadas')" title="Aprobadas"></div>
+          <div class="process-seg (rech)" [style.width.%]="getProcesoPercentage('postulacionesRechazadas')" title="Rechazadas"></div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="actions-grid" *ngIf="hasRole('POSTULANTE')">
-      <a routerLink="/dashboard/mi-postulacion" class="action-card">
-        <i class="pi pi-file action-icon"></i>
-        <h4>Mis Postulaciones</h4>
-        <p>Ver estado de postulaciones</p>
-      </a>
-
+    <!-- ═══════════════════════════════════════════════════════
+         FILA 3: ACCIONES RÁPIDAS
+    ══════════════════════════════════════════════════════════ -->
+    <div class="actions-section">
+      <h3>Acciones Administrativas</h3>
+      <div class="actions-grid">
+        <a *ngFor="let action of quickActions"
+           [routerLink]="action.route"
+           class="action-card"
+           [ngClass]="'action-' + action.color">
+          <div class="action-icon">
+            <i class="pi" [ngClass]="action.icon"></i>
+          </div>
+          <div class="action-content">
+            <h4>{{ action.title }}</h4>
+            <p>{{ action.description }}</p>
+          </div>
+          <div class="action-arrow">
+            <i class="pi pi-chevron-right"></i>
+          </div>
+        </a>
+      </div>
     </div>
-  </div>
-</div>
+
+  </div><!-- /!isLoading -->
+
+</div><!-- /admin-dashboard -->
+
+<!-- Dashboards secundarios por rol -->
+<app-alumno-home *ngIf="hasRole('ALUMNO')"></app-alumno-home>
+<app-profesor-home *ngIf="hasRole('PROFESOR')"></app-profesor-home>
+<app-postulante-home *ngIf="hasRole('POSTULANTE')"></app-postulante-home>
+<app-master-contabilidad-home *ngIf="hasRole('MASTER-CONTABILIDAD')"></app-master-contabilidad-home>
+<app-secretaria-general-home *ngIf="hasRole('SECRETARIA-GENERAL') || hasRole('SECRETARIA')"></app-secretaria-general-home>
+
+<app-welcome-onboarding></app-welcome-onboarding>

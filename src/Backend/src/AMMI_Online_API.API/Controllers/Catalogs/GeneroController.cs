@@ -17,17 +17,14 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             =>  await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<GeneroCreateDTO>> CreateGenero([FromBody] CreateGeneroCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<GeneroUpdateDTO>> UpdateGenero([FromBody] UpdateGeneroCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeleteGenero(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteGeneroCommand(id), cancellationToken);
 

@@ -1,0 +1,22 @@
+{
+  "name": "AmmiOnline",
+  "short_name": "AmmiOnline",
+  "description": "Plataforma educativa AmmiOnline",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "icons": [
+    {
+      "src": "assets/shared/logo_ico.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/shared/logo_ico.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

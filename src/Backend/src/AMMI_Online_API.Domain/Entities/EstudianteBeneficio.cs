@@ -27,6 +27,8 @@ public partial class EstudianteBeneficio
 
     public string Observaciones { get; set; }
 
+    public DateTime? FechaEliminado { get; set; }
+
     public virtual ICollection<CreditoBeneficio> CreditoBeneficio { get; set; } = new List<CreditoBeneficio>();
 
     public virtual Beneficio IdBeneficioNavigation { get; set; }

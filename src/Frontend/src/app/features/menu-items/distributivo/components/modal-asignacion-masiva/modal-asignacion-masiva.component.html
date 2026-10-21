@@ -1,170 +1,159 @@
-<p-dialog 
-  header="Asignación Masiva"
-  [visible]="show"
-  [modal]="true"
-  [closable]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [style]="{ width: '700px', maxWidth: '95vw' }"
-  [styleClass]="'masiva-dialog'"
-  (onHide)="onClose()">
-  
-  <!-- Info Banner -->
-  <div class="info-banner">
-    <i class="pi pi-info-circle"></i>
-    <p>Asigne un docente a una materia en <strong>múltiples paralelos</strong> simultáneamente.</p>
-  </div>
+<app-shared-drawer [visible]="show" title="Asignación Masiva de Distributivo" mode="drawer" position="right" size="xl"
+  [showCloseButton]="true" [closeOnOverlayClick]="false" [showFooter]="getMateriasCount() > 0" cancelText="Cancelar"
+  confirmText="Crear Distributivos" [confirmDisabled]="!validForSubmit || loadingDetalles || saving"
+  [confirmLoading]="saving" (close)="onClose()" (confirm)="onSubmit()">
 
   <form [formGroup]="form" class="form-grid">
-    <!-- Malla -->
-    <div class="form-field">
+
+    <div class="field-group">
       <label class="field-label">
-        <i class="pi pi-book"></i> Malla Curricular <span class="required">*</span>
+        <i class="pi pi-calendar"></i> Ciclo <span class="required">*</span>
       </label>
-      <p-select 
-        [options]="mallasOptions" 
-        formControlName="idMalla"
-        optionLabel="label" 
-        optionValue="value"
-        placeholder="Seleccione una malla"
-        [filter]="true"
-        filterBy="label"
-        [showClear]="true"
-        appendTo="body"
-        [scrollHeight]="'200px'">
-      </p-select>
+      <app-custom-select [items]="ciclosOptions" labelField="label" valueField="value"
+        [selectedValue]="form.get('idCiclo')?.value" (selectedValueChange)="onCicloChange($event)"
+        placeholder="Seleccione un ciclo" [searchable]="true">
+      </app-custom-select>
     </div>
 
-    <!-- Materia -->
-    <div class="form-field">
+    <div class="field-group">
       <label class="field-label">
-        <i class="pi pi-file-edit"></i> Materia <span class="required">*</span>
+        <i class="pi pi-book"></i> Curso / Malla <span class="required">*</span>
       </label>
-      @if (loadingMaterias) {
-        <div class="loading-materias">
-          <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="4" />
-          <span>Cargando materias...</span>
+      <div class="curso-malla-row">
+        <div class="select-container">
+          <app-custom-select [items]="mallasOptions" labelField="label" valueField="value"
+            [selectedValue]="form.get('idMalla')?.value" (selectedValueChange)="onMallaChange($event)"
+            [placeholder]="form.get('idCiclo')?.value ? 'Seleccione un curso' : 'Primero seleccione un ciclo'"
+            [searchable]="true" [disabled]="!form.get('idCiclo')?.value">
+          </app-custom-select>
         </div>
-      } @else {
-        <p-select 
-          [options]="materiasOptions" 
-          formControlName="idDetalleMalla"
-          optionLabel="label" 
-          optionValue="value"
-          placeholder="Seleccione una materia"
-          [filter]="true"
-          filterBy="label"
-          [showClear]="true"
-          [disabled]="materiasOptions.length === 0"
-          appendTo="body"
-          [scrollHeight]="'200px'">
-        </p-select>
+        <button type="button" class="btn-generar-curso" [disabled]="!form.get('idCiclo')?.value"
+          (click)="irAGenerarCursos()" title="Generar cursos rápidos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+      @if (!form.get('idCiclo')?.value) {
+      <small class="hierarchy-hint"><i class="pi pi-info-circle"></i> Seleccione primero un ciclo</small>
+      }
+      @if (tipoOfertaMalla || cicloMalla) {
+      <div class="info-details">
+        <span class="info-item"><i class="pi pi-tag"></i> <strong>Tipo de Oferta:</strong> {{ tipoOfertaMalla }}</span>
+        <span class="info-item"><i class="pi pi-calendar"></i> <strong>Ciclo:</strong> {{ cicloMalla }}</span>
+      </div>
       }
     </div>
 
-    <!-- Docente -->
-    <div class="form-field">
-      <label class="field-label">
-        <i class="pi pi-user"></i> Docente a Asignar <span class="required">*</span>
-      </label>
-      <p-select 
-        [options]="docentesOptions" 
-        formControlName="idPersona"
-        optionLabel="nombre" 
-        optionValue="value"
-        placeholder="Seleccione docente"
-        [filter]="true"
-        filterBy="nombre,documento"
-        [showClear]="true"
-        appendTo="body"
-        [scrollHeight]="'200px'">
-        <ng-template pTemplate="selectedItem" let-selected>
-          <div class="docente-selected">
-            <span>{{ selected?.nombre }}</span>
-          </div>
-        </ng-template>
-        <ng-template pTemplate="item" let-docente>
-          <div class="docente-item">
-            <span class="docente-nombre">{{ docente.nombre }}</span>
-            <small class="docente-ci">CI: {{ docente.documento }}</small>
-          </div>
-        </ng-template>
-      </p-select>
+    @if (loadingDetalles) {
+    <div class="loading-materias">
+      <i class="pi pi-spin pi-spinner" style="font-size:1.5rem;"></i>
+      <span>Cargando materias del curso...</span>
     </div>
+    }
 
-    <!-- Paralelos Selection -->
-    <div class="paralelos-section">
-      <div class="paralelos-header">
-        <label class="field-label">
-          <i class="pi pi-users"></i> Seleccione los Paralelos
-        </label>
-        <div style="display: flex; gap: 0.5rem;">
-          <p-button 
-            label="Todos" 
-            icon="pi pi-check-square" 
-            size="small"
-            severity="secondary"
-            [outlined]="true"
-            (click)="selectAllParalelos()">
-          </p-button>
-          <p-button 
-            label="Ninguno" 
-            icon="pi pi-stop" 
-            size="small"
-            severity="secondary"
-            [outlined]="true"
-            (click)="deselectAllParalelos()">
+    @if (!loadingDetalles && getMateriasCount() > 0) {
+    <div class="materias-header">
+      <h3>Materias a Asignar ({{ getMateriasCount() }})</h3>
+    </div>
+    <div class="materias-lista">
+      @for (materia of distributivosMapped; track materia.idDetalleMalla; let i = $index) {
+      <div class="materia-card">
+        <div class="materia-card-header">
+          <span class="materia-nombre">{{ materia.nombreMateria }}</span>
+          <span class="materia-horas"><i class="pi pi-clock"></i> {{ materia.horasMateria }}h</span>
+        </div>
+        <div class="materia-card-body">
+          <div>
+            <label class="field-label-sm">Paralelo <span class="required">*</span></label>
+            <app-custom-select [items]="paralelosDisponiblesPorDetalle[materia.idDetalleMalla] || []" labelField="label"
+              valueField="value" [selectedValue]="materia.idMallaParalelo"
+              (selectedValueChange)="onMateriaParaleloChange(i, $event)" placeholder="Seleccione paralelo"
+              [searchable]="true">
+            </app-custom-select>
+            @if ((paralelosDisponiblesPorDetalle[materia.idDetalleMalla] || []).length === 0) {
+            <small class="field-error">Sin paralelos disponibles</small>
+            }
+          </div>
+          <div>
+            <label class="field-label-sm">Docente <span class="required">*</span></label>
+            <app-custom-select [items]="docentesOptions" labelField="label" valueField="value"
+              [selectedValue]="materia.idPersona" (selectedValueChange)="onMateriaDocenteChange(i, $event)"
+              placeholder="Seleccione docente" [searchable]="true">
+            </app-custom-select>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    @if (sinMaterias) {
+    <div class="materia-empty">
+      <div class="status-icon-circle empty">
+        <i class="pi pi-folder-open"></i>
+      </div>
+      <h4 class="status-title">No hay materias configuradas</h4>
+      <p class="status-desc">Esta malla curricular aún no tiene materias agregadas. Ingrese a <strong>"Detalle de Malla"</strong> para configurarlas.</p>
+      <div class="status-actions">
+        <p-button label="Ingresar Detalles Mallas" icon="pi pi-file-edit" severity="info" (onClick)="irADetalleMalla()">
+        </p-button>
+      </div>
+    </div>
+    }
+
+    @if (sinParalelos) {
+      <div class="materia-empty">
+        <div class="status-icon-circle warning">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <h4 class="status-title">Sin paralelos disponibles</h4>
+        <p class="status-desc">Esta malla cuenta con materias pero no tiene paralelos activos configurados para realizar la asignación docente.</p>
+        <div class="status-actions">
+          <p-button label="Configurar Malla" icon="pi pi-cog" severity="warn" (onClick)="irADetalleMalla()">
           </p-button>
         </div>
       </div>
+    }
 
-      <div class="paralelos-grid" formArrayName="paralelosCheck">
-        @for (p of paralelos; track p.idParalelo; let i = $index) {
-          <div 
-            class="paralelo-card" 
-            [class.selected]="paralelosFormArray.at(i).value"
-            (click)="toggleParalelo(i)">
-            <i class="pi" [class.pi-check-circle]="paralelosFormArray.at(i).value" [class.pi-circle]="!paralelosFormArray.at(i).value"></i>
-            <div class="paralelo-info">
-              <span>{{ p.nombreParalelo }}</span>
-              @if (p.cupoMaximo) {
-                <small>Cupos: {{ p.cupoMaximo }}</small>
-              }
-            </div>
-          </div>
-        }
-      </div>
+    @if (todasMateriasAsignadas) {
+      <div class="materia-completed">
+        <div class="status-icon-circle success">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <h4 class="status-title">¡Malla completamente asignada!</h4>
+        <p class="status-desc">Todas las materias y paralelos de esta malla ya cuentan con un docente asignado en este ciclo lectivo.</p>
 
-      <!-- Selection Count -->
-      <div class="selection-count" 
-           [class.error]="selectedParalelosCount === 0 && form.touched"
-           [class.success]="selectedParalelosCount > 0">
-        @if (selectedParalelosCount === 0) {
-          <i class="pi pi-exclamation-triangle" style="color: #dc3545;"></i>
-          <span style="color: #dc3545;">Debe seleccionar al menos un paralelo</span>
-        } @else {
-          <i class="pi pi-check-circle" style="color: #198754;"></i>
-          <span style="color: #198754;">
-            <strong>{{ selectedParalelosCount }}</strong> paralelo(s) seleccionado(s)
+        <div class="status-stats">
+          <span class="stat-badge">
+            <i class="pi pi-book" style="color: var(--brand-yellow-dark, #eab308);"></i>
+            {{ totalMateriasConfiguradas }} {{ totalMateriasConfiguradas === 1 ? 'materia registrada' : 'materias registradas' }}
           </span>
-        }
+          <span class="stat-badge">
+            <i class="pi pi-users" style="color: #16a34a;"></i>
+            {{ totalParalelosConfigurados }} {{ totalParalelosConfigurados === 1 ? 'paralelo cubierto' : 'paralelos cubiertos' }}
+          </span>
+        </div>
+
+        <div class="status-actions">
+          <p-button label="Ver / Editar Malla" icon="pi pi-pencil" [outlined]="true" severity="secondary" (onClick)="irADetalleMalla()">
+          </p-button>
+          <p-button label="Cerrar" icon="pi pi-times" severity="success" (onClick)="onClose()">
+          </p-button>
+        </div>
       </div>
-    </div>
+    }
+
   </form>
 
-  <div class="modal-footer">
-    <p-button 
-      label="Cancelar" 
-      icon="pi pi-times" 
-      severity="secondary"
-      [outlined]="true"
-      (click)="onClose()">
-    </p-button>
-    <p-button 
-      label="Asignar a Todos"
-      icon="pi pi-check-circle"
-      (click)="onSubmit()"
-      [disabled]="form.invalid || loadingMaterias || selectedParalelosCount === 0">
-    </p-button>
-  </div>
-</p-dialog>
+</app-shared-drawer>
+
+<app-shared-drawer [(visible)]="showGestorMallaDrawer"
+  [title]="gestorMallaMode === 'create' ? 'Generar Curso' : 'Detalles de Malla'" mode="drawer" position="right"
+  size="xl" [showFooter]="false" (close)="showGestorMallaDrawer = false">
+  <app-gestor-malla [mode]="gestorMallaMode" [cicloId]="form.get('idCiclo')?.value"
+    [mallaId]="form.get('idMalla')?.value" (save)="onGestorMallaSave($event)" (cancel)="showGestorMallaDrawer = false">
+  </app-gestor-malla>
+</app-shared-drawer>

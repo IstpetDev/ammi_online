@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Postulations;
 using MediatR;
 
@@ -12,6 +12,7 @@ public class GetPersonaPostulacionQuery : IRequest<Response<PaginatedResult<Pers
     public int? IdOferta { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
+    public bool ExcludeContactoPersona { get; set; } = false;
 
     public GetPersonaPostulacionQuery() { }
 
@@ -21,7 +22,8 @@ public class GetPersonaPostulacionQuery : IRequest<Response<PaginatedResult<Pers
         int? idMalla = null,
         int? idOferta = null,
         int pageNumber = 1,
-        int pageSize = 10)
+        int pageSize = 10,
+        bool excludeContactoPersona = false)
     {
         Documento = documento;
         IdCiclo = idCiclo;
@@ -29,5 +31,6 @@ public class GetPersonaPostulacionQuery : IRequest<Response<PaginatedResult<Pers
         IdOferta = idOferta;
         PageNumber = pageNumber;
         PageSize = pageSize;
+        ExcludeContactoPersona = excludeContactoPersona;
     }
 }

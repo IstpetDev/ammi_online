@@ -1,13 +1,4 @@
-.tabs {
-  display: flex;
-  margin-bottom: 1rem;
-}
-
-.tabs button {
-  margin-right: 0.5rem;
-}
-
-.tabs button.active {
-  background-color: #007bff;
-  color: white;
+:host {
+  display: block;
+  width: 100%;
 }

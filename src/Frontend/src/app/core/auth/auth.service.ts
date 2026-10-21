@@ -1,7 +1,7 @@
-import { Injectable, PLATFORM_ID, inject, Inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError } from 'rxjs/operators';
 import { STORAGE_KEYS, API_ENDPOINTS } from '../constants/app.constants';
@@ -12,17 +12,20 @@ export enum UserRole {
   SUPERVISOR = 'SUPERVISOR',
   PROFESOR = 'PROFESOR',
   ALUMNO = 'ALUMNO',
-  ACADEMIA = 'ACADEMIA'
+  ACADEMIA = 'ACADEMIA',
+  ADMIN = 'ADMIN',
+  SECRETARIA_GENERAL = 'SECRETARIA-GENERAL'
 }
 
 export interface User {
   id: number;
   username: string;
-  token: string;
-  tokenExpiration: string;
-  refreshToken: string;
+  token?: string;
+  tokenExpiration?: string;
+  refreshToken?: string;
   roles: { idRol: number; nombre: string }[];
   permisos: { idModulo: number; nombreModulo: string; idOperacion: number; nombreOperacion: string }[];
+  requiereCambioContrasenia?: boolean;
 }
 
 @Injectable({
@@ -33,6 +36,8 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
   private isBrowser: boolean;
 
+  private readonly httpOptions = { withCredentials: true };
+
   constructor(
     private router: Router,
     private http: HttpClient,
@@ -42,68 +47,129 @@ export class AuthService {
     this.loadUserFromStorage();
   }
 
-  // ============ COOKIE HELPERS ============
-  private setCookie(name: string, value: string, days: number = 7): void {
-    if (!this.isBrowser) return;
-    
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+  // Helpers para cookies
+  private setCookie(name: string, value: string, days = 7) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  }
+  private getCookie(name: string): string | null {
+    return document.cookie.split('; ').reduce((r, v) => {
+      const parts = v.split('=');
+      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+    }, null as string | null);
+  }
+  private deleteCookie(name: string) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
   }
 
-  private getCookie(name: string): string | null {
-    if (!this.isBrowser) return null;
-    
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length));
+  private clearAuthStorage(): void {
+    if (!this.isBrowser) return;
+
+    this.deleteCookie(STORAGE_KEYS.currentUser);
+    this.deleteCookie(STORAGE_KEYS.token);
+    this.deleteCookie(STORAGE_KEYS.refreshToken);
+    localStorage.removeItem('user');
+    localStorage.removeItem(STORAGE_KEYS.currentUser);
+    sessionStorage.removeItem(STORAGE_KEYS.currentUser);
+  }
+
+  private decodeJwtPayload(token: string): any | null {
+    try {
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) return null;
+
+      const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedBase64 = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(paddedBase64));
+    } catch {
+      return null;
+    }
+  }
+
+  private isUserSessionValid(user: User | null): boolean {
+    if (!user?.token) return false;
+
+    if (user.tokenExpiration) {
+      const expirationMs = new Date(user.tokenExpiration).getTime();
+      if (!Number.isNaN(expirationMs)) {
+        return Date.now() < expirationMs;
       }
     }
-    return null;
-  }
 
-  private deleteCookie(name: string): void {
-    if (!this.isBrowser) return;
-    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+    const payload = this.decodeJwtPayload(user.token);
+    if (payload?.exp && typeof payload.exp === 'number') {
+      return Date.now() < payload.exp * 1000;
+    }
+
+    return true;
   }
-  // ========================================
 
   private loadUserFromStorage(): void {
-    // Cargar usuario de sessionStorage y token de cookies (solo en browser)
     if (!this.isBrowser) return;
-    
     try {
-      const userData = sessionStorage.getItem(STORAGE_KEYS.currentUser);
-      const token = this.getCookie(STORAGE_KEYS.token);
-      
-      if (userData && token) {
-        const user = JSON.parse(userData);
-        this.currentUserSubject.next(user);
-      } else {
-        console.log('⚠️ No hay usuario en sessionStorage o token en cookies');
+      // Eliminar cookie pesada para evitar 400 Bad Request (Header Too Large)
+      this.deleteCookie(STORAGE_KEYS.currentUser);
+
+      // Restaurar desde localStorage
+      const userLS = localStorage.getItem('user') || localStorage.getItem(STORAGE_KEYS.currentUser);
+      if (userLS) {
+        const user = JSON.parse(userLS);
+        if (user && user.token) {
+          if (!this.isUserSessionValid(user)) {
+            this.currentUserSubject.next(null);
+            this.clearAuthStorage();
+            return;
+          }
+          this.currentUserSubject.next(user);
+          // Mantener cookies livianas solo para token y refreshToken
+          this.setCookie(STORAGE_KEYS.token, user.token || '');
+          if (user.refreshToken) {
+            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken || '');
+          }
+        }
       }
     } catch (error) {
-      console.error('Error parsing user data:', error);
-      if (this.isBrowser) {
-        sessionStorage.removeItem(STORAGE_KEYS.currentUser);
-        this.deleteCookie(STORAGE_KEYS.token);
-      }
+      localStorage.removeItem('user');
+      localStorage.removeItem(STORAGE_KEYS.currentUser);
     }
   }
 
-  // Método público para forzar la carga del usuario
   public ensureUserLoaded(): void {
     if (this.currentUserSubject.value === null) {
       this.loadUserFromStorage();
     }
   }
 
+  public getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  public hasRefreshToken(): boolean {
+    if (!this.isBrowser) return false;
+
+    const currentUser = this.currentUserSubject.value;
+    if (currentUser?.refreshToken && currentUser.refreshToken.trim().length > 0) {
+      return true;
+    }
+
+    const refreshTokenCookie = this.getCookie(STORAGE_KEYS.refreshToken);
+    if (refreshTokenCookie && refreshTokenCookie.trim().length > 0) {
+      return true;
+    }
+
+    try {
+      const userLS = localStorage.getItem('user');
+      if (!userLS) return false;
+
+      const user = JSON.parse(userLS);
+      return !!(user?.refreshToken && String(user.refreshToken).trim().length > 0);
+    } catch {
+      return false;
+    }
+  }
+
   login(username: string, password: string): Observable<User> {
-    return this.http.post<any>(API_ENDPOINTS.auth.login, { username, password }).pipe(
+    return this.http.post<any>(API_ENDPOINTS.auth.login, { username, password }, this.httpOptions).pipe(
       map(response => {
         if (response.isSuccess) {
           const user: User = {
@@ -112,22 +178,17 @@ export class AuthService {
             token: response.data.token,
             tokenExpiration: response.data.tokenExpiration,
             refreshToken: response.data.refreshToken,
+            requiereCambioContrasenia: response.data.requiereCambioContrasenia,
             roles: response.data.roles,
             permisos: response.data.permisos
           };
           this.currentUserSubject.next(user);
           if (this.isBrowser) {
-            // Guardar usuario en sessionStorage (sin límite de tamaño)
-            sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
-            // Guardar tokens en cookies (más seguro)
-            this.setCookie(STORAGE_KEYS.token, user.token, 7);
-            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken, 7);
-            console.log('✅ LOGIN: Usuario guardado en sessionStorage y tokens en cookies', {
-              username: user.username,
-              token: user.token.substring(0, 20) + '...',
-              hasToken: !!this.getCookie(STORAGE_KEYS.token),
-              hasUser: !!sessionStorage.getItem(STORAGE_KEYS.currentUser)
-            });
+            this.deleteCookie(STORAGE_KEYS.currentUser);
+            this.setCookie(STORAGE_KEYS.token, user.token || '');
+            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken || '');
+            // Guardar solo el objeto user en localStorage
+            localStorage.setItem('user', JSON.stringify(user));
           }
           return user;
         } else {
@@ -140,8 +201,8 @@ export class AuthService {
     );
   }
 
-  register(userData: { username: string; password: string; email: string; nombre: string; apellido: string }): Observable<User> {
-    return this.http.post<any>(API_ENDPOINTS.auth.register, userData).pipe(
+  register(userData: any): Observable<User> {
+    return this.http.post<any>(API_ENDPOINTS.auth.register, userData, this.httpOptions).pipe(
       map(response => {
         if (response.isSuccess) {
           const user: User = {
@@ -150,14 +211,16 @@ export class AuthService {
             token: response.data.token,
             tokenExpiration: response.data.tokenExpiration,
             refreshToken: response.data.refreshToken,
+            requiereCambioContrasenia: response.data.requiereCambioContrasenia,
             roles: response.data.roles,
             permisos: response.data.permisos
           };
           this.currentUserSubject.next(user);
           if (this.isBrowser) {
-            sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
-            this.setCookie(STORAGE_KEYS.token, user.token, 7);
-            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken, 7);
+            this.deleteCookie(STORAGE_KEYS.currentUser);
+            this.setCookie(STORAGE_KEYS.token, user.token || '');
+            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken || '');
+            localStorage.setItem('user', JSON.stringify(user));
           }
           return user;
         } else {
@@ -170,28 +233,24 @@ export class AuthService {
     );
   }
 
-  changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
-    return this.http.post<any>(API_ENDPOINTS.auth.changePassword, data).pipe(
-      map(response => {
-        if (response.isSuccess) {
-          return response;
-        } else {
-          throw new Error(response.message || 'Change password failed');
+  changePassword(data: any): Observable<any> {
+    return this.http.post<any>(API_ENDPOINTS.auth.changePassword, data, this.httpOptions).pipe(
+      map(res => {
+        // Si el backend dice que NO fue exitoso aunque el HTTP sea 200
+        if (!res.isSuccess) {
+          throw new Error(res.message || 'Error al cambiar contraseña');
         }
+        return res;
       }),
-      catchError((error: HttpErrorResponse) => {
-        return throwError(() => new Error(error.error?.message || 'Change password failed'));
+      catchError((error) => {
+        // Errores de red o errores lanzados por el map de arriba
+        const errorMsg = error instanceof Error ? error.message : (error.error?.message || 'Error de conexión');
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
-
-  refreshToken(): Observable<User> {
-    const refreshToken = this.getCookie(STORAGE_KEYS.refreshToken);
-    if (!refreshToken) {
-      return throwError(() => new Error('No refresh token available'));
-    }
-
-    return this.http.post<any>(API_ENDPOINTS.auth.refresh, { refreshToken }).pipe(
+  refreshToken(): Observable<User | any> {
+    return this.http.post<any>(API_ENDPOINTS.auth.refresh || '/api/Auth/refresh', {}, this.httpOptions).pipe(
       map(response => {
         if (response.isSuccess) {
           const user: User = {
@@ -200,24 +259,23 @@ export class AuthService {
             token: response.data.token,
             tokenExpiration: response.data.tokenExpiration,
             refreshToken: response.data.refreshToken,
+            requiereCambioContrasenia: response.data.requiereCambioContrasenia,
             roles: response.data.roles,
             permisos: response.data.permisos
           };
           this.currentUserSubject.next(user);
           if (this.isBrowser) {
-            sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
-            this.setCookie(STORAGE_KEYS.token, user.token, 7);
-            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken, 7);
+            this.deleteCookie(STORAGE_KEYS.currentUser);
+            this.setCookie(STORAGE_KEYS.token, user.token || '');
+            this.setCookie(STORAGE_KEYS.refreshToken, user.refreshToken || '');
+            localStorage.setItem('user', JSON.stringify(user));
           }
-          console.log('✅ Token renovado exitosamente');
           return user;
         } else {
           throw new Error(response.message || 'Token refresh failed');
         }
       }),
       catchError((error: HttpErrorResponse) => {
-        console.error('❌ Error al renovar token:', error);
-        // Si el refresh token también falló, hacer logout
         this.logout();
         return throwError(() => new Error(error.error?.message || 'Token refresh failed'));
       })
@@ -226,30 +284,26 @@ export class AuthService {
 
   logout(): void {
     this.currentUserSubject.next(null);
-    if (this.isBrowser) {
-      sessionStorage.removeItem(STORAGE_KEYS.currentUser);
-      this.deleteCookie(STORAGE_KEYS.token);
-      this.deleteCookie(STORAGE_KEYS.refreshToken);
-    }
+    this.clearAuthStorage();
     this.router.navigate(['/login']);
-  }
-
-  getCurrentUser(): User | null {
-    // Si no hay usuario en memoria, intentar cargar
-    if (this.currentUserSubject.value === null) {
-      this.ensureUserLoaded();
-    }
-    return this.currentUserSubject.value;
   }
 
   isAuthenticated(): boolean {
     if (!this.isBrowser) return false;
-    
-    // Verificar token en cookies y usuario en sessionStorage
-    const token = this.getCookie(STORAGE_KEYS.token);
-    const userData = sessionStorage.getItem(STORAGE_KEYS.currentUser);
-    
-    return !!(token && userData);
+    this.ensureUserLoaded();
+
+    const user = this.currentUserSubject.value;
+    if (!user?.token) {
+      return false;
+    }
+
+    if (!this.isUserSessionValid(user)) {
+      this.currentUserSubject.next(null);
+      this.clearAuthStorage();
+      return false;
+    }
+
+    return true;
   }
 
   hasRole(role: string): boolean {
@@ -261,12 +315,36 @@ export class AuthService {
     return roles.some(role => currentRoles.includes(role));
   }
 
-  // Método para futura integración con API
-  // loginFromAPI(email: string, password: string): Observable<User> {
-  //   return this.http.post<User>('/api/auth/login', { email, password });
-  // }
+  forgotPassword(username: string): Observable<any> {
+    return this.http.post<any>(API_ENDPOINTS.auth.forgotPassword, { username });
+  }
 
-  // getUsersFromAPI(): Observable<User[]> {
-  //   return this.http.get<User[]>('/api/users');
-  // }
+  resetPassword(data: any): Observable<any> {
+    return this.http.post<any>(API_ENDPOINTS.auth.resetPassword, data);
+  }
+
+  cambiarContraseniaPrimerIngreso(nuevaContrasenia: string, confirmarNuevaContrasenia: string): Observable<any> {
+    const data = { nuevaContrasenia, confirmarNuevaContrasenia };
+    return this.http.post<any>(API_ENDPOINTS.auth.cambiarContraseniaPrimerIngreso, data, this.httpOptions).pipe(
+      map((response: any) => {
+        if (response.isSuccess) {
+          const user = this.currentUserSubject.value;
+          if (user) {
+            user.requiereCambioContrasenia = false;
+            this.currentUserSubject.next(user);
+            if (this.isBrowser) {
+              sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
+              localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
+            }
+          }
+          return response;
+        } else {
+          throw new Error(response.message || 'Error al cambiar contraseña');
+        }
+      }),
+      catchError((error: HttpErrorResponse) => {
+        return throwError(() => new Error(error.error?.message || 'Error al cambiar contraseña'));
+      })
+    );
+  }
 }

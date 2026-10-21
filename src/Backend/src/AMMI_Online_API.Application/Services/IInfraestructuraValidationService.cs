@@ -40,4 +40,35 @@ public interface IInfraestructuraValidationService
     Task<(bool EsValido, string Mensaje)> ValidarMallaEliminableAsync(
         int idMalla,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Valida que la malla esté completamente configurada para permitir matrícula:
+    /// ciclo activo, al menos 1 DetalleMalla, al menos 1 MallaRequisitos y al menos 1 paralelo activo.
+    /// </summary>
+    Task<(bool EsValido, string Mensaje)> ValidarMallaListaParaMatricularAsync(
+        int idMalla,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devuelve error si la malla ya tiene alumnos matriculados, bloqueando cualquier modificación estructural.
+    /// </summary>
+    Task<(bool EsValido, string Mensaje)> ValidarMallaSinMatriculadosAsync(
+        int idMalla,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devuelve error si alguna malla del ciclo ya tiene alumnos matriculados,
+    /// bloqueando modificaciones en EspecieCiclo.
+    /// </summary>
+    Task<(bool EsValido, string Mensaje)> ValidarCicloSinMatriculadosAsync(
+        int idCiclo,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devuelve error si la malla del EspecieCiclo pertenece a un ciclo con alumnos matriculados.
+    /// Navega desde la malla para obtener el ciclo y delega en ValidarCicloSinMatriculadosAsync.
+    /// </summary>
+    Task<(bool EsValido, string Mensaje)> ValidarModificacionEspecieCicloAsync(
+        int idMalla,
+        CancellationToken cancellationToken);
 }

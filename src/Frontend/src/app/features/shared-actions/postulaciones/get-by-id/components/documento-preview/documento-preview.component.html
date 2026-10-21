@@ -1,0 +1,50 @@
+<div class="document-preview">
+  <h3>Previsualización de Documentos</h3>
+  <div class="preview-content">
+    <div class="no-documents" *ngIf="!previewUrl">
+      <i class="pi pi-file"></i>
+      <p>Selecciona un documento y presiona "Ver" para previsualizarlo</p>
+    </div>
+
+    <div class="preview-container" *ngIf="previewUrl">
+      <div class="preview-header-info">
+        <span class="preview-filename">
+          <i class="pi" [class.pi-image]="esImagenArchivo(previewFileName, previewFileType)"
+            [class.pi-file-pdf]="!esImagenArchivo(previewFileName, previewFileType)"></i>
+          {{ previewFileName }}
+        </span>
+        <a [href]="previewUrl | safe:'url'" target="_blank" class="open-new-tab-btn"
+          title="Abrir en ventana externa"
+          style="margin-left: auto; text-decoration: none; color: #10b981; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.3rem; padding: 4px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.1);">
+          <i class="pi pi-external-link"></i> Abrir en ventana
+        </a>
+      </div>
+      <!-- Mostrar imagen para archivos de imagen usando componente compartido -->
+      <app-shared-image-preview [src]="previewUrl" [fileName]="previewFileName" class="document-image-comp"
+        *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType) && esImagenArchivo(previewFileName, previewFileType)">
+      </app-shared-image-preview>
+      <!-- Mostrar iframe para archivos PDF y documentos previsualizables con alto 100% -->
+      <iframe
+        *ngIf="previewUrl && esTipoPrevisualizable(previewFileName, previewFileType) && !esImagenArchivo(previewFileName, previewFileType)"
+        [src]="previewUrl | safe:'resourceUrl'"
+        class="document-iframe"
+        width="100%"
+        height="100%"
+        frameborder="0">
+      </iframe>
+      <!-- Mostrar información para archivos no previsualizables -->
+      <div class="non-previewable-file" *ngIf="previewUrl && !esTipoPrevisualizable(previewFileName, previewFileType)">
+        <div class="file-info">
+          <i class="pi pi-file" style="font-size: 3rem; color: var(--primary-color);"></i>
+          <h4>Archivo cargado correctamente</h4>
+          <p><strong>Nombre:</strong> {{ previewFileName }}</p>
+          <p><strong>Tipo:</strong> {{ obtenerTipoArchivo(previewFileName, previewFileType) }}</p>
+          <p class="note">Este tipo de archivo no se puede previsualizar directamente en el cuadro, pero ha sido procesado correctamente.</p>
+          <a [href]="previewUrl" [download]="previewFileName" class="download-link">
+            <i class="pi pi-download"></i> Descargar archivo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -27,8 +27,8 @@ public class EspecieHandler :
         {
             IdEspecie = e.IdEspecie,
             Detalle = e.Detalle,
-            EsDiferible = e.EsDiferible,
-            MaximoDiferidos = e.MaximoDiferidos,
+            EsMatricula = e.EsMatricula,
+            EsPension = e.EsPension,
             Activo = e.Activo
         });
     }
@@ -38,9 +38,9 @@ public class EspecieHandler :
         var entity = new Especie
         {
             Detalle = request.Especie.Detalle,
-            EsDiferible = request.Especie.EsDiferible,
-            MaximoDiferidos = request.Especie.MaximoDiferidos,
-            Activo = request.Especie.Activo
+            EsMatricula = request.Especie.EsMatricula,
+            EsPension = request.Especie.EsPension,
+            Activo = request.Especie.Activo ?? true
         };
 
         var created = await _repository.AddAsync(entity, cancellationToken);
@@ -49,8 +49,8 @@ public class EspecieHandler :
         {
             IdEspecie = created.IdEspecie,
             Detalle = created.Detalle,
-            EsDiferible = created.EsDiferible,
-            MaximoDiferidos = created.MaximoDiferidos,
+            EsMatricula = created.EsMatricula,
+            EsPension = created.EsPension,
             Activo = created.Activo
         };
     }
@@ -61,9 +61,9 @@ public class EspecieHandler :
         {
             IdEspecie = request.Especie.IdEspecie,
             Detalle = request.Especie.Detalle,
-            EsDiferible = request.Especie.EsDiferible,
-            MaximoDiferidos = request.Especie.MaximoDiferidos,
-            Activo = request.Especie.Activo
+            EsMatricula = request.Especie.EsMatricula,
+            EsPension = request.Especie.EsPension,
+            Activo = request.Especie.Activo ?? true
         };
 
         var updated = await _repository.UpdateAsync(entity, cancellationToken);
@@ -72,8 +72,8 @@ public class EspecieHandler :
         {
             IdEspecie = updated.IdEspecie,
             Detalle = updated.Detalle,
-            EsDiferible = updated.EsDiferible,
-            MaximoDiferidos = updated.MaximoDiferidos,
+            EsMatricula = updated.EsMatricula,
+            EsPension = updated.EsPension,
             Activo = updated.Activo
         };
     }

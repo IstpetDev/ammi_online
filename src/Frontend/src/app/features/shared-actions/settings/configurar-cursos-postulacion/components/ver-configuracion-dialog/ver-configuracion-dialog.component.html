@@ -1,0 +1,110 @@
+<app-shared-modal [(visible)]="visible"
+  [title]="'Configuración: ' + (curso?.detalle || '')" customWidth="700px" [showFooter]="true"
+  cancelText="Cerrar" confirmText="" (cancel)="close()">
+  <div class="ccp-dialog-body">
+    
+    <div class="ver-section" *ngIf="materias.length > 0">
+      <h4 class="ver-section-title">
+        <i class="pi pi-book icon-brand"></i> Materias ({{ materias.length }})
+      </h4>
+      <div class="ver-table-wrap">
+        <table class="ver-table">
+          <thead>
+            <tr>
+              <th>Materia</th>
+              <th style="width: 60px;">Mód.</th>
+              <th style="width: 60px;">Horas</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of materias">
+              <td class="ver-cell-main">{{ m.nombre }}</td>
+              <td>{{ m.modulo }}</td>
+              <td>{{ m.horas }}</td>
+              <td>{{ m.fechaInicio }}</td>
+              <td>{{ m.fechaFin }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ver-section" *ngIf="requisitos.length > 0">
+      <h4 class="ver-section-title">
+        <i class="pi pi-check-square icon-brand"></i> Requisitos ({{ requisitos.length }})
+      </h4>
+      <div class="ver-table-wrap">
+        <table class="ver-table">
+          <thead>
+            <tr>
+              <th>Requisito</th>
+              <th style="width: 100px;">Tipo</th>
+              <th style="width: 80px;">Oblig.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of requisitos">
+              <td class="ver-cell-main">{{ r.detalle }}</td>
+              <td>{{ r.tipo }}</td>
+              <td>{{ r.obligatorio }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ver-section" *ngIf="paralelos.length > 0">
+      <h4 class="ver-section-title">
+        <i class="pi pi-users icon-brand"></i> Paralelos ({{ paralelos.length }})
+      </h4>
+      <div class="ver-table-wrap">
+        <table class="ver-table">
+          <thead>
+            <tr>
+              <th>Paralelo</th>
+              <th style="width: 80px;">Cupo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of paralelos">
+              <td class="ver-cell-main">{{ p.nombre }}</td>
+              <td>{{ p.cupo }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ver-section" *ngIf="costos.length > 0">
+      <h4 class="ver-section-title">
+        <i class="pi pi-dollar icon-brand"></i> Costos ({{ costos.length }})
+      </h4>
+      <div class="ver-table-wrap">
+        <table class="ver-table">
+          <thead>
+            <tr>
+              <th>Especie</th>
+              <th style="width: 100px;">Valor</th>
+              <th style="width: 100px;">Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of costos">
+              <td class="ver-cell-main">{{ c.detalle }}</td>
+              <td>{{ c.valor }}</td>
+              <td>{{ c.tipo }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="materias.length === 0 && requisitos.length === 0 && paralelos.length === 0 && costos.length === 0">
+      <i class="pi pi-inbox empty-icon"></i>
+      <span>No hay datos de configuración disponibles.</span>
+    </div>
+
+  </div>
+</app-shared-modal>

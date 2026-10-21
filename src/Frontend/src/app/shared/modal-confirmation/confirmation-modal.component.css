@@ -5,34 +5,18 @@
 }
 
 .message-content {
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  font-family: var(--font-family, 'Poppins', sans-serif);
   font-size: 0.95rem;
-  line-height: 1.7;
+  line-height: 1.6;
   margin: 0;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--surface-section, #f8f9fa) 0%, var(--surface-card, #ffffff) 100%);
-  border-radius: 0.75rem;
-  border: 2px solid var(--primary-color, #007bff);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  color: var(--text-color, #495057);
-  position: relative;
-}
-
-.message-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-color, #007bff), var(--primary-hover, #0056b3));
-  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 0.75rem 0;
+  color: var(--text-color, #1D1E1C);
 }
 
 .message-content p {
   margin: 0 0 1rem 0;
   font-weight: 600;
-  color: var(--primary-color, #007bff);
+  color: var(--text-color);
   font-size: 1.1rem;
 }
 
@@ -45,17 +29,17 @@
 .message-content li {
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
-  background-color: var(--surface-ground, #f1f3f4);
+  background-color: var(--surface-ground, #f8f9fa);
   border-radius: 0.5rem;
-  border-left: 4px solid var(--primary-color, #007bff);
+  border-left: 4px solid var(--brand-yellow-dark, #E9B902);
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  color: var(--text-color);
 }
 
 .message-content li:hover {
-  background-color: var(--surface-hover, #e9ecef);
-  transform: translateX(2px);
+  background-color: var(--surface-hover, #f1f3f4);
 }
 
 .message-content li strong {
@@ -66,132 +50,135 @@
   font-size: 0.9rem;
 }
 
-.message-content li::after {
-  content: '';
-  flex: 1;
-}
-
 .p-dialog-mask {
-  background-color: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(8px) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
 }
 
-::ng-deep .p-dialog-content{
-    background-color: var(--surface-ground) !important;
+::ng-deep .p-dialog-content {
+  background-color: var(--surface-card, #ffffff) !important;
+  padding: 1.5rem 2rem 1rem 2rem !important;
 }
 
 ::ng-deep .p-dialog {
-  border-radius: 12px !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid var(--surface-border) !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid var(--surface-border, #e9ecef) !important;
 }
 
-::ng-deep .p-dialog.postulation-modal .p-dialog-content {
-  padding: 2rem !important;
-}
-
-/* Scrollbar personalizado para el contenido del mensaje */
+/* Scrollbar */
 .modal-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: var(--surface-ground);
-  border-radius: 4px;
+  background: transparent;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-  background: var(--surface-border);
-  border-radius: 4px;
+  background: var(--surface-border, #e9ecef);
+  border-radius: 3px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
-  background: var(--text-color-secondary);
+  background: var(--text-color-secondary, #adb5bd);
 }
 
+/* Header */
 ::ng-deep .p-dialog-header {
-  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-hover, #0056b3) 100%) !important;
-  color: white !important;
-  border-radius: 8px 8px 0 0 !important;
-  padding: 1.5rem 2rem !important;
-  border-bottom: none !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  color: var(--text-color, #1D1E1C) !important;
+  border-radius: 16px 16px 0 0 !important;
+  padding: 1.25rem 2rem !important;
+  border-bottom: 1px solid var(--surface-border, #e9ecef) !important;
 }
 
 ::ng-deep .p-dialog-header .p-dialog-title {
-  font-size: 1.25rem !important;
+  font-size: 1.1rem !important;
   font-weight: 700 !important;
-  margin: 0 !important;
+  color: var(--text-color, #1D1E1C) !important;
+  border-left: 4px solid var(--brand-yellow-dark, #E9B902) !important;
+  padding-left: 0.75rem !important;
 }
 
 ::ng-deep .p-dialog-header .p-dialog-header-icon {
-  color: white !important;
-  font-size: 1.2rem !important;
-}
-::ng-deep .p-dialog-footer {
-  background-color: var(--surface-card) !important;
-  border-radius: 0 0 8px 8px !important;
-  padding: 1.5rem 2rem !important;
-  display: flex !important;
+  color: var(--text-color-secondary, #6c757d) !important;
+  font-size: 1rem !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
   justify-content: center !important;
-  gap: 1rem !important;
+  transition: all 0.2s ease !important;
 }
 
-::ng-deep .p-dialog-footer .p-button-label{
-    font-weight: 600 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+::ng-deep .p-dialog-header .p-dialog-header-icon:hover {
+  background-color: var(--surface-hover, #f8f9fa) !important;
+  color: var(--text-color, #1D1E1C) !important;
 }
 
-/* Estilos mejorados para los botones del modal */
+/* Footer */
+::ng-deep .p-dialog-footer {
+  background-color: var(--surface-card, #ffffff) !important;
+  border-radius: 0 0 16px 16px !important;
+  padding: 1rem 2rem 1.25rem 2rem !important;
+  border-top: 1px solid var(--surface-border, #e9ecef) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+}
+
+::ng-deep .p-dialog-footer .p-button-label {
+  font-weight: 700 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Button styles */
 ::ng-deep .p-dialog-footer .p-button,
 ::ng-deep .p-dialog-footer button.p-button {
-  border: 3px solid var(--primary-color, #007bff) !important;
   border-radius: 10px !important;
-  padding: 1rem 2rem !important;
-  margin: 0 0.75rem !important;
+  padding: 0.6rem 1.25rem !important;
   font-weight: 700 !important;
-  font-size: 1rem !important;
-  transition: all 0.3s ease !important;
-  min-width: 140px !important;
+  font-size: 0.8rem !important;
+  transition: all 0.2s ease !important;
+  min-width: 110px !important;
   height: auto !important;
   line-height: 1.2 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+/* Secondary Button (Cancelar) */
+::ng-deep .p-dialog-footer .p-button.p-button-text,
+::ng-deep .p-dialog-footer button.p-button.p-button-text {
   background: transparent !important;
-  color: var(--primary-color, #007bff) !important;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2) !important;
+  border: 2px solid var(--surface-border, #e9ecef) !important;
+  color: var(--text-color, #1D1E1C) !important;
 }
 
-::ng-deep .p-dialog-footer .p-button:hover,
-::ng-deep .p-dialog-footer button.p-button:hover {
-  transform: translateY(-3px) scale(1.05) !important;
-  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3) !important;
-  border-color: var(--primary-hover, #0056b3) !important;
-  color: var(--primary-hover, #0056b3) !important;
+::ng-deep .p-dialog-footer .p-button.p-button-text:hover,
+::ng-deep .p-dialog-footer button.p-button.p-button-text:hover {
+  background-color: var(--surface-hover, #f8f9fa) !important;
+  border-color: var(--surface-border, #e9ecef) !important;
+  color: var(--text-color, #1D1E1C) !important;
+  transform: translateY(-1px) !important;
 }
 
-::ng-deep .p-dialog-footer .p-button.p-button-secondary,
-::ng-deep .p-dialog-footer button.p-button.p-button-secondary {
-  background-color: transparent !important;
-  color: var(--primary-color, #007bff) !important;
-  border-color: var(--primary-color, #007bff) !important;
-}
-
-::ng-deep .p-dialog-footer .p-button.p-button-secondary:hover,
-::ng-deep .p-dialog-footer button.p-button.p-button-secondary:hover {
-  background-color: var(--primary-color, #007bff) !important;
-  color: white !important;
-  border-color: var(--primary-color, #007bff) !important;
-}
-
+/* Primary Button (Aceptar / Eliminar) */
 ::ng-deep .p-dialog-footer .p-button.p-button-primary,
 ::ng-deep .p-dialog-footer button.p-button.p-button-primary {
-  background-color: var(--primary-color, #007bff) !important;
-  color: white !important;
-  border-color: var(--primary-color, #007bff) !important;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
+  background-color: var(--brand-yellow-dark, #E9B902) !important;
+  border: 2px solid var(--brand-yellow-dark, #E9B902) !important;
+  color: var(--brand-black, #1D1E1C) !important;
 }
 
 ::ng-deep .p-dialog-footer .p-button.p-button-primary:hover,
 ::ng-deep .p-dialog-footer button.p-button.p-button-primary:hover {
-  background-color: var(--primary-hover, #0056b3) !important;
-  border-color: var(--primary-hover, #0056b3) !important;
-  box-shadow: 0 6px 16px rgba(0, 86, 179, 0.5) !important;
+  background-color: var(--brand-yellow, #FCEA1E) !important;
+  border-color: var(--brand-yellow, #FCEA1E) !important;
+  color: var(--brand-black, #1D1E1C) !important;
+  transform: translateY(-1px) !important;
 }

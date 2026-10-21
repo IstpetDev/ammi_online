@@ -40,7 +40,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "contenido_malla",
+         "Name": "cliente",
          "ObjectType": 0
       },
       {
@@ -84,6 +84,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "email_verificaciones_otp",
+         "ObjectType": 0
+      },
+      {
          "Name": "especialidad",
          "ObjectType": 0
       },
@@ -97,6 +101,14 @@
       },
       {
          "Name": "estado_civil",
+         "ObjectType": 0
+      },
+      {
+         "Name": "estado_matricula",
+         "ObjectType": 0
+      },
+      {
+         "Name": "estado_pago",
          "ObjectType": 0
       },
       {
@@ -117,6 +129,10 @@
       },
       {
          "Name": "malla",
+         "ObjectType": 0
+      },
+      {
+         "Name": "malla_paralelo",
          "ObjectType": 0
       },
       {
@@ -188,10 +204,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "persona_alergias",
-         "ObjectType": 0
-      },
-      {
          "Name": "persona_direccion",
          "ObjectType": 0
       },
@@ -248,11 +260,15 @@
          "ObjectType": 0
       },
       {
-         "Name": "tipo_actividad_economica",
+         "Name": "saldo_favor_alumno",
          "ObjectType": 0
       },
       {
-         "Name": "tipo_alergia",
+         "Name": "saldo_favor_movimiento",
+         "ObjectType": 0
+      },
+      {
+         "Name": "tipo_actividad_economica",
          "ObjectType": 0
       },
       {
@@ -297,10 +313,6 @@
       },
       {
          "Name": "tipo_regla_calculo",
-         "ObjectType": 0
-      },
-      {
-         "Name": "tipo_sangre",
          "ObjectType": 0
       },
       {

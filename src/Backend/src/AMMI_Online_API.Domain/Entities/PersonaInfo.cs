@@ -15,13 +15,9 @@ public partial class PersonaInfo
 
     public int? IdNacionalidadEtnica { get; set; }
 
-    public int? IdTipoSangre { get; set; }
-
     public virtual EstadoCivil IdEstadoCivilNavigation { get; set; }
 
     public virtual NacionalidadEtnica IdNacionalidadEtnicaNavigation { get; set; }
 
     public virtual Persona IdPersonaNavigation { get; set; }
-
-    public virtual TipoSangre IdTipoSangreNavigation { get; set; }
 }

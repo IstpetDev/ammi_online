@@ -1,0 +1,377 @@
+<div class="clone-container">
+  <div class="clone-header">
+    <h1>Clonado rápido de malla completa</h1>
+    <p>
+      Te ayudamos a copiar una malla o un ciclo completo paso a paso,
+      con validaciones automáticas para evitar errores.
+    </p>
+  </div>
+
+  <div class="clone-card info-card">
+    <div class="info-grid">
+      <div class="info-block success-block">
+        <h4><i class="pi pi-check-circle"></i> Qué se duplica</h4>
+        <ul>
+          <li>Malla (en el ciclo destino)</li>
+          <li>Detalle de malla (materias, plantillas, áreas y módulos)</li>
+          <li>Requisitos de malla</li>
+          <li>Especies del ciclo destino (solo si aún no existen)</li>
+        </ul>
+      </div>
+
+      <div class="info-block warn-block">
+        <h4><i class="pi pi-exclamation-triangle"></i> Qué no se duplica</h4>
+        <ul>
+          <li>Paralelos de malla</li>
+          <li>Distributivos docentes</li>
+          <li>Fechas de materias del ciclo origen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="clone-card mode-card">
+    <h3>Modo de duplicación</h3>
+    <div class="mode-options">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="clonadoModo === 'malla'"
+        (click)="onModoChange('malla')"
+      >
+        <i class="pi pi-copy"></i>
+        Duplicar una malla
+      </button>
+
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="clonadoModo === 'ciclo'"
+        (click)="onModoChange('ciclo')"
+      >
+        <i class="pi pi-clone"></i>
+        Duplicar ciclo completo
+      </button>
+    </div>
+    <small class="helper-text">El sistema inicia en <strong>Duplicar ciclo completo</strong> para agilitar el proceso.</small>
+  </div>
+
+  <div class="clone-card">
+    <h3>Selecciona origen y destino</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Ciclo de origen (inactivo)</label>
+        <p-select
+          [(ngModel)]="sourceCiclo"
+          [options]="sourceCiclos"
+          optionLabel="detalle"
+          placeholder="Seleccione ciclo fuente"
+          [showClear]="true"
+          (onChange)="onSourceCicloChange()"
+          appendTo="body"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+
+      <div class="field">
+        <label>Malla origen</label>
+        <p-select
+          [(ngModel)]="selectedMalla"
+          [options]="sourceMallas"
+          optionLabel="detalle"
+          placeholder="Seleccione malla a clonar"
+          [showClear]="true"
+          [disabled]="!sourceCiclo || clonadoModo === 'ciclo'"
+          appendTo="body"
+          styleClass="w-full"
+        ></p-select>
+        <small *ngIf="clonadoModo === 'ciclo'" class="helper-text">
+          En este modo se copiarán automáticamente las {{ sourceCicloMallasCount }} mallas del ciclo de origen.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Ciclo destino (activo)</label>
+        <p-select
+          [(ngModel)]="destinationCiclo"
+          [options]="destinationCiclos"
+          optionLabel="detalle"
+          placeholder="Seleccione ciclo destino"
+          [showClear]="true"
+          (onChange)="onDestinationCicloChange()"
+          appendTo="body"
+          styleClass="w-full"
+        ></p-select>
+        <small *ngIf="checkingDestinationEspecies" class="helper-text">
+          Revisando la configuración del ciclo destino...
+        </small>
+        <small *ngIf="destinationHasEspecies && !checkingDestinationEspecies" class="helper-text success">
+          ¡Listo! Este ciclo ya tiene {{ destinationEspecies.length }} especies configuradas.
+        </small>
+        <small *ngIf="isDestinationSpeciesInvalid" class="helper-text warning">
+          Este ciclo tiene una configuración incompleta ({{ destinationEspecies.length }} especies). Debe tener 2.
+        </small>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="clone-card" *ngIf="shouldRequestEspecies">
+    <h3>Completa las especies del ciclo destino</h3>
+    <p class="helper-text">
+      Como este ciclo aún no tiene especies, regístralas una sola vez para continuar.
+    </p>
+
+    <div class="form-grid two-columns">
+      <div class="field">
+        <label>Especie 1</label>
+        <p-select
+          [(ngModel)]="idEspecie1"
+          [options]="especies"
+          optionLabel="detalle"
+          optionValue="idEspecie"
+          placeholder="Seleccione especie"
+          [showClear]="true"
+          (onChange)="onEspecie1Change()"
+          appendTo="body"
+          styleClass="w-full"
+        ></p-select>
+        <small class="helper-text">Al elegir una especie, se autoselecciona su pareja compatible.</small>
+      </div>
+
+      <div class="field">
+        <label>Valor especie 1</label>
+        <p-inputNumber
+          [(ngModel)]="valorEspecie1"
+          mode="decimal"
+          [min]="0"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          inputStyleClass="w-full"
+        ></p-inputNumber>
+      </div>
+
+      <div class="field">
+        <label>Especie 2</label>
+        <p-select
+          [(ngModel)]="idEspecie2"
+          [options]="especies"
+          optionLabel="detalle"
+          optionValue="idEspecie"
+          placeholder="Seleccione especie"
+          [showClear]="true"
+          (onChange)="onEspecie2Change()"
+          appendTo="body"
+          styleClass="w-full"
+        ></p-select>
+        <small class="helper-text success">
+          Selección sugerida: {{ getEspecieLabelById(idEspecie2) }}
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Valor especie 2</label>
+        <p-inputNumber
+          [(ngModel)]="valorEspecie2"
+          mode="decimal"
+          [min]="0"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          inputStyleClass="w-full"
+        ></p-inputNumber>
+      </div>
+    </div>
+  </div>
+
+  <div class="clone-card" *ngIf="sourceCiclo">
+    <h3>Resumen de lo que se copiará</h3>
+    <p class="helper-text">
+      Se copiarán {{ mallasParaClonar.length }} malla(s) desde
+      <strong>{{ sourceCiclo.detalle || 'N/A' }}</strong>
+      hacia
+      <strong>{{ destinationCiclo?.detalle || 'sin destino seleccionado' }}</strong>.
+    </p>
+
+    <div class="copy-summary-grid">
+      <div class="summary-panel">
+        <h4>Datos que se copiarán (origen)</h4>
+        <div class="destination-state success" *ngIf="mallasParaClonar.length > 0">
+          Se copiarán {{ mallasParaClonar.length }} malla(s) al ciclo destino.
+        </div>
+
+        <div class="destination-state neutral" *ngIf="mallasParaClonar.length === 0">
+          No hay mallas seleccionadas para copiar.
+        </div>
+
+        <ul class="destination-list" *ngIf="mallasParaClonar.length > 0; else noMallasPreview">
+          <li *ngFor="let m of mallasParaClonar">
+            <div>
+              <strong>{{ m.detalle || 'Malla sin nombre' }}</strong>
+              <small>Se copiará su estructura académica al ciclo destino.</small>
+
+              <button
+                type="button"
+                class="expand-btn"
+                (click)="toggleMallaDetalle(m)"
+                [disabled]="!m.idMalla"
+              >
+                <i class="pi" [ngClass]="isMallaExpanded(m.idMalla) ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                {{ isMallaExpanded(m.idMalla) ? 'Ocultar detalle' : 'Ver detalle a copiar' }}
+              </button>
+
+              <div class="malla-expand" *ngIf="isMallaExpanded(m.idMalla) && m.idMalla">
+                <small class="helper-text" *ngIf="mallaDetalleLoading[m.idMalla]">
+                  Cargando detalle de la malla...
+                </small>
+
+                <small class="helper-text warning" *ngIf="mallaDetalleError[m.idMalla]">
+                  {{ mallaDetalleError[m.idMalla] }}
+                </small>
+
+                <div class="expand-grid" *ngIf="!mallaDetalleLoading[m.idMalla] && !mallaDetalleError[m.idMalla] && mallaDetalleData[m.idMalla] as detalle">
+                  <div class="expand-block">
+                    <h5>Requisitos</h5>
+                    <ul>
+                      <li *ngFor="let item of detalle.requisitos">{{ item }}</li>
+                    </ul>
+                    <small class="helper-text" *ngIf="detalle.requisitos.length === 0">No se encontraron requisitos en esta malla.</small>
+                  </div>
+
+                  <div class="expand-block compact-subjects">
+                    <h5>Asignaturas (compacto)</h5>
+                    <div class="compact-subjects-table" *ngIf="detalle.materias.length > 0; else noMateriasCompactas">
+                      <div class="compact-head">
+                        <span>Asignatura</span>
+                        <span>Horas</span>
+                        <span>Área</span>
+                        <span>Plantilla</span>
+                      </div>
+                      <div class="compact-row" *ngFor="let mat of detalle.materias">
+                        <span>{{ mat.asignatura }}</span>
+                        <span>{{ mat.horas }}</span>
+                        <span>{{ mat.area }}</span>
+                        <span>{{ mat.plantilla }}</span>
+                      </div>
+                    </div>
+                    <ng-template #noMateriasCompactas>
+                      <small class="helper-text">No se encontraron asignaturas en esta malla.</small>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="summary-panel">
+        <h4>Estado actual del ciclo destino</h4>
+        <p class="helper-text" *ngIf="!destinationCiclo">Selecciona un ciclo destino para ver su estado.</p>
+
+        <div class="destination-state neutral" *ngIf="destinationCiclo && checkingDestinationMallas">
+          Revisando mallas existentes...
+        </div>
+
+        <div class="destination-state warning" *ngIf="destinationCiclo && !checkingDestinationMallas && destinationMallasError">
+          No pudimos obtener las mallas del ciclo destino.
+        </div>
+
+        <div class="destination-state success" *ngIf="destinationCiclo && !checkingDestinationMallas && !destinationMallasError && destinationMallasCount > 0">
+          Este ciclo ya tiene {{ destinationMallasCount }} malla(s).
+        </div>
+
+        <div class="destination-state neutral" *ngIf="destinationCiclo && !checkingDestinationMallas && !destinationMallasError && destinationMallasCount === 0">
+          Este ciclo no tiene mallas registradas todavía.
+        </div>
+
+        <ul class="destination-list" *ngIf="destinationCiclo && !checkingDestinationMallas && !destinationMallasError && destinationMallasCount > 0">
+          <li *ngFor="let mallaDestino of destinationMallas">
+            <div>
+              <strong>{{ mallaDestino.detalle || 'Malla sin nombre' }}</strong>
+              <small>Tipo oferta: {{ mallaDestino.nombreTipoOferta || 'N/A' }}</small>
+
+              <button
+                type="button"
+                class="expand-btn"
+                (click)="toggleDestinationMallaDetalle(mallaDestino)"
+                [disabled]="!mallaDestino.idMalla"
+              >
+                <i class="pi" [ngClass]="isDestinationMallaExpanded(mallaDestino.idMalla) ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                {{ isDestinationMallaExpanded(mallaDestino.idMalla) ? 'Ocultar detalle' : 'Ver detalle en destino' }}
+              </button>
+
+              <div class="malla-expand" *ngIf="isDestinationMallaExpanded(mallaDestino.idMalla) && mallaDestino.idMalla">
+                <small class="helper-text" *ngIf="destinationMallaDetalleLoading[mallaDestino.idMalla]">
+                  Cargando detalle de la malla destino...
+                </small>
+
+                <small class="helper-text warning" *ngIf="destinationMallaDetalleError[mallaDestino.idMalla]">
+                  {{ destinationMallaDetalleError[mallaDestino.idMalla] }}
+                </small>
+
+                <div class="expand-grid" *ngIf="!destinationMallaDetalleLoading[mallaDestino.idMalla] && !destinationMallaDetalleError[mallaDestino.idMalla] && destinationMallaDetalleData[mallaDestino.idMalla] as detalleDestino">
+                  <div class="expand-block">
+                    <h5>Requisitos actuales</h5>
+                    <ul>
+                      <li *ngFor="let item of detalleDestino.requisitos">{{ item }}</li>
+                    </ul>
+                    <small class="helper-text" *ngIf="detalleDestino.requisitos.length === 0">No se encontraron requisitos en esta malla.</small>
+                  </div>
+
+                  <div class="expand-block compact-subjects">
+                    <h5>Asignaturas actuales (compacto)</h5>
+                    <div class="compact-subjects-table" *ngIf="detalleDestino.materias.length > 0; else noMateriasDestinoCompactas">
+                      <div class="compact-head">
+                        <span>Asignatura</span>
+                        <span>Horas</span>
+                        <span>Área</span>
+                        <span>Plantilla</span>
+                      </div>
+                      <div class="compact-row" *ngFor="let mat of detalleDestino.materias">
+                        <span>{{ mat.asignatura }}</span>
+                        <span>{{ mat.horas }}</span>
+                        <span>{{ mat.area }}</span>
+                        <span>{{ mat.plantilla }}</span>
+                      </div>
+                    </div>
+                    <ng-template #noMateriasDestinoCompactas>
+                      <small class="helper-text">No se encontraron asignaturas en esta malla.</small>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <ng-template #noMallasPreview>
+      <small class="helper-text warning">No hay mallas seleccionadas para clonar.</small>
+    </ng-template>
+  </div>
+
+
+  <div class="clone-card action-card">
+    <h3>Confirma la acción</h3>
+    <div class="actions">
+      <p-button
+        label="Limpiar"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [text]="true"
+        (onClick)="resetForm(true)"
+      ></p-button>
+      <p-button
+        [label]="clonadoModo === 'malla' ? 'Clonar malla completa' : 'Clonar ciclo completo'"
+        [icon]="clonadoModo === 'malla' ? 'pi pi-copy' : 'pi pi-clone'"
+        [disabled]="!canSubmit || loading"
+        [loading]="loading"
+        (onClick)="ejecutarClonado()"
+      ></p-button>
+    </div>
+  </div>
+
+  <app-shared-toast></app-shared-toast>
+</div>

@@ -11,13 +11,15 @@ public partial class Distributivo
 
     public int IdDetalleMalla { get; set; }
 
-    public int IdPersona { get; set; }
+    public int? IdPersona { get; set; }
 
-    public int IdParalelo { get; set; }
+    public int IdMallaParalelo { get; set; }
+
+    public bool? Activo { get; set; }
 
     public virtual DetalleMalla IdDetalleMallaNavigation { get; set; }
 
-    public virtual Paralelo IdParaleloNavigation { get; set; }
+    public virtual MallaParalelo IdMallaParaleloNavigation { get; set; }
 
     public virtual Usuario IdPersonaNavigation { get; set; }
 }

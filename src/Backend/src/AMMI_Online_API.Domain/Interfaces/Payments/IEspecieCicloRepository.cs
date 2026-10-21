@@ -6,15 +6,15 @@ public interface IEspecieCicloRepository
 {
     Task<IEnumerable<EspecieCiclo>> GetAllAsync(CancellationToken cancellationToken);
 
-    Task<IEnumerable<EspecieCiclo>> GetByCicloAsync(int idCiclo, CancellationToken cancellationToken);
+    Task<IEnumerable<EspecieCiclo>> GetByMallaAsync(int idMalla, CancellationToken cancellationToken);
 
     Task<EspecieCiclo?> GetByIdAsync(int idEspecieCiclo, CancellationToken cancellationToken);
 
-    Task<bool> ExisteEspecieEnCicloAsync(int idCiclo, int idEspecie, CancellationToken cancellationToken);
+    Task<bool> ExisteEspecieEnMallaAsync(int idMalla, int idEspecie, CancellationToken cancellationToken);
 
-    Task<bool> EsCicloActivoAsync(int idCiclo, CancellationToken cancellationToken);
+    Task<bool> EsMallaConCicloActivoAsync(int idMalla, CancellationToken cancellationToken);
 
     Task<EspecieCiclo> CreateAsync(EspecieCiclo especieCiclo, CancellationToken cancellationToken);
 
-    Task<EspecieCiclo> UpdateValorAsync(int idEspecieCiclo, decimal valorEspecie, CancellationToken cancellationToken);
+    Task<EspecieCiclo> UpdateValorAsync(int idEspecieCiclo, int idEspecie, decimal valorEspecie, CancellationToken cancellationToken);
 }

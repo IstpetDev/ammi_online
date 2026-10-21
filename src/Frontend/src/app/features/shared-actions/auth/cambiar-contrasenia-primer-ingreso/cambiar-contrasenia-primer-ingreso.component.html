@@ -1,0 +1,119 @@
+<div class="split-login-container">
+  <!-- Left Side: Graphic Illustration -->
+  <div class="login-graphic-side">
+    <!-- Floating Background Ornaments -->
+    <div class="bg-circles"></div>
+    <div class="bg-dots"></div>
+    
+    <div class="graphic-content">
+      <div class="graphic-logo-wrapper">
+        <div class="illustration-blob">
+          <img src="assets/shared/Logo-sin-fondo-oscuro.png" alt="AMMI Online" class="graphic-logo-img">
+        </div>
+      </div>
+      
+      <div class="graphic-text">
+        <h2>Educación sin fronteras</h2>
+        <p>Accede a tus cursos, calificaciones y pagos desde un solo lugar de manera rápida y segura.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: First Time Entry Form -->
+  <div class="login-form-side">
+    <div class="login-form-wrapper">
+      <!-- Brand Logo at Top of Form (Centered) -->
+      <div class="brand-logo-container">
+        <img [src]="logoSrc()" alt="AMMI Online Logo" class="brand-logo">
+      </div>
+      
+      <div class="welcome-header">
+        <h1>Primer Ingreso</h1>
+        <p>Por seguridad debes establecer una contraseña personal antes de continuar.</p>
+      </div>
+
+      <div class="info-message">
+        <p class="info-title"><i class="pi pi-info-circle"></i> <strong>Requisitos de la contraseña:</strong></p>
+        <ul>
+          <li>Mínimo 8 caracteres</li>
+          <li>Al menos 1 número</li>
+          <li>Al menos 1 letra mayúscula</li>
+        </ul>
+        <p class="warning-text"><i class="pi pi-exclamation-triangle"></i> No puedes usar tu número de documento como contraseña.</p>
+      </div>
+
+      <form [formGroup]="cambiarForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="nuevaContrasenia">Nueva Contraseña</label>
+          <div class="password-input-wrapper">
+            <i class="pi pi-lock input-icon"></i>
+            <input
+              [type]="showNuevaContrasenia ? 'text' : 'password'"
+              id="nuevaContrasenia"
+              formControlName="nuevaContrasenia"
+              class="form-input"
+              placeholder="Ingresa tu nueva contraseña"
+              [class.error]="cambiarForm.get('nuevaContrasenia')?.invalid && cambiarForm.get('nuevaContrasenia')?.touched"
+            >
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showNuevaContrasenia = !showNuevaContrasenia"
+              [attr.aria-label]="showNuevaContrasenia ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i [class]="showNuevaContrasenia ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+          </div>
+          <div class="error-message" *ngIf="cambiarForm.get('nuevaContrasenia')?.invalid && cambiarForm.get('nuevaContrasenia')?.touched">
+            <span *ngIf="cambiarForm.get('nuevaContrasenia')?.errors?.['required']"><i class="pi pi-exclamation-circle"></i> La contraseña es requerida.</span>
+            <span *ngIf="cambiarForm.get('nuevaContrasenia')?.errors?.['minlength']"><i class="pi pi-exclamation-circle"></i> Mínimo 8 caracteres.</span>
+            <span *ngIf="cambiarForm.get('nuevaContrasenia')?.errors?.['pattern']"><i class="pi pi-exclamation-circle"></i> Debe contener al menos 1 mayúscula y 1 número.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmarNuevaContrasenia">Confirmar Nueva Contraseña</label>
+          <div class="password-input-wrapper">
+            <i class="pi pi-lock input-icon"></i>
+            <input
+              [type]="showConfirmarNuevaContrasenia ? 'text' : 'password'"
+              id="confirmarNuevaContrasenia"
+              formControlName="confirmarNuevaContrasenia"
+              class="form-input"
+              placeholder="Confirma tu nueva contraseña"
+              [class.error]="(cambiarForm.get('confirmarNuevaContrasenia')?.invalid || cambiarForm.hasError('mismatch')) && cambiarForm.get('confirmarNuevaContrasenia')?.touched"
+            >
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showConfirmarNuevaContrasenia = !showConfirmarNuevaContrasenia"
+              [attr.aria-label]="showConfirmarNuevaContrasenia ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i [class]="showConfirmarNuevaContrasenia ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+          </div>
+          <div class="error-message" *ngIf="cambiarForm.get('confirmarNuevaContrasenia')?.touched">
+            <span *ngIf="cambiarForm.get('confirmarNuevaContrasenia')?.errors?.['required']"><i class="pi pi-exclamation-circle"></i> La confirmación es requerida.</span>
+            <span *ngIf="!cambiarForm.get('confirmarNuevaContrasenia')?.errors?.['required'] && cambiarForm.hasError('mismatch')"><i class="pi pi-exclamation-circle"></i> Las contraseñas no coinciden.</span>
+          </div>
+        </div>
+
+        <div class="status-alert alert-error" *ngIf="error">
+          <i class="pi pi-times-circle"></i>
+          <span>{{ error }}</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="cambiarForm.invalid || isLoading">
+          <span *ngIf="!isLoading">Guardar y continuar</span>
+          <p-progressSpinner *ngIf="isLoading" [style]="{width: '20px', height: '20px'}" strokeWidth="4" animationDuration="1s"></p-progressSpinner>
+        </button>
+
+        <div class="form-footer">
+          <button type="button" class="btn-logout" (click)="logout()">Cerrar sesión</button>
+        </div>
+      </form>
+      
+      <div class="form-copyright">
+        <p>&copy; {{ currentYear }} AMMI Online. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </div>
+</div>

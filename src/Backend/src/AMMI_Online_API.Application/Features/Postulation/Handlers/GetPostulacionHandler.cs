@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Postulations;
 using AMMI_Online_API.Application.Features.Postulation.Queries;
 using AMMI_Online_API.Domain.Entities;
@@ -36,9 +36,21 @@ public class GetPostulacionHandler : IRequestHandler<GetPersonaPostulacionQuery,
             query.PageSize,
             cancellationToken);
 
+        if (query.ExcludeContactoPersona)
+        {
+            const int IdEstadoContactoPersona = 8;
+            postulaciones = postulaciones.Where(p => p.IdTipoEstadoAprobacion != IdEstadoContactoPersona).ToList();
+            totalCount = postulaciones.Count();
+        }
+
         var postulacionesDTO = postulaciones.Select(p => new PersonaPostulacionDTO
         {
             IdPostulacion = p.IdPostulacion,
+            IdPersona = p.IdPersona,
+            ObservacionesRevision = p.ObservacionesRevision,
+            EsPostulacionRapida = p.EsPostulacionRapida,
+            ObservacionesPostulante = p.ObservacionesPostulante,
+            FechaPostulacion = p.FechaPostulacion,
             personasimple = MapPersona(p.IdPersonaNavigation),
             tipoestadoaprobacion = p.IdTipoEstadoAprobacionNavigation != null
                 ? new TipoEstadoAprobacionSimp
@@ -83,10 +95,10 @@ public class GetPostulacionHandler : IRequestHandler<GetPersonaPostulacionQuery,
                     ? MapPersonaActividadEconomica(persona.PersonaActividadEconomica.FirstOrDefault())
                     : null,
 
-            // Mapeo de Contacto (tomando el primero)
-            pcontacto = persona.DatosContacto?.FirstOrDefault() != null
-                ? MapPersonaContacto(persona.DatosContacto.FirstOrDefault())
-                : null,
+            // Mapeo de Contactos (todos)
+            pcontacto = persona.DatosContacto != null
+                ? persona.DatosContacto.Select(c => MapPersonaContacto(c)).ToList()
+                : new List<PersonaContactoSimp>(),
 
             // Mapeo de Documentos Personales (lista)
             // Mapeo de Documentos Personales (lista)
@@ -146,11 +158,18 @@ public class GetPostulacionHandler : IRequestHandler<GetPersonaPostulacionQuery,
 
         return new PersonaContactoSimp
         {
+            IdDatosContacto = contacto.IdDatosContacto,
+            IdTipoDatoContacto = contacto.IdTipoDatoContacto,
+            EsPrincipal = contacto.EsPrincipal,
             Detalle = contacto.Detalle,
             tipocontacto = contacto.IdTipoDatoContactoNavigation != null ? new TipoContactoSimp
             {
+                IdTipoDatoContacto = contacto.IdTipoDatoContactoNavigation.IdTipoDatoContacto,
                 Detalle = contacto.IdTipoDatoContactoNavigation.Detalle
-            } : null
+            } : new TipoContactoSimp
+            {
+                IdTipoDatoContacto = contacto.IdTipoDatoContacto
+            }
         };
     }
 
@@ -193,10 +212,6 @@ public class GetPostulacionHandler : IRequestHandler<GetPersonaPostulacionQuery,
             estadocivil = info.IdEstadoCivilNavigation != null ? new EstadoCivilSimp
             {
                 Nombre = info.IdEstadoCivilNavigation.Nombre
-            } : null,
-            sangre = info.IdTipoSangreNavigation != null ? new TipoSangreSimp
-            {
-                Detalle = info.IdTipoSangreNavigation.Detalle
             } : null,
             nacionalidadetnica = info.IdNacionalidadEtnicaNavigation != null
                 ? MapNacionalidad(info.IdNacionalidadEtnicaNavigation)

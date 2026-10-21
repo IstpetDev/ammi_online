@@ -1,0 +1,362 @@
+.requisitos-section {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+}
+
+.requisitos-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.requisitos-info {
+  margin-top: 0.375rem;
+  padding: 0.5rem;
+  background-color: var(--surface-ground);
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--primary-color);
+}
+
+.visual-aid-banner {
+  background-color: var(--surface-hover);
+  border-left: 4px solid var(--primary-color);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.requisitos-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.requisito-card {
+  background-color: var(--surface-section);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  padding: 0.8rem;
+  min-width: 0;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.requisito-card:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+.requisito-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.requisito-name {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.requisito-status {
+  padding: 0.2rem 0.45rem;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.requisito-status.required {
+  background-color: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.requisito-badges {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.requisito-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+}
+
+.bool-buttons {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.bool-result {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.45rem;
+  background-color: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+}
+
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.result-badge.cumple {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.result-badge.no-cumple {
+  background-color: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.doc-action-group {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.doc-action-group button {
+  flex: 0 0 auto;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.45rem;
+  font-weight: 600;
+  font-size: 0.825rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  line-height: 1;
+}
+
+.btn-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.btn-action.btn-icon-only {
+  width: 2.15rem;
+  height: 2.15rem;
+  min-width: 2.15rem;
+  border-radius: 0.45rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action.btn-icon-only i {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Aprobar Requisito (Soft Soft Emerald/Mint) */
+.btn-approve-brand {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.btn-approve-brand:hover:not(:disabled) {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+}
+
+/* Rechazar (Soft Rose / Soft Crimson) */
+.btn-reject-brand {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.btn-reject-brand:hover:not(:disabled) {
+  background: #f43f5e;
+  border-color: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(244, 63, 94, 0.25);
+}
+
+/* Botón Ver Documento (Soft Indigo / Soft Blue) */
+.btn-ver-doc {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.btn-ver-doc:hover:not(:disabled) {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+}
+
+/* Botón Subir Documento (Soft Violet / Soft Lavender) */
+.btn-subir-doc {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #6d28d9;
+}
+
+.btn-subir-doc:hover:not(:disabled) {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.25);
+}
+
+/* Botón BOOL Sí Cumple (Soft Teal / Green Accent) */
+.btn-bool-si {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.btn-bool-si:hover:not(:disabled) {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+}
+
+/* Botón BOOL No Cumple (Soft Amber / Soft Rose) */
+.btn-bool-no {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.btn-bool-no:hover:not(:disabled) {
+  background: #f43f5e;
+  border-color: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(244, 63, 94, 0.25);
+}
+
+/* Botón Cambiar (BOOL definido - Soft Slate / Soft Purple) */
+.btn-cambiar {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.btn-cambiar:hover:not(:disabled) {
+  background: #64748b;
+  border-color: #64748b;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(100, 116, 139, 0.25);
+}
+
+/* Diálogos y máquina de estados */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  width: 100%;
+}
+
+.estado-subido   { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.estado-aprobado { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.estado-rechazado{ background-color: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+.rechazado-mensaje {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  color: #be123c;
+  margin-bottom: 0.35rem;
+}
+.rechazado-mensaje i { flex-shrink: 0; font-size: 0.85rem; margin-top: 0.1rem; }
+
+.motivo-rechazo-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.motivo-rechazo-label {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+  letter-spacing: 0.01em;
+}
+
+.motivo-rechazo-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--surface-hover);
+}

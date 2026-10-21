@@ -11,22 +11,22 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class TipoEstadoAprobacionController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
+        
         public async Task<Response<IEnumerable<TipoEstadoAprobacionDTO>>> GetAllTipoEstadoAprobacion([FromQuery] GetAllTipoEstadoAprobacionQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
+        
         public async Task<Response<int>> CreateTipoEstadoAprobacion([FromBody] CreateTipoEstadoAprobacionCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
+        
         public async Task<Response<bool>> UpdateTipoEstadoAprobacion([FromBody] UpdateTipoEstadoAprobacionCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
+        
         public async Task<Response<bool>> DeleteTipoEstadoAprobacion(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteTipoEstadoAprobacionCommand(id), cancellationToken);
     }

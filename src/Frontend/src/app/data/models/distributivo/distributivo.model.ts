@@ -4,7 +4,8 @@
 export interface DistributivoDTO {
   idDistributivo: number;
   idDetalleMalla: number;
-  idPersona: number;
+  idPersona: number | null;
+  idMallaParalelo: number;
   idParalelo: number;
 
   // Datos del DetalleMalla
@@ -30,6 +31,7 @@ export interface DistributivoDTO {
   // Datos del Docente
   nombreDocente: string;
   documentoDocente: string;
+  tieneDocente: boolean;
 
   // Conteo de alumnos
   cantidadAlumnos: number;
@@ -37,6 +39,12 @@ export interface DistributivoDTO {
   // Datos de Plantilla (agregados para consistencia con AsignacionDocenteDTO)
   idPlantillaEvaluacion?: number;
   nombrePlantilla?: string;
+
+  // Fechas de notas
+  fechaInicio?: string;
+  fechaFin?: string;
+  diasGracia?: number;
+  statusPeriodo?: string;
 }
 
 /**
@@ -45,7 +53,7 @@ export interface DistributivoDTO {
 export interface DistributivoCreateDTO {
   idDetalleMalla: number;
   idPersona: number;
-  idParalelo: number;
+  idMallaParalelo: number;
 }
 
 /**
@@ -55,7 +63,7 @@ export interface DistributivoUpdateDTO {
   idDistributivo: number;
   idDetalleMalla: number;
   idPersona: number;
-  idParalelo: number;
+  idMallaParalelo: number;
 }
 
 /**
@@ -89,16 +97,29 @@ export interface MallaCargaDTO {
 
 export interface MateriaCargaDTO {
   idDetalleMalla: number;
+  idMateria?: number;
   nombreMateria: string;
   horas: number;
+  idPlantillaEvaluacion?: number;
+  nombrePlantilla?: string;
+  modulo?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+  diasGracia?: number;
+  statusPeriodo?: string;
   paralelos: ParaleloCargaDTO[];
 }
 
 export interface ParaleloCargaDTO {
   idDistributivo: number;
   idParalelo: number;
+  idMallaParalelo?: number;
   nombreParalelo: string;
   cantidadAlumnos: number;
+  alumnosCalificados?: number;
+  alumnosSinCalificar?: number;
+  tieneDocente?: boolean;
+  nombreDocente?: string;
 }
 
 /**
@@ -126,6 +147,7 @@ export interface AsignacionDocenteDTO {
   cantidadAlumnos: number;
   idMalla: number;
   nombreMalla: string;
+  alumnos?: any[]; // Lista de alumnos para contar únicos
 }
 
 
@@ -141,4 +163,24 @@ export interface DetalleMallaDTO {
   nombreMateria?: string;
   horasMateria?: number;
   nombreMalla?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  diasGracia?: number;
+}
+
+export interface DistributivoItemDTO {
+  idDistributivo: number;
+  idDetalleMalla: number;
+  idMateria: number;
+  nombreMateria: string;
+  horasMateria: number;
+  idPersona: number | null;
+  nombreDocente: string;
+  documentoDocente: string;
+  tieneDocente: boolean;
+  esActivo?: boolean;
+  fechaInicio?: string;
+  fechaFin?: string;
+  diasGracia?: number;
+  statusPeriodo?: string;
 }

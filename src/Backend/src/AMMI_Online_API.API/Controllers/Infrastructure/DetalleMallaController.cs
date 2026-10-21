@@ -10,6 +10,7 @@ namespace AMMI_Online_API.API.Controllers.Infrastructure;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DetalleMallaController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -20,7 +21,7 @@ public class DetalleMallaController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<DetalleMallaDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetDetalleMallaByIdQuery(id), cancellationToken);
@@ -29,15 +30,35 @@ public class DetalleMallaController : ControllerBase
     }
 
     [HttpGet("ByMalla/{idMalla}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<PaginatedResult<DetalleMallaDTO>>> GetByMalla(int idMalla, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetDetalleMallaByMallaIdQuery(idMalla, pageNumber, pageSize), cancellationToken);
         return Ok(result);
     }
 
+    [HttpGet("ByMalla/{idMalla}/PorModulo")]
+    
+    public async Task<ActionResult<IEnumerable<DetalleMallaModuloDTO>>> GetByMallaGroupedByModulo(int idMalla, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetDetalleMallaPorModuloQuery(idMalla), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("FechasSugeridas")]
+    public async Task<ActionResult<FechasSugeridasModuloDTO>> GetFechasSugeridasModulo(
+        [FromQuery] int idCiclo,
+        [FromQuery] int modulo,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetFechasSugeridasModuloQuery(idCiclo, modulo), cancellationToken);
+        return Ok(result);
+    }
+
+
     [HttpPost]
-    [AllowAnonymous]
+
+    
     public async Task<ActionResult<DetalleMallaDTO>> Create([FromBody] DetalleMallaCreateDTO dto, CancellationToken cancellationToken)
     {
         try
@@ -52,7 +73,7 @@ public class DetalleMallaController : ControllerBase
     }
 
     [HttpPost("Bulk")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<IEnumerable<DetalleMallaDTO>>> CreateBulk([FromBody] List<DetalleMallaCreateDTO> dtos, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateBulkDetalleMallaCommand(dtos), cancellationToken);
@@ -60,7 +81,7 @@ public class DetalleMallaController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<DetalleMallaDTO>> Update([FromBody] DetalleMallaUpdateDTO dto, CancellationToken cancellationToken)
     {
         try
@@ -74,8 +95,29 @@ public class DetalleMallaController : ControllerBase
         }
     }
 
+    [HttpPut("{id}/FechasNotas")]
+    public async Task<ActionResult<DetalleMallaDTO>> ActualizarFechasNotas(int id, [FromBody] ActualizarFechasNotasMateriaDTO dto, CancellationToken cancellationToken)
+    {
+        if (id != dto.IdDetalleMalla)
+            return BadRequest("El ID de la ruta no coincide con el cuerpo de la solicitud.");
+
+        try
+        {
+            var result = await _mediator.Send(new ActualizarFechasNotasMateriaCommand(dto), cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Materia no encontrada");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpDelete("{id}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteDetalleMallaCommand(id), cancellationToken);

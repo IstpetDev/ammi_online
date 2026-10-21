@@ -24,4 +24,5 @@ export { TipoSangreService } from './tipo-sangre.service';
 export { TipoActividadEconomicaService } from './tipo-actividad-economica.service';
 export { TipoDiscapacidadService } from './tipo-discapacidad.service';
 export { ParaleloService } from './paralelo.service';
+export { EmailVerificationService } from './email-verification.service';
 

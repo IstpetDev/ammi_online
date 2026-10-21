@@ -6,7 +6,6 @@ public record PersonaInfoDTO
     public DateOnly? FechaNacimiento { get; set; }
     public int? IdEstadoCivil { get; set; }
     public int? IdNacionalidadEtnica { get; set; }
-    public int? IdTipoSangre { get; set; }
 }
 
 public record CreatePersonaInfoDTO
@@ -15,7 +14,6 @@ public record CreatePersonaInfoDTO
     public DateOnly? FechaNacimiento { get; set; }
     public int? IdEstadoCivil { get; set; }
     public int? IdNacionalidadEtnica { get; set; }
-    public int? IdTipoSangre { get; set; }
 }
 
 public record UpdatePersonaInfoDTO
@@ -24,5 +22,4 @@ public record UpdatePersonaInfoDTO
     public DateOnly? FechaNacimiento { get; set; }
     public int? IdEstadoCivil { get; set; }
     public int? IdNacionalidadEtnica { get; set; }
-    public int? IdTipoSangre { get; set; }
 }

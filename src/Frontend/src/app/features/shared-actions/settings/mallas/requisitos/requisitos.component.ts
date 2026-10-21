@@ -5,19 +5,21 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { RequisitoDTO } from '../../../../../data/models/Entities';
 import { RequisitosService } from '../../../../../core/services/settings/requisitos.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-requisitos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, ToastModule, TooltipModule, CheckboxModule, ToggleButtonModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, SelectModule, TagModule, CheckboxModule, ToggleButtonModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './requisitos.component.html',
   styleUrls: ['./requisitos.component.css'],
   providers: [MessageService]
@@ -25,6 +27,11 @@ import { MessageService } from 'primeng/api';
 export class RequisitosComponent implements OnInit {
   requisitos: RequisitoDTO[] = [];
   requisitoForm: FormGroup;
+
+  readonly tipoDatoOptions = [
+    { label: 'Confirmación', value: 'BOOL' },
+    { label: 'Documento Adjunto', value: 'ADJUNTO' }
+  ];
   displayDialog: boolean = false;
   isEditing: boolean = false;
   selectedRequisito: RequisitoDTO | null = null;

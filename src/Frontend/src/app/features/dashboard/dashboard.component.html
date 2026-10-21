@@ -1,47 +1,91 @@
 <div class="dashboard-layout">
+  <!-- Zona de detección de proximidad al borde -->
+  <div 
+    class="edge-hover-zone"
+    [class.at-right]="sidebarPosition === 'right'"
+    (mouseenter)="setHoverSidebar(true)"
+    (mouseleave)="setHoverSidebar(false)">
+  </div>
+
   <!-- Sidebar -->
-  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+  <aside class="sidebar" 
+    [class.collapsed]="sidebarCollapsed"
+    [class.at-right]="sidebarPosition === 'right'"
+    (mouseenter)="setHoverSidebar(true)"
+    (mouseleave)="setHoverSidebar(false)">
     <div class="sidebar-header">
-      <i class="pi pi-graduation-cap sidebar-logo-icon"></i>
-      <span class="sidebar-logo-text" *ngIf="!sidebarCollapsed">AMMI ONLINE</span>
+      <img [src]="logoSrc()" class="sidebar-logo" alt="AMMI ONLINE Logo">
     </div>
 
     <nav class="sidebar-menu">
       <!-- Menú dinámico basado en rol -->
       <ng-container *ngFor="let item of menuItems">
-        <a 
-          [routerLink]="item.route" 
-          [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}" 
-          routerLinkActive="active" 
-          class="menu-item">
+        <a [routerLink]="item.route" [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}"
+          routerLinkActive="active" class="menu-item">
           <i class="pi" [ngClass]="item.icon"></i>
-          <span *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+          <span>{{ item.label }}</span>
         </a>
       </ng-container>
     </nav>
-
-    <button class="sidebar-toggle" (click)="toggleSidebar()">
-      <i class="pi" [ngClass]="sidebarCollapsed ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
-    </button>
   </aside>
+
+  <!-- Botón flotante tipo etiqueta / guardapáginas -->
+  <button 
+    class="sidebar-toggle-fab"
+    [class.dragging]="isDragging"
+    [class.at-left]="sidebarPosition === 'left'"
+    [class.at-right]="sidebarPosition === 'right'"
+    [style.left]="getButtonLeft()"
+    [style.right]="getButtonRight()"
+    [style.top.px]="buttonPosition.y"
+    (mousedown)="startDrag($event)"
+    (touchstart)="startDrag($event)"
+    (mouseenter)="setHoverButton(true)"
+    (mouseleave)="setHoverButton(false)"
+    (click)="toggleSidebar($event)"
+    title="Menú de Navegación">
+    <i class="pi pi-bars"></i>
+  </button>
 
   <!-- Main Content -->
   <div class="main-content">
     <!-- Header -->
     <header class="top-header">
       <div class="header-left">
-        <h1 class="page-title">{{ pageTitle }}</h1>
+        <!-- Botón de menú móvil (solo visible en móvil) -->
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" title="Menú">
+          <i class="pi" [ngClass]="mobileMenuOpen ? 'pi-times' : 'pi-bars'"></i>
+        </button>
+        <app-breadcrumbs></app-breadcrumbs>
       </div>
       <div class="header-right">
-        <button class="icon-btn" title="Notificaciones">
-          <i class="pi pi-bell"></i>
-          <span class="notification-badge" *ngIf="notificationCount > 0">{{ notificationCount }}</span>
-        </button>
+
         <app-theme-toggle></app-theme-toggle>
+
+        <!-- Botón de configuración -->
+        <button class="icon-btn"
+          (click)="showSettingsPanel = !showSettingsPanel" title="Configuración">
+          <i class="pi pi-cog"></i>
+        </button>
+
         <div class="user-menu">
           <div class="user-info-header">
-            <div class="user-avatar-small">
-              <i class="pi pi-user"></i>
+            <div class="user-avatar-small profile-avatar" style="overflow: visible;"
+              (mouseenter)="showLargeProfile = true" (mouseleave)="showLargeProfile = false"
+              (click)="showLargeProfile = !showLargeProfile">
+
+              <i class="pi pi-user" *ngIf="!fotoPerfilUrl"></i>
+
+              <img *ngIf="fotoPerfilUrl && !isPdf" [src]="fotoPerfilUrl" alt=""
+                style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+              <i class="pi pi-file-pdf profile-pdf-icon" *ngIf="fotoPerfilUrl && isPdf" title="Documento PDF"
+                style="font-size: 1.5rem;"></i>
+
+              <div class="profile-preview-card" *ngIf="showLargeProfile && fotoPerfilUrl">
+                <img *ngIf="!isPdf" [src]="fotoPerfilUrl" alt="Perfil Ampliado">
+                <iframe *ngIf="isPdf" [src]="safeFotoPerfilUrl" width="100%" height="100%" frameborder="0"
+                  style="pointer-events: none;"></iframe>
+              </div>
             </div>
             <div class="user-details" *ngIf="user">
               <span class="user-name">{{ user.username }}</span>
@@ -55,9 +99,32 @@
       </div>
     </header>
 
+    <!-- Menú Desplegable Móvil (Top-down dropdown) -->
+    <div class="mobile-menu-dropdown" [class.open]="mobileMenuOpen">
+      <nav class="mobile-menu-nav">
+        <ng-container *ngFor="let item of menuItems">
+          <a [routerLink]="item.route" [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}"
+            routerLinkActive="active" class="mobile-menu-item" (click)="closeMobileMenu()">
+            <i class="pi" [ngClass]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        </ng-container>
+      </nav>
+    </div>
+
     <!-- Content Area -->
     <div class="content-area">
       <router-outlet></router-outlet>
     </div>
   </div>
 </div>
+
+<!-- Panel de configuración -->
+<app-settings-panel
+  [visible]="showSettingsPanel"
+  [user]="user"
+  [fotoPerfilUrl]="fotoPerfilUrl"
+  [isPdf]="isPdf"
+  (close)="showSettingsPanel = false"
+  (logoutRequested)="logout(); showSettingsPanel = false">
+</app-settings-panel>

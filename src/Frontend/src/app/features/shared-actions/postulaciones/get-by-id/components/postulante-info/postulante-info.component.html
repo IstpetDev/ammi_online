@@ -1,0 +1,75 @@
+<div class="info-section-simplified">
+  <div class="profile-header">
+    <div class="profile-avatar">
+      <i class="pi pi-user"></i>
+    </div>
+    <div class="profile-meta">
+      <div class="name-row">
+        <h4>{{ getNombreEstudiante() || 'No especificado' }}</h4>
+        <div class="header-actions-group">
+          <button type="button" class="btn-action-edit" (click)="onEditarClick()" title="Editar nombres y datos básicos del postulante" aria-label="Editar datos básicos">
+            <i class="pi pi-pencil"></i>
+            <span>Editar</span>
+          </button>
+          <button type="button" class="btn-action-delete" (click)="onEliminarClick()" title="Eliminar postulante y su postulación" aria-label="Eliminar postulante">
+            <i class="pi pi-trash"></i>
+            <span>Eliminar</span>
+          </button>
+        </div>
+      </div>
+      <span class="profile-sub">
+        CI: {{ postulante?.personasimple?.documento || 'No disponible' }} •
+        {{ calcularEdad(postulante?.personasimple?.pinfo?.fechaNacimiento) || 'Edad no disponible' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="profile-details-grid">
+    <div class="detail-item">
+      <span class="detail-label">Programa de Estudio</span>
+      <span class="detail-value">{{ postulante?.malla?.detalle || 'Oferta académica por definir' }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Curso / Ciclo</span>
+      <span class="detail-value">
+        {{ postulante?.malla?.curso?.detalle || 'Curso por definir' }} —
+        {{ postulante?.malla?.mallaCiclo?.ciclo?.detalle || 'Ciclo lectivo por definir' }}
+      </span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Fecha Postulación</span>
+      <span class="detail-value">{{ (postulante?.fechaPostulacion | date:'dd/MM/yyyy') || 'No disponible' }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Estado</span>
+      <div>
+        <span class="status-badge"
+          [class]="'status-' + ((postulante?.tipoestadoaprobacion?.detalle?.toLowerCase() || 'desconocido').replace(' ', '-'))">
+          {{ postulante?.tipoestadoaprobacion?.detalle || 'Sin Estado' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-item observation-item" *ngIf="postulante?.observacionesPostulante">
+    <span class="detail-label">Observaciones Postulante</span>
+    <span class="detail-value">{{ postulante.observacionesPostulante }}</span>
+  </div>
+
+  <div class="detail-item observation-item" *ngIf="postulante?.observacionesRevision">
+    <span class="detail-label">Observaciones de Revisión</span>
+    <span class="detail-value">{{ postulante.observacionesRevision }}</span>
+  </div>
+
+  <div class="detail-item contacts-item" *ngIf="tieneDatosContacto">
+    <span class="detail-label">Datos de Contacto</span>
+    <div class="contacts-pills">
+      <span class="contact-pill" *ngFor="let contacto of datosContacto">
+        <i class="pi"
+          [class.pi-envelope]="contacto?.tipocontacto?.detalle?.toUpperCase().includes('CORREO') || contacto?.tipocontacto?.detalle?.toUpperCase().includes('MAIL')"
+          [class.pi-phone]="!contacto?.tipocontacto?.detalle?.toUpperCase().includes('CORREO') && !contacto?.tipocontacto?.detalle?.toUpperCase().includes('MAIL')"></i>
+        {{ contacto.detalle }}
+      </span>
+    </div>
+  </div>
+</div>

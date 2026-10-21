@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Person;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Hosting;
@@ -35,7 +35,9 @@ public class DocumentosPersonalesRepository : IDocumentosPersonales
         string? observacion = null,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<DocumentosPersonales> query = _context.DocumentosPersonales.AsNoTracking();
+        IQueryable<DocumentosPersonales> query = _context.DocumentosPersonales
+            .Include(x => x.IdAdjuntoNavigation)
+            .AsNoTracking();
 
         if (idDocumentosPersonales.HasValue)
             query = query.Where(x => x.IdDocumentosPersonales == idDocumentosPersonales.Value);

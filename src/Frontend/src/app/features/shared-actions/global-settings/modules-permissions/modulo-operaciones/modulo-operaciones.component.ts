@@ -6,23 +6,20 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ModuloService, ModuloOperacionService } from '../../../../../core/services/seguridad';
 import { ModuloDTO, ModuloOperacionDTO } from '../../../../../data/models/Entities';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-modulo-operaciones',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     FormsModule,
     TableModule,
     ButtonModule,
     DialogModule,
-    InputTextModule,
-    ToastModule
-  ],
+    InputTextModule, SharedToastComponent],
   templateUrl: './modulo-operaciones.component.html',
   styleUrls: ['./modulo-operaciones.component.css']
 })

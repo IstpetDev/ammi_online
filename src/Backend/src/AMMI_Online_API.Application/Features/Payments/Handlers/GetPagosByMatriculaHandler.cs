@@ -26,23 +26,31 @@ public class GetPagosByMatriculaHandler : IRequestHandler<GetPagosByMatriculaQue
     {
         // Tomar la primera cuota para obtener datos de matr�cula (asumiendo que todas las cuotas pertenecen a la misma matr�cula)
         var primeraCuota = pago.PagoCuota.FirstOrDefault();
-        var matriculaId = primeraCuota?.IdDetalleCreditoNavigation?.IdCreditoNavigation?.IdMatricula ?? 0;
+        var idMatricula = primeraCuota?.IdDetalleCreditoNavigation?.IdCreditoNavigation?.IdMatricula ?? 0;
 
         return new PagoDTO
         {
             IdPago = pago.IdPago,
             IdTipoPago = pago.IdTipoPago,
             TipoPagoDetalle = pago.IdTipoPagoNavigation?.Detalle ?? string.Empty,
+            IdCliente = pago.IdCliente,
+            ClienteDocumento = pago.IdClienteNavigation?.Documento ?? string.Empty,
+            ClienteNombre = $"{pago.IdClienteNavigation?.Nombres} {pago.IdClienteNavigation?.Apellidos}".Trim(),
+            IdEstadoPago = pago.IdEstadoPago,
+            EstadoPagoDetalle = pago.IdEstadoPagoNavigation?.Detalle ?? string.Empty,
+            EsCancelado = pago.IdEstadoPagoNavigation?.EsCancelado ?? false,
             FechaPago = pago.FechaPago,
             ValorPago = pago.ValorPago,
             FechaDeposito = pago.FechaDeposito,
             IdCuentaBancaria = pago.IdCuentaBancaria,
             NumeroDeposito = pago.NumeroDeposito ?? string.Empty,
-            RucCliente = pago.RucCliente ?? string.Empty,
-            Observaciones = pago.Observaciones ?? string.Empty,
             FechaRegistro = pago.FechaRegistro,
-            EsValidado = pago.EsValidado,
-            IdMatricula = matriculaId,
+            UrlComprobante = pago.UrlComprobante,
+            FechaEliminacion = pago.FechaEliminacion,
+            Observaciones = pago.Observaciones ?? string.Empty,
+            UsuarioRegistro = pago.UsuarioRegistro,
+            UsuarioElimino = pago.UsuarioElimino,
+            IdMatricula = idMatricula,
             CuotasAplicadas = pago.PagoCuota.Select(pc => new PagoCuotaInfoDTO
             {
                 IdPagoCuota = pc.IdPagoCuota,
@@ -52,8 +60,7 @@ public class GetPagosByMatriculaHandler : IRequestHandler<GetPagosByMatriculaQue
                 SaldoCuota = pc.IdDetalleCreditoNavigation?.SaldoCuota ?? 0,
                 EstadoCuota = pc.IdDetalleCreditoNavigation?.Estado ?? string.Empty,
                 IdCredito = pc.IdDetalleCreditoNavigation?.IdCredito ?? 0,
-                DetalleEspecie = pc.IdDetalleCreditoNavigation?.IdCreditoNavigation?
-                                     .IdEspecieCicloNavigation?.IdEspecieNavigation?.Detalle ?? string.Empty
+                DetalleEspecie = pc.IdDetalleCreditoNavigation?.IdCreditoNavigation?.IdEspecieCicloNavigation?.IdEspecieNavigation?.Detalle ?? string.Empty
             }).ToList()
         };
     }

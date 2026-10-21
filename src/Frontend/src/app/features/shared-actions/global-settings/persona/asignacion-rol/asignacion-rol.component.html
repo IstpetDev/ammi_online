@@ -1,68 +1,297 @@
-<div class="seasons-container">
-  <div class="seasons-header">
-    <div class="seasons-header-content">
-      <div class="seasons-header-title">
-        <h1>Asignación de Roles</h1>
-        <p>Aquí se gestionarán las asignaciones de roles a las personas.</p>
-      </div>
-      <div class="seasons-header-actions">
-        <p-button label="Nueva Asignación" icon="pi pi-plus" (click)="openNewRolUsuarioDialog()" styleClass="p-button-primary p-button-lg"></p-button>
-      </div>
+<div class="asignacion-container">
+  <div class="settings-header">
+    <div class="header-title">
+      <h1>Asignación de Roles</h1>
+      <p>Gestión de roles asignados a personas del sistema</p>
+    </div>
+    <button class="btn-nuevo" (click)="openNewRolUsuarioDrawer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-svg">
+        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Nueva Asignación
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-row">
+      <input type="text" class="input-search" placeholder="Buscar por nombre..." (input)="onFilterNombre($event.target.value)" />
+      <input type="text" class="input-search" placeholder="Buscar por documento..." (input)="onFilterDocumento($event.target.value)" />
     </div>
   </div>
 
-  <div class="seasons-content-card">
-    <div class="p-field p-fluid" style="margin-bottom: 1rem;">
-      <input pInputText placeholder="Buscar asignaciones..." (input)="dt.filterGlobal($event.target.value, 'contains')" />
-    </div>
-    <p-table #dt [value]="rolUsuarios" [loading]="loading" [paginator]="true" [rows]="10" [globalFilterFields]="['persona.primerNombre', 'persona.segundoNombre', 'persona.primerApellido', 'persona.segundoApellido', 'persona.documento', 'persona.idTipoDocumento', 'rol.detalle']">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>ID</th>
-          <th>Persona <p-columnFilter type="text" field="persona.primerNombre" display="menu"></p-columnFilter></th>
-          <th>Rol <p-columnFilter type="text" field="rol.detalle" display="menu"></p-columnFilter></th>
-          <th>Acciones</th>
-        </tr>
+  <div class="table-wrapper">
+    <app-shared-table
+      [columns]="columns"
+      [data]="paginatedData"
+      [loading]="loading"
+      [totalRecords]="totalRecords"
+      [rowsPerPage]="rowsPerPage"
+      [page]="page"
+      [paginator]="true"
+      emptyMessage="No hay asignaciones registradas aún."
+      (pageChange)="onPageChange($event)">
+
+      <ng-template stColTemplate="acciones" let-row>
+        <div class="table-actions">
+          <button class="btn-icon-material" (click)="editRolUsuario(row.ru)" title="Editar">
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mat-icon">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-icon-material" (click)="confirmDeleteRolUsuario(row.ru)" title="Eliminar">
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mat-icon">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
       </ng-template>
-      <ng-template pTemplate="body" let-ru>
-        <tr>
-          <td>{{ ru.idRolUsuario }}</td>
-          <td>{{ ru.persona?.idTipoDocumento }} - {{ ru.persona?.documento }} - {{ ru.persona?.primerNombre }} {{ ru.persona?.segundoNombre }} {{ ru.persona?.primerApellido }} {{ ru.persona?.segundoApellido }}</td>
-          <td>{{ ru.rol?.detalle }}</td>
-          <td>
-            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editRolUsuario(ru)"></button>
-            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteRolUsuario(ru)"></button>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+    </app-shared-table>
   </div>
 </div>
 
-<!-- Dialog for RolUsuario -->
-<p-dialog [(visible)]="rolUsuarioDialog" [style]="{width: '450px'}" header="Asignación de Rol" [modal]="true" [closable]="false" styleClass="p-dialog-custom">
-  <form class="seasons-form-grid">
-    <div class="seasons-form-row">
-      <div class="seasons-form-group">
-        <label class="seasons-form-label">Persona</label>
-        <p-autoComplete [(ngModel)]="selectedPersona" [suggestions]="filteredPersonas" (completeMethod)="filterPersonas($event)" [optionLabel]="'primerNombre'" placeholder="Buscar persona" [ngModelOptions]="{standalone: true}" style="width: 100%" class="seasons-form-control">
-          <ng-template let-persona pTemplate="item">
-            {{persona.idTipoDocumento}} - {{persona.documento}} - {{persona.primerNombre}} {{persona.segundoNombre}} {{persona.primerApellido}} {{persona.segundoApellido}}
-          </ng-template>
-        </p-autoComplete>
+<app-shared-drawer
+  [(visible)]="drawerVisible"
+  title="Asignación de Rol"
+  mode="drawer"
+  position="right"
+  size="lg"
+  [showCloseButton]="true"
+  [closeOnOverlayClick]="false"
+  [showFooter]="true"
+  cancelText="Cancelar"
+  [confirmText]="isEdit ? 'Guardar Cambios' : 'Guardar'"
+  [confirmDisabled]="confirmDisabled"
+  [confirmLoading]="confirmLoading"
+  (confirm)="onDrawerConfirm()"
+  (cancel)="onDrawerCancel()">
+
+  <div class="drawer-content">
+
+    <!-- STEP 1: Search section (only for new) -->
+    @if (!isEdit) {
+      <div class="form-section">
+        <div class="section-step">
+          <span class="step-badge">1</span>
+          <span class="step-label">Buscar o registrar persona</span>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Tipo Documento</label>
+            <app-custom-select
+              [items]="tiposDocumento"
+              labelField="nombre"
+              valueField="idTipoDocumento"
+              [(selectedValue)]="selectedTipoDocumentoId"
+              placeholder="Seleccione tipo documento"
+              [searchable]="false">
+            </app-custom-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de Documento</label>
+            <div class="input-group-row">
+              <input
+                type="text"
+                class="form-input"
+                [class.input-with-btn]="!!selectedTipoDocumentoId"
+                [(ngModel)]="documentoBusqueda"
+                [disabled]="!selectedTipoDocumentoId"
+                placeholder="Ingrese número de documento"
+                (keydown.enter)="buscarPersonaPorDocumento()" />
+              <button
+                class="btn-buscar"
+                (click)="buscarPersonaPorDocumento()"
+                [disabled]="!selectedTipoDocumentoId || !documentoBusqueda.trim() || buscando">
+                @if (buscando) {
+                  <span class="spinner-sm"></span>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon-svg">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="seasons-form-row">
-      <div class="seasons-form-group">
-        <label class="seasons-form-label">Rol</label>
-        <p-autoComplete [(ngModel)]="selectedRol" [suggestions]="filteredRoles" (completeMethod)="filterRoles($event)" [optionLabel]="'detalle'" placeholder="Buscar rol" [ngModelOptions]="{standalone: true}" style="width: 100%" class="seasons-form-control"></p-autoComplete>
+    }
+
+    <!-- Step 2a: Person found - show data -->
+    @if (personaEncontrada && !modoCreacion) {
+      <div class="form-section">
+        <div class="section-step">
+          <span class="step-badge step-badge-done">&#10003;</span>
+          <span class="step-label">Persona encontrada</span>
+        </div>
+        <div class="persona-card">
+          <div class="persona-field">
+            <span class="persona-label">Documento:</span>
+            <span class="persona-value">{{ personaEncontrada.documento }}</span>
+          </div>
+          <div class="persona-field">
+            <span class="persona-label">Nombres:</span>
+            <span class="persona-value">{{ personaEncontrada.primerNombre }} {{ personaEncontrada.segundoNombre }}</span>
+          </div>
+          <div class="persona-field">
+            <span class="persona-label">Apellidos:</span>
+            <span class="persona-value">{{ personaEncontrada.primerApellido }} {{ personaEncontrada.segundoApellido }}</span>
+          </div>
+        </div>
       </div>
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <div class="seasons-form-actions">
-      <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideRolUsuarioDialog()" styleClass="p-button-secondary"></p-button>
-      <p-button label="Guardar" icon="pi pi-check" (onClick)="saveRolUsuario()" styleClass="p-button-primary"></p-button>
-    </div>
-  </ng-template>
-</p-dialog>
+    }
+
+    <!-- Step 2b: Creation mode - register new person -->
+    @if (modoCreacion) {
+      <div class="form-section">
+        <div class="section-step">
+          <span class="step-badge">2</span>
+          <span class="step-label">Registrar nueva persona</span>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Primer Nombre <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.primerNombre" placeholder="Primer nombre" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Segundo Nombre</label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.segundoNombre" placeholder="Segundo nombre" />
+          </div>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Primer Apellido <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.primerApellido" placeholder="Primer apellido" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Segundo Apellido</label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.segundoApellido" placeholder="Segundo apellido" />
+          </div>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Género <span class="required">*</span></label>
+            <app-custom-select
+              [items]="generos"
+              labelField="nombre"
+              valueField="idGenero"
+              [(selectedValue)]="selectedGeneroId"
+              placeholder="Seleccione género"
+              [searchable]="false">
+            </app-custom-select>
+          </div>
+          <div class="form-group"></div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Rol and credentials -->
+    @if (!isEdit) {
+      <div class="form-section" [class.section-muted]="!personaEncontrada && !modoCreacion">
+        <div class="section-step">
+          <span class="step-badge">3</span>
+          <span class="step-label">Asignar rol y credenciales</span>
+        </div>
+        <div class="form-row form-row-full">
+          <div class="form-group">
+            <label class="form-label">Rol <span class="required">*</span></label>
+            <app-custom-select
+              [items]="roles"
+              labelField="detalle"
+              valueField="idRol"
+              [(selectedValue)]="selectedRolId"
+              placeholder="Seleccione rol"
+              [searchable]="true">
+            </app-custom-select>
+          </div>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Username <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="username" placeholder="Nombre de usuario" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña <span class="required">*</span></label>
+            <input type="password" class="form-input" [(ngModel)]="contrasenia" placeholder="Contraseña" />
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Edit mode: editable fields (except documento) + rol full width -->
+    @if (isEdit && personaEncontrada) {
+      <div class="form-section">
+        <div class="section-step">
+          <span class="step-badge step-badge-done">&#10003;</span>
+          <span class="step-label">Editar persona y rol</span>
+        </div>
+        <div class="persona-card">
+          <div class="persona-field">
+            <span class="persona-label">Documento:</span>
+            <span class="persona-value">{{ personaEncontrada.documento }}</span>
+          </div>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Primer Nombre <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.primerNombre" placeholder="Primer nombre" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Segundo Nombre</label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.segundoNombre" placeholder="Segundo nombre" />
+          </div>
+        </div>
+        <div class="form-row form-row-equal">
+          <div class="form-group">
+            <label class="form-label">Primer Apellido <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.primerApellido" placeholder="Primer apellido" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Segundo Apellido</label>
+            <input type="text" class="form-input" [(ngModel)]="nuevaPersona.segundoApellido" placeholder="Segundo apellido" />
+          </div>
+        </div>
+        <div class="form-row form-row-full">
+          <div class="form-group">
+            <label class="form-label">Género <span class="required">*</span></label>
+            <app-custom-select
+              [items]="generos"
+              labelField="nombre"
+              valueField="idGenero"
+              [(selectedValue)]="selectedGeneroId"
+              placeholder="Seleccione género"
+              [searchable]="false">
+            </app-custom-select>
+          </div>
+        </div>
+        <div class="form-row form-row-full">
+          <div class="form-group">
+            <label class="form-label">Rol <span class="required">*</span></label>
+            <app-custom-select
+              [items]="roles"
+              labelField="detalle"
+              valueField="idRol"
+              [(selectedValue)]="selectedRolId"
+              placeholder="Seleccione rol"
+              [searchable]="true">
+            </app-custom-select>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</app-shared-drawer>
+
+<app-confirmation-modal
+  [visible]="confirmModalVisible"
+  title="Confirmar Eliminación de Rol"
+  [message]="'¿Está seguro de eliminar esta asignación de rol?'"
+  acceptLabel="Sí, eliminar"
+  rejectLabel="Cancelar"
+  [loading]="confirmLoading"
+  (accept)="onConfirmDelete()"
+  (reject)="onCancelDelete()"
+  (hide)="onCancelDelete()">
+</app-confirmation-modal>
+
+<app-shared-toast></app-shared-toast>

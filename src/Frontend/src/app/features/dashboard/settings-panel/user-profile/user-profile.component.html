@@ -1,0 +1,140 @@
+<app-shared-toast></app-shared-toast>
+
+<!-- ─── Header ─── -->
+<div class="profile-header">
+  <button class="back-btn" (click)="back.emit()" title="Volver">
+    <i class="pi pi-arrow-left"></i>
+  </button>
+  <span class="profile-header-title">Mi Perfil</span>
+</div>
+
+<!-- ─── Loading ─── -->
+@if (loading) {
+  <div class="profile-loading">
+    <p-progressSpinner strokeWidth="4" [style]="{width:'40px', height:'40px'}" />
+    <span class="loading-text">Cargando perfil...</span>
+  </div>
+}
+
+@if (!loading && persona) {
+
+<!-- ══════════════════════════════════
+     TARJETA DE IDENTIDAD (solo lectura)
+     ══════════════════════════════════ -->
+<div class="profile-card identity-card">
+  <!-- Avatar + nombre -->
+  <div class="identity-top">
+    <div class="avatar-circle">
+      <span>{{ initials }}</span>
+    </div>
+    <div class="identity-info">
+      <span class="identity-name">{{ fullName }}</span>
+      <p-tag [value]="userRole || 'Usuario'" severity="info" styleClass="role-tag" />
+    </div>
+  </div>
+
+  <div class="identity-divider"></div>
+
+  <!-- Campo cédula -->
+  <div class="info-row">
+    <div class="info-icon-wrap">
+      <i class="pi pi-id-card"></i>
+    </div>
+    <div class="info-content">
+      <span class="info-label">Cédula de identidad</span>
+      <span class="info-value">{{ persona.documento || '—' }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     DATOS DE CONTACTO (editables)
+     ══════════════════════════════════ -->
+<div class="profile-card">
+  <div class="card-section-title">
+    <i class="pi pi-address-book"></i>
+    <span>Datos de contacto</span>
+  </div>
+
+  <!-- Email -->
+  @if (emailContacto) {
+  <div class="contact-field">
+    <div class="contact-field-header">
+      <i class="pi pi-envelope"></i>
+      <label>Correo electrónico</label>
+    </div>
+    <div class="contact-field-row">
+      <input pInputText [(ngModel)]="emailEdit" placeholder="correo@ejemplo.com" class="contact-input" />
+      <button class="contact-save-btn" [disabled]="savingEmail || emailEdit === emailContacto.detalle"
+        (click)="guardarContacto('email')" title="Guardar">
+        @if (savingEmail) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-check"></i>
+        }
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- Teléfono -->
+  @if (phoneContacto) {
+  <div class="contact-field">
+    <div class="contact-field-header">
+      <i class="pi pi-phone"></i>
+      <label>Teléfono</label>
+    </div>
+    <div class="contact-field-row">
+      <input pInputText [(ngModel)]="phoneEdit" placeholder="09XXXXXXXX" class="contact-input" />
+      <button class="contact-save-btn" [disabled]="savingPhone || phoneEdit === phoneContacto.detalle"
+        (click)="guardarContacto('phone')" title="Guardar">
+        @if (savingPhone) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-check"></i>
+        }
+      </button>
+    </div>
+  </div>
+  }
+</div>
+
+<!-- ══════════════════════════════════
+     CAMBIAR CONTRASEÑA
+     ══════════════════════════════════ -->
+<div class="profile-card">
+  <div class="card-section-title">
+    <i class="pi pi-lock"></i>
+    <span>Cambiar contraseña</span>
+  </div>
+
+  @if (pwError) {
+  <div class="inline-error">
+    <i class="pi pi-exclamation-circle"></i>
+    <span>{{ pwError }}</span>
+  </div>
+  }
+
+  <div class="pw-fields">
+    <div class="pw-field">
+      <label>Contraseña actual</label>
+      <p-password [(ngModel)]="pwActual" [feedback]="false" [toggleMask]="true"
+        placeholder="••••••••" styleClass="w-full" inputStyleClass="pw-input" />
+    </div>
+    <div class="pw-field">
+      <label>Nueva contraseña</label>
+      <p-password [(ngModel)]="pwNueva" [toggleMask]="true"
+        placeholder="••••••••" styleClass="w-full" inputStyleClass="pw-input" />
+    </div>
+    <div class="pw-field">
+      <label>Confirmar contraseña</label>
+      <p-password [(ngModel)]="pwConfirmar" [feedback]="false" [toggleMask]="true"
+        placeholder="••••••••" styleClass="w-full" inputStyleClass="pw-input" />
+    </div>
+  </div>
+
+  <p-button label="Actualizar contraseña" icon="pi pi-lock" [loading]="savingPw"
+    (onClick)="cambiarContrasenia()" styleClass="pw-submit-btn" />
+</div>
+
+}

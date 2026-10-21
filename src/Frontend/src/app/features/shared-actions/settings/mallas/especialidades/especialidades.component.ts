@@ -5,17 +5,17 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { EspecialidadDTO } from '../../../../../data/models/Entities';
 import { EspecialidadService } from '../../../../../core/services/infrastructure/especialidad.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-especialidades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './especialidades.component.html',
   styleUrls: ['./especialidades.component.css'],
   providers: [MessageService]

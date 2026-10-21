@@ -3,52 +3,73 @@
   <div class="page-header">
     <div class="header-content">
       <div class="title-section">
+          <button *ngIf="showModulesPermissionsComponent || showCyclicConfigurationsComponent || showMallasComponent || showPersonaComponent || showCuentaBancariaComponent" (click)="hideComponents()" class="mr-4 p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Volver a Configuraciones">
+            <i class="pi pi-arrow-left text-lg"></i>
+          </button>
         <div class="title-icon">
           <i class="pi pi-cog"></i>
         </div>
-        <div>
-          <h1 class="page-title">Gestión de Configuraciones</h1>
-          <p class="page-subtitle">Administra y controla las configuraciones del sistema</p>
+        <div class="flex items-center">
+
+          <div>
+            <h1 class="page-title">Gestión de Configuraciones</h1>
+            <p class="page-subtitle">Administra y controla las configuraciones del sistema</p>
+          </div>
         </div>
       </div>
-      <button pButton
-              label="Volver"
-              icon="pi pi-arrow-left"
-              class="p-button-outlined"
-              routerLink="/dashboard">
-      </button>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="card-grid">
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" routerLink="/dashboard/modules-permissions">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-shield text-6xl"></i>
-      </div>
 
-      <h2 class="card-title text-xl font-semibold text-center">Módulos y Permisos</h2>
-
-      <p class="card-description text-center">Configurar módulos del sistema y permisos</p>
-    </div>
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" routerLink="/dashboard/users">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-users text-6xl"></i>
-      </div>
-
-      <h2 class="card-title text-xl font-semibold text-center">Usuarios</h2>
-
-      <p class="card-description text-center">Gestionar usuarios del sistema</p>
-    </div>
-    <div class="card-item rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105" routerLink="/dashboard/cyclic-configurations">
-      <div class="icon-container text-center mb-4">
-        <i class="pi pi-refresh text-6xl"></i>
-      </div>
-
-      <h2 class="card-title text-xl font-semibold text-center">Configuraciones Cíclicas</h2>
-
-      <p class="card-description text-center">Configurar especies y mallas por ciclo académico</p>
-    </div>
-
+  <!-- Mostrar componente modules-permissions si está activado -->
+  <div *ngIf="showModulesPermissionsComponent" class="modules-permissions-container">
+    <app-modules-permissions></app-modules-permissions>
   </div>
+
+ 
+  <!-- Mostrar componente mallas si está activado -->
+  <div *ngIf="showMallasComponent" class="mallas-container">
+    <app-mallas></app-mallas>
+  </div>
+
+  <!-- Mostrar componente persona si está activado -->
+  <div *ngIf="showPersonaComponent" class="persona-container">
+    <app-persona></app-persona>
+  </div>
+
+  <!-- Mostrar componente cuentas bancarias si está activado -->
+  <div *ngIf="showCuentaBancariaComponent" class="cuentabancaria-container">
+    <app-cuenta-bancaria></app-cuenta-bancaria>
+  </div>
+
+  <!-- Mostrar tarjetas si no está mostrando ningún componente -->
+  <div *ngIf="!showModulesPermissionsComponent && !showCyclicConfigurationsComponent && !showMallasComponent && !showPersonaComponent && !showCuentaBancariaComponent" class="actions-grid">
+    <div class="action-card" (click)="showModulesPermissions()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-shield action-icon"></i>
+      </div>
+      <h4>Gestión de Módulos y Permisos</h4>
+      <p>Configurar módulos del sistema y permisos de acceso</p>
+      <span class="action-badge">Configurar</span>
+    </div>
+
+    <!-- Estructuras Académicas moved to Parametrización (infraestructura) -->
+    <div class="action-card" (click)="showPersona()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-users action-icon"></i>
+      </div>
+      <h4>Administración de Usuarios</h4>
+      <p>Gestionar usuarios, roles y permisos del sistema</p>
+      <span class="action-badge">Gestionar</span>
+    </div>
+    <div class="action-card" (click)="showCuentaBancaria()">
+      <div class="action-card-icon-wrapper">
+        <i class="pi pi-building-columns action-icon"></i>
+      </div>
+      <h4>Cuentas Bancarias</h4>
+      <p>Configurar las cuentas bancarias para recaudación de pagos</p>
+      <span class="action-badge">Configurar</span>
+    </div>
+  </div> 
 </div>

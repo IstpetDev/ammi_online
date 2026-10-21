@@ -1,0 +1,32 @@
+.ccp-dialog-body {
+  padding: 0.5rem 0.25rem;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color, #374151);
+}
+.required {
+  color: #ef4444;
+}
+.form-control {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--surface-border, #d1d5db);
+  border-radius: 8px;
+  background-color: var(--surface-input, #ffffff);
+  color: var(--text-color, #1f2937);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}

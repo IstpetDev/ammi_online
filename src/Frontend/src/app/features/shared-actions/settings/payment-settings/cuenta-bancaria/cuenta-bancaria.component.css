@@ -1,0 +1,201 @@
+/* === DESIGN SYSTEM: Settings Tables & Forms (Bank Accounts) === */
+
+.seasons-container { padding: 0; }
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--brand-yellow-dark);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seasons-header-title h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.seasons-header-title p {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  margin: 0.25rem 0 0 0;
+}
+
+.seasons-content-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* Table */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-ground) !important;
+  color: var(--text-color) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--brand-yellow-dark) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+:host ::ng-deep .p-datatable .p-paginator {
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+  padding: 0.75rem 1.25rem;
+}
+
+/* Primary button */
+:host ::ng-deep .btn-nuevo.p-button {
+  background-color: var(--brand-yellow-dark) !important;
+  border-color: var(--brand-yellow-dark) !important;
+  color: var(--brand-black) !important;
+  font-weight: 600;
+}
+
+:host ::ng-deep .btn-nuevo.p-button:hover { filter: brightness(0.92); }
+
+:host ::ng-deep .btn-edit.p-button  { color: var(--brand-yellow-dark) !important; }
+:host ::ng-deep .btn-delete.p-button { color: var(--red-500) !important; }
+
+/* Columns */
+.col-primary { font-weight: 700; }
+.col-numero  { font-family: monospace; font-size: 0.88rem; letter-spacing: 0.04em; }
+
+/* Account type badge */
+.badge-tipo-cuenta {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* Icons */
+.icon-yes { color: #16a34a; font-size: 1.1rem; }
+.icon-no  { color: #9ca3af; font-size: 1.1rem; }
+
+.seasons-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ===== Dialog ===== */
+.seasons-dialog-content { padding: 0.5rem 0; }
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seasons-form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.seasons-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.seasons-form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.required { color: var(--red-500); }
+
+.seasons-form-control {
+  width: 100%;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: var(--surface-card);
+  color: var(--text-color);
+  transition: border-color 0.15s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+}
+
+:host ::ng-deep .seasons-form-group input.p-inputtext {
+  width: 100%;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: var(--surface-card);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .seasons-form-group input.p-inputtext:focus {
+  border-color: var(--brand-yellow-dark);
+  box-shadow: none;
+}
+
+.form-hint {
+  color: var(--red-500);
+  font-size: 0.78rem;
+  margin-top: 0.1rem;
+}
+
+.checkbox-group { justify-content: flex-start; }
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+}
+
+.checkbox-label {
+  font-size: 0.88rem;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.seasons-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--surface-border);
+}

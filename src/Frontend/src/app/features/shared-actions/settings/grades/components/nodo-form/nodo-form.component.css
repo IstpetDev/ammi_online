@@ -1,48 +1,58 @@
-/* Estilos para el dialog */
-:host ::ng-deep .p-dialog-custom .p-dialog-header {
-  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-hover, #0056b3) 100%) !important;
-  color: white !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 1.5rem 2rem !important;
-  border-bottom: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+.icon-20 {
+  width: 20px;
+  height: 20px;
 }
 
-:host ::ng-deep .p-dialog-custom .p-dialog-header .p-dialog-title {
-  font-size: 1.25rem !important;
-  font-weight: 700 !important;
-  margin: 0 !important;
-  color: white !important;
+.icon-helper {
+  display: inline-flex;
+  color: var(--text-color-secondary);
+  cursor: help;
+  margin-left: 0.25rem;
 }
 
-:host ::ng-deep .p-dialog-custom .p-dialog-header .p-dialog-header-icon {
-  color: white !important;
-  font-size: 1.2rem !important;
+/* Drawer footer buttons */
+.btn-drawer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
 }
 
-:host ::ng-deep .p-dialog-custom .p-dialog-content {
-  padding: 2rem !important;
-  background: linear-gradient(135deg, var(--surface-card, #ffffff) 0%, var(--surface-ground, #f8f9fa) 100%) !important;
+.btn-drawer-cancel {
+  background: transparent;
+  border-color: var(--surface-border);
+  color: var(--text-color-secondary);
 }
 
-:host ::ng-deep .p-dialog-custom .p-dialog-footer {
-  padding: 1.5rem 2rem !important;
-  border-top: 2px solid var(--surface-border, #e9ecef) !important;
-  background: linear-gradient(135deg, var(--surface-section, #f8f9fa) 0%, var(--surface-ground, #f1f3f4) 100%) !important;
-  border-radius: 0 0 12px 12px !important;
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 1rem !important;
+.btn-drawer-cancel:hover {
+  border-color: var(--text-color-secondary);
+  color: var(--text-color);
 }
 
-:host ::ng-deep .p-dialog-custom {
-  border-radius: 12px !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid var(--surface-border, #e9ecef) !important;
+.btn-drawer-confirm {
+  background: var(--brand-yellow-dark);
+  border-color: var(--brand-yellow-dark);
+  color: var(--brand-black);
 }
 
-:host ::ng-deep .p-dialog-custom .p-dialog-footer .p-button {
-  border-radius: 10px !important;
-  padding: 0.75rem 1.5rem !important;
-  font-weight: 700 !important;
+.btn-drawer-confirm:hover {
+  background: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+}
+
+.btn-drawer-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-icon-svg {
+  width: 16px;
+  height: 16px;
 }

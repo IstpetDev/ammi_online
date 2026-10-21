@@ -1,0 +1,116 @@
+.menu-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100%;
+  position: relative;
+}
+
+/* Filtros */
+.mp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+.mp-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  flex: 1;
+}
+
+.mp-filter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mp-search-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+
+.mp-search-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+
+.mp-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 2px;
+}
+
+.mp-btn-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mp-btn-clear:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.mp-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Loading */
+.mp-loading-initial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.mp-spinner-big {
+  width: 40px;
+  height: 40px;
+  color: #6366f1;
+  animation: mp-rotate 1s linear infinite;
+}
+
+@keyframes mp-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* Saldos en tabla */
+.saldo-valor {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.saldo-valor.danger { color: #dc2626; }
+.saldo-valor.success { color: #16a34a; }
+.saldo-valor.warn { color: #d97706; }

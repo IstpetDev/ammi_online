@@ -37,4 +37,10 @@ export class TipoDiscapacidadService {
       ))
     );
   }
+
+  create(data: Partial<TipoDiscapacidadDTO>): Observable<any> {
+    return this.http.post<IResponse<any>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.tipoDiscapacidad.create}`, { tipoDiscapacidadDTO: data }).pipe(
+      map(response => response.data)
+    );
+  }
 }

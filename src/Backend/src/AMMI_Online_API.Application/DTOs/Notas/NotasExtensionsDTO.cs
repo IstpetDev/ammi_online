@@ -1,6 +1,18 @@
 
 namespace AMMI_Online_API.Application.DTOs.Notas
 {
+
+    public record ActaAlumnoDTO
+    {
+        public string NombreAlumno { get; init; } = string.Empty;
+        public string NumeroDocumento { get; init; } = string.Empty;
+        public int IdDetalleMatricula { get; init; }
+        public decimal? NotaFinal { get; init; }
+        public decimal? ExamenRemedial { get; init; }
+        public bool? Aprobado { get; init; }
+        public string Estado { get; init; } = string.Empty;
+    }
+
     public record NotaAlumnoParaleloDTO
     {
         public int IdMatricula { get; init; }

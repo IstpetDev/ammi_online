@@ -1,0 +1,38 @@
+<div class="acciones-section" *ngIf="!ocultarAccionesPostulacion && statusDetalle !== 'APROBADO' && statusDetalle !== 'RECHAZADO' && statusDetalle !== 'FINALIZADO'">
+  <h3>Acciones de Postulación</h3>
+  <div class="acciones-grid">
+    <button type="button" class="btn-action btn-contact-brand"
+      *ngIf="statusDetalle === 'CONTACTO PERSONA'"
+      (click)="contactar.emit()">
+      <i class="pi pi-phone"></i> Contactar
+    </button>
+
+    <button type="button" class="btn-action btn-complete-brand"
+      *ngIf="statusDetalle === 'CONTACTO PERSONA'"
+      (click)="completarRegistro.emit()">
+      <i class="pi pi-user-edit"></i> Completar Registro
+    </button>
+
+    <button type="button" class="btn-action btn-reject-brand"
+      *ngIf="statusDetalle !== 'CONTACTO PERSONA'"
+      (click)="rechazar.emit()">
+      <i class="pi pi-times-circle"></i> Rechazar
+    </button>
+
+    <button type="button" class="btn-action btn-approve-full"
+      *ngIf="statusDetalle !== 'CONTACTO PERSONA'"
+      [class.btn-approve-postulacion]="puedeIntentarAprobacion"
+      [class.btn-faltan-docs]="!puedeIntentarAprobacion"
+      [disabled]="aprobandoPostulacion || !puedeIntentarAprobacion"
+      [attr.title]="!puedeIntentarAprobacion ? motivoBloqueoAprobacion : null"
+      (click)="puedeIntentarAprobacion ? aprobar.emit() : null">
+      <i class="pi" [class.pi-check-circle]="puedeIntentarAprobacion"
+        [class.pi-exclamation-triangle]="!puedeIntentarAprobacion"></i>
+      {{ puedeIntentarAprobacion ? 'Aprobar' : 'Aprobación bloqueada' }}
+    </button>
+  </div>
+  <small *ngIf="!puedeIntentarAprobacion && statusDetalle !== 'CONTACTO PERSONA'"
+    style="display:block; margin-top:0.45rem; color:#ad6800; font-size:0.8rem;">
+    <i class="pi pi-info-circle"></i> {{ motivoBloqueoAprobacion }}
+  </small>
+</div>

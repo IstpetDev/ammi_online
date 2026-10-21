@@ -9,7 +9,6 @@ namespace AMMI_Online_API.Domain.Interfaces.Person
             DateOnly? fechaNacimiento,
             int? idEstadoCivil,
             int? idNacionalidadEtnica,
-            int? idTipoSangre,
             CancellationToken cancellationToken);
         Task<PersonaInfo?> GeyByIdAsync(int id, CancellationToken cancellationToken);
         Task<PersonaInfo> AddAsync(PersonaInfo personaInfo, CancellationToken cancellationToken);

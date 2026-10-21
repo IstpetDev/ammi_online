@@ -10,7 +10,7 @@
 
 
 
-export interface PersonaDTO{
+export interface PersonaDTO {
     idPersona?: number;
     idTipoDocumento?: number;
     documento?: string | undefined;
@@ -21,100 +21,108 @@ export interface PersonaDTO{
     segundoApellido?: string | undefined;
     activo?: boolean;
 }
-export interface TipoDocumentoDTO{
+export interface TipoDocumentoDTO {
     idTipoDocumento?: number;
     nombre?: string | undefined;
     descripcion?: string | undefined;
 }
 
-export interface GeneroDTO{
-    idGenero ?: number;
+export interface GeneroDTO {
+    idGenero?: number;
     nombre?: string | undefined;
 }
 
-export interface EstadoCivilDTO{
-    idEstadoCivil ?: number;
+export interface EstadoCivilDTO {
+    idEstadoCivil?: number;
     nombre?: string | undefined;
 }
 
-export interface EtniaDTO{
-    idEtnia ?: number;
+export interface EtniaDTO {
+    idEtnia?: number;
     nombre?: string | undefined;
     default?: boolean;
 }
 
-export interface NacionalidadEtnicaDTO{
-    idnacionalidadEtnica ?: number;
+export interface NacionalidadEtnicaDTO {
+    idnacionalidadEtnica?: number;
     nombre?: string | undefined;
-    idEtnia ?: number;
-    esNinguna ?: boolean;
+    idEtnia?: number;
+    esNinguna?: boolean;
 }
 
-export interface PaisDTO{
-    idPais ?: number;
+export interface PaisDTO {
+    idPais?: number;
     nombre?: string | undefined;
     nacionalidad?: string | undefined;
-    esEcuador? : boolean;
+    esEcuador?: boolean;
 }
 
-export interface ProvinciaDTO{
-    idProvincia ?: number;
+export interface ProvinciaDTO {
+    idProvincia?: number;
     nombre?: string | undefined;
-    idPais ?: number;
+    idPais?: number;
 }
 
-export interface CantonDTO{
-    idCanton ?: number;
+export interface CantonDTO {
+    idCanton?: number;
     nombre?: string | undefined;
-    idProvincia ?: number;
+    idProvincia?: number;
 }
 
-export interface ParroquiaDTO{
-    idParroquia ?: number;
+export interface ParroquiaDTO {
+    idParroquia?: number;
     nombre?: string | undefined;
-    idCanton ?: number;
+    idCanton?: number;
 }
 
-export interface CicloDTO{
-    idCiclo ?: number;
+export interface CicloDTO {
+    idCiclo?: number;
     idPadre?: number | null;
     idPeriodo?: number;
     idRegimen?: number;
+    idTipoOferta?: number;
     detalle?: string | undefined;
     fechaInicioEstimada?: Date | undefined;
     fechaFinEstimada?: Date | undefined;
+    esActivo?: boolean;
+    nombrePeriodo?: string | undefined;
+    nombreRegimen?: string | undefined;
+    nombreTipoOferta?: string | undefined;
+    nombreCicloPadre?: string | null;
+    cantidadMallas?: number;
 }
 
-export interface TipoOfertaDTO{
-    idtipoOferta ?: number;
+export interface TipoOfertaDTO {
+    idtipoOferta?: number;
     detalle?: string | undefined;
-    esActivo ?: boolean;
+    duracion?: number;
+    esActivo?: boolean;
 }
 
-export interface PeriodoLectivoDTO{
-    idPeriodoLectivo ?: number;
+export interface PeriodoLectivoDTO {
+    idPeriodoLectivo?: number;
     detalle?: string | undefined;
     fechaInicioEstimada?: string | undefined;
     fechaFinEstimada?: string | undefined;
 }
 
 export interface RegimenDTO {
-    idRegimen ?: number;
+    idRegimen?: number;
     detalle?: string | undefined;
 }
 
 
-export interface EspecialidadDTO{
-    idEspecialidad ?: number;
+export interface EspecialidadDTO {
+    idEspecialidad?: number;
     detalle?: string | undefined;
 }
 
-export interface MateriaDTO{
-    idMateria ?: number;
-    detalle ?: string | undefined;
-    horasRequeridas ?: number;
-    fechaCreacion ?: string | undefined;
-    esActivo ?: boolean;
+export interface MateriaDTO {
+    idMateria?: number;
+    detalle?: string | undefined;
+    horasRequeridas?: number;
+    fechaCreacion?: string | undefined;
+    esActivo?: boolean;
 }
 
 export interface PaginatedMateriaResponse {
@@ -127,88 +135,96 @@ export interface PaginatedMateriaResponse {
     hasNextPage: boolean;
 }
 
-export interface MallaDTO{
-    idMalla ?: number;
-    detalle ?: string | undefined;
-    idCursos ?: number;
-    idTipoOferta ?: number;
+export interface MallaDTO {
+    idMalla?: number;
+    detalle?: string | undefined;
+    idCursos?: number;
+    idTipoOferta?: number;
+    idCiclo?: number;
+    nombreCurso?: string;
+    nombreTipoOferta?: string;
+    nombreEspecialidad?: string;
+    detalleCiclo?: string;
+    cicloEsActivo?: boolean;
+    tieneDetalleMalla?: boolean;
+    ordenCurso?: number; // Nuevo campo para ordenar visualmente
 }
 
-export interface CursoDTO{
-    idCursos ?: number;
-    idEspecialidad ?: number;
+export interface CursoDTO {
+    idCursos?: number;
+    idEspecialidad?: number;
     detalle?: string | undefined;
 }
 
-export interface TipoDatoContactoDTO{
-    idTipoDatoContacto ?: number;
+export interface TipoDatoContactoDTO {
+    idTipoDatoContacto?: number;
     detalle?: string | undefined;
-    esObligatorio ?: boolean;
+    esObligatorio?: boolean;
 }
 
-export interface TipoEstadoAprobacionDTO{
-    idTipoEstadoAprobacion ?: number;
+export interface TipoEstadoAprobacionDTO {
+    idTipoEstadoAprobacion?: number;
     detalle?: string | undefined;
 }
 
 
-export interface PostulacionDTO{
-    idPostulacion ?: number;
-    idTipoDocumento ?: number;
-    Documento ?: string | undefined;
-    idGenero ?: number;
-    PrimerNombre ?: string | undefined;
-    SegundoNombre ?: string | undefined;
-    PrimerApellido ?: string | undefined;
-    SegundoApellido ?: string | undefined;
-    FechaNacimiento ?: string | undefined;
-    idEstadoCivil ?: number;
-    idNacionalidadEtnica ?: number;
-    idParroquia ?: number;
-    DireccionDomiciliaria ?: string | undefined;
-    idCiclo ?: number;
-    idCursos ?: number;
-    FechaPostulacion ?: string | undefined;
-    idEstadoPostulacion ?: number;
-    DatosContactos ?: {
-        idTipoDatoContacto ?: number;
-        Detalle ?: string | undefined;
-        EsPrincipal ?: boolean;
+export interface PostulacionDTO {
+    idPostulacion?: number;
+    idTipoDocumento?: number;
+    Documento?: string | undefined;
+    idGenero?: number;
+    PrimerNombre?: string | undefined;
+    SegundoNombre?: string | undefined;
+    PrimerApellido?: string | undefined;
+    SegundoApellido?: string | undefined;
+    FechaNacimiento?: string | undefined;
+    idEstadoCivil?: number;
+    idNacionalidadEtnica?: number;
+    idParroquia?: number;
+    DireccionDomiciliaria?: string | undefined;
+    idCiclo?: number;
+    idCursos?: number;
+    FechaPostulacion?: string | undefined;
+    idEstadoPostulacion?: number;
+    DatosContactos?: {
+        idTipoDatoContacto?: number;
+        Detalle?: string | undefined;
+        EsPrincipal?: boolean;
     }[] | undefined;
 }
 
-export interface PostulacionCommand{
-    idTipoDocumento ?: number;
-    Documento ?: string | undefined;
-    idGenero ?: number;
-    PrimerNombre ?: string | undefined;
-    SegundoNombre ?: string | undefined;
-    PrimerApellido ?: string | undefined;
-    SegundoApellido ?: string | undefined;
-    FechaNacimiento ?: string | undefined;
-    idEstadoCivil ?: number;
-    idNacionalidadEtnica ?: number;
-    idParroquia ?: number;
-    DireccionDomiciliaria ?: string | undefined;
-    idCiclo ?: number;
-    idCursos ?: number;
-    FechaPostulacion ?: string | undefined;
-    idEstadoPostulacion ?: number;
-    DatosContactos ?: {
-        idTipoDatoContacto ?: number;
-        Detalle ?: string | undefined;
-        EsPrincipal ?: boolean;
+export interface PostulacionCommand {
+    idTipoDocumento?: number;
+    Documento?: string | undefined;
+    idGenero?: number;
+    PrimerNombre?: string | undefined;
+    SegundoNombre?: string | undefined;
+    PrimerApellido?: string | undefined;
+    SegundoApellido?: string | undefined;
+    FechaNacimiento?: string | undefined;
+    idEstadoCivil?: number;
+    idNacionalidadEtnica?: number;
+    idParroquia?: number;
+    DireccionDomiciliaria?: string | undefined;
+    idCiclo?: number;
+    idCursos?: number;
+    FechaPostulacion?: string | undefined;
+    idEstadoPostulacion?: number;
+    DatosContactos?: {
+        idTipoDatoContacto?: number;
+        Detalle?: string | undefined;
+        EsPrincipal?: boolean;
     }[] | undefined;
 }
 
-export interface RequisitosDTO{
-    idRequisitos ?: number;
-    idMalla ?: number;
+export interface RequisitosDTO {
+    idRequisitos?: number;
+    idMalla?: number;
     detalle?: string | undefined;
-    esObligatorio ?: boolean;
-    bloqueaInscripcion ?: boolean;
+    esObligatorio?: boolean;
+    bloqueaInscripcion?: boolean;
     tipoDato?: string | undefined;
-    esMayorEdad ?: boolean;
+    esMayorEdad?: boolean;
 }
 
 export interface MallaRequisitosDTO {
@@ -223,83 +239,149 @@ export interface MallaRequisitosDTO {
     esMayorEdad: boolean;
 }
 
-export interface AreaDTO{
-    idArea ?: number;
+export interface AreaDTO {
+    idArea?: number;
     detalle?: string | undefined;
 }
-export interface AreaCompetenciaDTO{
-    idAreaCompetencia ?: number;
+export interface AreaCompetenciaDTO {
+    idAreaCompetencia?: number;
     detalle?: string | undefined;
+}
+
+export interface PostulacionFlatDTO {
+    idPostulacion: number;
+    primerNombre: string;
+    segundoNombre: string;
+    primerApellido: string;
+    segundoApellido: string;
+    documento: string;
+    fechaNacimiento?: string;
+    mallaDetalle: string;
+    cursoDetalle: string;
+    tipoOfertaDetalle: string;
+    estadoDetalle: string;
+    cicloActivoDetalle: string;
+    tieneRequisitosPendientes: boolean;
+    estadoRequisitos?: string;
+    totalRequisitosObligatorios?: number;
+    totalSubidosSinRevisar?: number;
+    totalSubidosAprobados?: number;
+    totalSubidosRechazados?: number;
+    totalRequisitosPendientes?: number;
+    requisitosPendientesNombres?: string[];
+    observacionesRevision?: string;
+    matriculaPagada?: boolean;
+    tieneMatriculaGenerada?: boolean;
+    estadoPagoMatricula?: 'PAGADO' | 'PAGO_POR_VALIDAR' | 'VALOR_FALTANTE' | 'SIN_PAGO' | string;
+    montoTotalMatricula?: number;
+    saldoPendienteMatricula?: number;
+    montoPagadoMatricula?: number;
 }
 export interface PostulacionCompletaDTO {
-    idPostulacion ?: number;
-    idPersonaPostulacion ?: number;
-    TipoDocumento ?: string;
-    Documento ?: string;
-    Genero ?: string;
-    NombreCompleto ?: string;
-    FechaNacimiento ?: string;
-    Edad ?: number;
-    EstadoCivil ?: string;
-    NacionalidadEtnica ?: string;
-    Parroquia ?: string;
-    DireccionDomiciliaria ?: string;
-    Ciclo ?: string;
-    Curso ?: string;
-    OfertaAcademica ?: string;
-    idMalla ?: number;
-    FechaPostulacion ?: string;
-    Estado ?: string;
-    DatosContactos ?: {
-        TipoDatoContacto ?: string;
-        Detalle ?: string;
-        EsPrincipal ?: boolean;
-    }[] | undefined;
+    idPostulacion?: number;
+    idPersona?: number;
+    fechaPostulacion?: string | undefined;
+    observacionesRevision?: string | undefined;
+    observacionesPostulante?: string | undefined;
+    matriculaPagada?: boolean;
+    tieneMatriculaGenerada?: boolean;
+    personasimple?: {
+        documento?: string;
+        primerNombre?: string;
+        segundoNombre?: string;
+        primerApellido?: string;
+        segundoApellido?: string;
+        generosimple?: {
+            nombre?: string;
+        };
+        pinfo?: {
+            fechaNacimiento?: string;
+            estadocivil?: any;
+            sangre?: any;
+            nacionalidadetnica?: any;
+        };
+        pdiscapacidad?: any;
+        pactividadeconomica?: any;
+        pcontacto?: any;
+        pdocumentos?: any;
+        pdireccion?: any;
+    };
+    tipoestadoaprobacion?: {
+        detalle?: string;
+    };
+    malla?: {
+        idMalla?: number;
+        detalle?: string;
+        curso?: {
+            detalle?: string;
+        };
+        tipooferta?: any;
+        mallaCiclo?: {
+            ciclo?: {
+                periodo?: {
+                    detalle?: string;
+                };
+                regimen?: {
+                    detalle?: string;
+                };
+                detalle?: string;
+                fechaInicioEstimada?: string;
+                fechaFinEstimada?: string;
+            };
+        };
+    };
+    totalCount?: number;
+    pageNumber?: number;
+    pageSize?: number;
+    totalPages?: number;
+    hasPreviousPage?: boolean;
+    hasNextPage?: boolean;
 }
-export interface PostulacionByDocumentoDTO{
-    idPostulacion ?: number;
-    personasimple ?: {
-        documento ?: string | undefined;
-        primerNombre ?: string | undefined;
-        segundoNombre ?: string | undefined;
-        primerApellido ?: string | undefined;
-        segundoApellido ?: string | undefined;
-        generosimple ?: {
-            nombre ?: string | undefined;
+export interface PostulacionByDocumentoDTO {
+    idPostulacion?: number;
+    fechaPostulacion?: string | undefined;
+    personasimple?: {
+        documento?: string | undefined;
+        primerNombre?: string | undefined;
+        segundoNombre?: string | undefined;
+        primerApellido?: string | undefined;
+        segundoApellido?: string | undefined;
+        generosimple?: {
+            nombre?: string | undefined;
         };
-        pinfo ?: {
-            fechaNacimiento ?: string | undefined;
-            estadocivil ?: any;
-            sangre ?: any;
-            nacionalidadetnica ?: any;
+        pinfo?: {
+            fechaNacimiento?: string | undefined;
+            estadocivil?: any;
+            sangre?: any;
+            nacionalidadetnica?: any;
         };
-        pdiscapacidad ?: any;
-        pactividadeconomica ?: any;
-        pcontacto ?: any;
-        pdocumentos ?: any;
-        pdireccion ?: any;
+        pdiscapacidad?: any;
+        pactividadeconomica?: any;
+        pcontacto?: any;
+        pdocumentos?: any;
+        pdireccion?: any;
     };
-    tipoestadoaprobacion ?: {
-        detalle ?: string | undefined;
+    tipoestadoaprobacion?: {
+        detalle?: string | undefined;
     };
-    malla ?: {
-        idMalla ?: number;
-        detalle ?: string | undefined;
-        curso ?: {
-            detalle ?: string | undefined;
+    malla?: {
+        idMalla?: number;
+        detalle?: string | undefined;
+        curso?: {
+            detalle?: string | undefined;
         };
-        tipooferta ?: any;
-        mallaCiclo ?: {
-            ciclo ?: {
-                periodo ?: {
-                    detalle ?: string | undefined;
+        tipooferta?: any;
+        mallaCiclo?: {
+            ciclo?: {
+                periodo?: {
+                    detalle?: string | undefined;
                 };
-                regimen ?: {
-                    detalle ?: string | undefined;
+                regimen?: {
+                    detalle?: string | undefined;
                 };
-                detalle ?: string | undefined;
-                fechaInicioEstimada ?: string | undefined;
-                fechaFinEstimada ?: string | undefined;
+                detalle?: string | undefined;
+                fechaInicioEstimada?: string | undefined;
+                fechaFinEstimada?: string | undefined;
             };
         };
     };
@@ -361,35 +443,61 @@ export interface ApiResponseDTO<T> {
     errores?: any;
 }
 
-export interface TipoEstadoAprobacionDTO{
-    idTipoEstadoAprobacion ?: number;
+export interface TipoEstadoAprobacionDTO {
+    idTipoEstadoAprobacion?: number;
     Detalle?: string | undefined;
 }
 
 export interface ParaleloDTO {
     idParalelo?: number;
     nombreParalelo?: string | undefined;
+    detalle?: string | undefined;
     idTipoJornada?: number;
+    orden?: number;
     cupoMaximo?: number;
 }
 
-export interface RegimenDTTO{
-    idRegimen ?: number;
+export interface MallaParaleloDTO {
+    idMallaParalelo?: number;
+    idMalla?: number;
+    idParalelo?: number;
+    cupoMaximo?: number;
+    esActivo?: boolean;
+    nombreMalla?: string | undefined;
+    nombreParalelo?: string | undefined;
+    cantidadAlumnos?: number;
+    alumnosMatriculados? :number;
+}
+
+export interface MallaParaleloCreateDTO {
+    idMalla?: number;
+    idParalelo?: number;
+    cupoMaximo?: number;
+}
+
+export interface ActivarMallaParaleloDTO {
+    idMallaParalelo?: number;
+    clonarDistributivos?: boolean;
+    idMallaParaleloOrigen?: number | null;
+}
+
+export interface RegimenDTTO {
+    idRegimen?: number;
     detalle?: string | undefined;
 }
 
-export interface RegimenCommandDTO{
+export interface RegimenCommandDTO {
     detalle?: string | undefined;
 }
 
-export interface PeriodoLectivoDTO{
-    idPeriodoLectivo ?: number;
+export interface PeriodoLectivoDTO {
+    idPeriodoLectivo?: number;
     detalle?: string | undefined;
     fechaInicioEstimada?: string | undefined;
     fechaFinEstimada?: string | undefined;
 }
 
-export interface PeriodoLectivoCommand{
+export interface PeriodoLectivoCommand {
     detalle?: string | undefined;
     fechaInicioEstimada?: string | undefined;
     fechaFinEstimada?: string | undefined;
@@ -426,25 +534,29 @@ export interface CreatePersonaPostulacionManualDTO {
 }
 
 export interface MatriculaDTO {
-    idMatricula ?: number;
-    idUsuarioAlumno ?: number;
-    idCurso ?: number;
-    idCiclo ?: number;
-    detalleParalelo ?: string;
-    esFinalizada ?: boolean;
-    detalleTipoOferta ?: string;
-    primerNombre ?: string;
-    primerApellido ?: string;
-    segundoNombre ?: string;
-    segundoApellido ?: string;
-    numeroDocumento ?: string;
-    detalleCiclo ?: string;
+    idMatricula?: number;
+    idMalla?: number;
+    idUsuarioAlumno?: number;
+    detalleMalla?: string | undefined;
+    idCurso?: number;
+    idCiclo?: number;
+    idParalelo?: number;
+    detalleParalelo?: string;
+    esFinalizada?: boolean;
+    detalleTipoOferta?: string;
+    primerNombre?: string;
+    primerApellido?: string;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    numeroDocumento?: string;
+    detalleCiclo?: string;
+    pathFoto?: string | undefined;
 }
 
-export interface UsuarioDTO{
-    idPersona ?: number;
-    Username ?: string | undefined;
-    Contrasenia ?: string | undefined;
+export interface UsuarioDTO {
+    idPersona?: number;
+    Username?: string | undefined;
+    Contrasenia?: string | undefined;
 }
 
 export interface DatosContactoPostulacionDTO {
@@ -456,14 +568,16 @@ export interface DatosContactoPostulacionDTO {
 export interface PersonaPostulacionDTO {
     IdTipoDocumento?: number;
     Documento?: string | undefined;
-    IdGenero?: number;
+    IdGenero?: number | null;
     PrimerNombre?: string | undefined;
     SegundoNombre?: string | undefined;
     PrimerApellido?: string | undefined;
     SegundoApellido?: string | undefined;
     FechaNacimiento?: string | undefined;
-    IdProvincia?: number;
-    IdMalla?: number;
+    IdProvincia?: number | null;
+    IdMalla?: number | null;
+    EsPostulacionRapida?: boolean;
+    ObservacionesPostulante?: string | undefined;
     DatosContactos?: DatosContactoPostulacionDTO[] | undefined;
 }
 
@@ -521,25 +635,25 @@ export interface CrearPostulacionManualRequestDTO {
 }
 
 
-export interface TipoSangreDTO{
-    idTipoSangre ?: number;
+export interface TipoSangreDTO {
+    idTipoSangre?: number;
     detalle?: string | undefined;
 }
 
-export interface TipoActividadEconomicaDTO{
-    idtipoActividadEconomica ?: number;
+export interface TipoActividadEconomicaDTO {
+    idtipoActividadEconomica?: number;
     nombre?: string | undefined;
-    esFormal ?: boolean;
+    esFormal?: boolean;
 }
 
-export interface TipoDiscapacidadDTO{
-    idTipoDiscapacidad ?: number;
+export interface TipoDiscapacidadDTO {
+    idTipoDiscapacidad?: number;
     nombre?: string | undefined;
-    recomendaciones ?: string | undefined;
+    recomendaciones?: string | undefined;
 }
 
-export interface TipoDocumentoPersonalDTO{
-    idTipoDocumentoPersonal ?: number;
+export interface TipoDocumentoPersonalDTO {
+    idTipoDocumentoPersonal?: number;
     nombre?: string | undefined;
 }
 
@@ -601,22 +715,27 @@ export interface RolOperacionDTO {
 // Interfaces para Sistema de Pagos
 // ============================================
 
-// Especie: tipo de cobro (matrícula, pensión)
+// Especie: tipo de cobro (matrícula, pensión, extra)
 export interface EspecieDTO {
     idEspecie?: number;
     detalle?: string | undefined;
-    esDiferible?: boolean;
+    activo?: boolean;
+    esMatricula?: boolean;
+    esPension?: boolean;
+    tipoEspecie?: string;
 }
 
-// Especie por Ciclo: define el valor de cada especie en un ciclo específico
+// Especie por Malla: define el valor de cada especie en una malla específica
 export interface EspecieCicloDTO {
     idEspecieCiclo?: number;
-    idCiclo?: number;
+    idMalla?: number;
     idEspecie?: number;
     valorEspecie?: number;
-    // Datos relacionados para mostrar
     especie?: EspecieDTO;
-    ciclo?: CicloDTO;
+    detalleMalla?: string;
+    esPension?: boolean;
+    esMatricula?: boolean;
+    cicloActivo?: boolean;
 }
 
 // Crédito: relación entre matrícula y especie-ciclo con cuotas
@@ -631,17 +750,37 @@ export interface CreditoDTO {
     matricula?: MatriculaDTO;
 }
 
+// Detalle de crédito según nuevo API (GetCreditosByMatricula)
+export interface DetalleCredito2DTO {
+    idDetalleCredito?: number;
+    numeroCuota?: number;
+    valor?: number;
+    valorCancelado?: number;
+    valorOriginal?: number;
+    saldoCuota?: number;
+    fechaLimite?: string | null;
+    estado?: string;
+    pagado?: boolean;
+}
+
 // Crédito con detalles completos (respuesta de GetCreditosByMatricula)
 export interface CreditoConDetallesDTO {
     idCredito?: number;
     idMatricula?: number;
     idEspecieCiclo?: number;
-    diferido?: number;
+    montoOriginal?: number;
+    montoBeneficio?: number | null;
+    montoFinal?: number;
+    saldoPendiente?: number;
+    estado?: string;               // 'ACTIVO' | 'PENDIENTE_DIFERIR' | etc.
+    fechaGeneracion?: string;
     valorEspecie?: number;
     idEspecie?: number;
     detalleEspecie?: string | undefined;
     esDiferible?: boolean;
-    detallesCredito?: DetalleCreditoDTO[];
+    esPension?: boolean;
+    esMatricula?: boolean;
+    detallesCredito?: DetalleCredito2DTO[];
 }
 
 // Request para diferir crédito
@@ -689,19 +828,21 @@ export interface DatosPagoCreditoDTO {
     fechaPagoCredito?: string | undefined;
 }
 
-// Request para crear un pago
+// Request para crear un pago — POST /api/Pagos
 export interface CrearPagoCreditoRequestDTO {
-    pagoCredito?: {
-        idCredito?: number;
+    pago?: {
         idTipoPago?: number;
-        fechaPago?: string | undefined;
+        fechaPago?: string;
         valorPago?: number;
-        esValidado?: boolean;
-        datosPagosCredito?: {
-            idDetalleCredito?: number;
-            valorCancelado?: number;
-            pagado?: boolean;
-            fechaPagoCredito?: string | undefined;
+        fechaDeposito?: string;
+        idCuentaBancaria?: number;
+        numeroDeposito?: string;
+        rucCliente?: string;
+        observaciones?: string;
+        esValidado?: boolean | null;
+        cuotas?: {
+            idDetalleCredito: number;
+            valorAplicado: number;
         }[];
     };
     distribuirExcedente?: boolean;
@@ -733,6 +874,16 @@ export interface RequisitoDTO {
     esMayorEdad?: boolean;
 }
 
+export interface ClienteDTO {
+    idCliente?: number;
+    documento: string;
+    nombres: string;
+    apellidos: string;
+    correo: string;
+    celular: string;
+    direccion: string;
+}
+
 export interface MallaRequisitoDTO {
     idMallaRequisitos?: number;
     idMalla?: number;
@@ -743,4 +894,127 @@ export interface MallaRequisitoDTO {
     bloqueaInscripcion?: boolean;
     tipoDato?: string | undefined;
     esMayorEdad?: boolean;
+}
+
+// ========== Personal Data Management DTOs ==========
+
+export interface PersonaNacionalidadDTO {
+    idPersonaNacionalidad?: number;
+    idPersona?: number;
+    idPais?: number;
+    nombrePais?: string | undefined;
+    nacio?: string | undefined;
+    activo?: boolean;
+}
+
+export interface PersonaInfoDTO {
+    idPersonaInfo?: number;
+    idPersona?: number;
+    fechaNacimiento?: string | undefined;
+    idEstadoCivil?: number;
+    nombreEstadoCivil?: string | undefined;
+    idNacionalidadEtnica?: number;
+    nombreNacionalidadEtnica?: string | undefined;
+    idTipoSangre?: number;
+    nombreTipoSangre?: string | undefined;
+}
+
+export interface PersonaDiscapacidadDTO {
+    idPersonaDiscapacidad?: number;
+    idPersona?: number;
+    porcentaje?: number;
+    recomendaciones?: string | undefined;
+    idTipoDiscapacidad?: number;
+    nombreTipoDiscapacidad?: string | undefined;
+    idAdjunto?: number;
+}
+
+export interface PersonaDireccionDTO {
+    idPersonaDireccion?: number;
+    idPersona?: number;
+    idParroquia?: number;
+    nombreParroquia?: string | undefined;
+    direccionDomiciliaria?: string | undefined;
+    activo?: boolean;
+}
+
+export interface PersonaActividadEconomicaDTO {
+    idPersonaActividadEconomica?: number;
+    idPersona?: number;
+    idTipoActividadEconomica?: number;
+    nombreTipoActividadEconomica?: string | undefined;
+    valor?: number;
+    esPrincipal?: boolean;
+    activo?: boolean;
+}
+
+export interface ParentescoDTO {
+    idParentesco?: number;
+    idPersonaOrigen?: number;
+    idPersonaDestino?: number;
+    idTipoParentesco?: number;
+    nombreTipoParentesco?: string | undefined;
+    representante?: boolean;
+    tutor?: boolean;
+    responsableFinanciero?: boolean;
+    conviveAlumno?: boolean;
+    personaDestino?: PersonaDTO;
+}
+
+export interface TipoParentescoDTO {
+    idTipoParentesco?: number;
+    nombre?: string | undefined;
+    descripcion?: string | undefined;
+}
+
+export interface CreateParentescoRequestDTO {
+    parentescos?: ParentescoDTO[];
+}
+
+// ========== Beneficios DTOs ==========
+
+export interface EstudianteBeneficioDTO {
+    idEstudianteBeneficio?: number;
+    idPersona?: number;
+    idBeneficio?: number;
+    detalleBeneficio?: string;
+    tipoValor?: string;       // 'PORCENTAJE' | 'VALOR_FIJO'
+    valor?: number;
+    activo?: boolean;
+    fechaInicio?: string;
+    fechaFin?: string;
+    idCiclo?: number;
+    detalleCiclo?: string;
+    observaciones?: string;
+    idAprobadoPor?: number;
+    requiereRenovacion?: boolean;
+}
+export interface BeneficioDTO {
+    idBeneficio?: number;
+    detalle?: string;
+    tipoValor?: string;
+    valor?: number;
+    aplicaA?: number;
+    esBeca?: boolean;
+    descripcion?: string | undefined;
+    requiereRenovacion?: boolean;
+    idEspecie?: number;
+    detalleEspecie?: string;
+    activo?: boolean;
+}
+
+// ========== Cuentas Bancarias DTOs ==========
+
+export interface TipoCuentaDTO {
+    idTipoCuenta?: number;
+    detalle?: string;
+}
+
+export interface CuentaBancariaDTO {
+    idCuentaBancaria?: number;
+    idTipoCuenta?: number;
+    detalleTipoCuenta?: string;
+    numeroCuenta?: string;
+    banco?: string;
+    activo?: boolean;
 }

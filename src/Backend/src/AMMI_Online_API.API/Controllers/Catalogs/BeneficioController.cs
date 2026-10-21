@@ -10,7 +10,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs;
 public class BeneficioController : ApiController
 {
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<BeneficioDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetAllBeneficiosQuery(), cancellationToken);
@@ -18,7 +17,6 @@ public class BeneficioController : ApiController
     }
 
     [HttpGet("ById")]
-    [AllowAnonymous]
     public async Task<ActionResult<BeneficioDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetBeneficioByIdQuery(id), cancellationToken);
@@ -27,7 +25,6 @@ public class BeneficioController : ApiController
     }
 
     [HttpGet("ByEspecie")]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<BeneficioDTO>>> GetByIdEspecie(int idEspecie, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetBeneficioByIdEspecie(idEspecie), cancellationToken);
@@ -36,7 +33,6 @@ public class BeneficioController : ApiController
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<ActionResult<BeneficioDTO>> Create([FromBody] BeneficioCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new CreateBeneficioCommand(dto), cancellationToken);
@@ -44,7 +40,6 @@ public class BeneficioController : ApiController
     }
 
     [HttpPut]
-    [AllowAnonymous]
     public async Task<ActionResult<BeneficioDTO>> Update([FromBody] BeneficioUpdateDTO dto, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new UpdateBeneficioCommand(dto), cancellationToken);
@@ -53,7 +48,6 @@ public class BeneficioController : ApiController
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new DeleteBeneficioCommand(id), cancellationToken);

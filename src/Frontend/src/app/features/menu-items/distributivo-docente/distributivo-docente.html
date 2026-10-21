@@ -1,158 +1,134 @@
-<p-toast></p-toast>
+<app-shared-toast></app-shared-toast>
 
-<div class="menu-container">
+<div class="distributivo-container">
   <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <div class="title-icon">
-          <i class="pi pi-users"></i>
-        </div>
-        <div>
-          <h1 class="page-title">Mi Distributivo</h1>
-          <p class="page-subtitle">Gestiona el contenido de tus asignaturas asignadas</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-shared-header icon="pi pi-users" title="Mi Distributivo" subtitle="Gestiona el contenido de tus asignaturas asignadas">
+  </app-shared-header>
 
   <!-- Loading State -->
   @if (loading) {
-    <div class="loading-container">
-      <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
-      <p>Cargando asignaciones...</p>
+    <div class="dd-loading-initial">
+      <svg class="dd-spinner-big" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+          stroke-dasharray="31.4 31.4" />
+      </svg>
+      <span>Cargando tus asignaciones...</span>
     </div>
   }
 
   <!-- Error State -->
   @if (error && !loading) {
-    <div class="error-container">
+    <div class="dd-error-container">
       <i class="pi pi-exclamation-triangle"></i>
       <p>{{ error }}</p>
-      <button pButton label="Reintentar" icon="pi pi-refresh" (click)="cargarAsignacionesDocente()"></button>
+      <button class="dd-btn-retry" (click)="cargarCargaDocente()">
+        <i class="pi pi-refresh" style="margin-right: 6px;"></i> Reintentar
+      </button>
     </div>
   }
 
   <!-- Content -->
   @if (!loading && !error) {
-    <div class="content-section">
-      <p-card header="Asignaturas Asignadas">
-        @if (asignaciones.length === 0) {
-          <div class="no-data">
-            <i class="pi pi-info-circle"></i>
-            <p>No tienes asignaturas asignadas actualmente.</p>
+    <!-- Filtros -->
+    @if (cargaDocente && cargaDocente.mallas && cargaDocente.mallas.length > 0) {
+      <div class="dd-filters">
+        <div class="dd-filter-group">
+          <label class="dd-filter-label">Buscar materia:</label>
+          <input type="text" 
+                 [(ngModel)]="searchTerm" 
+                 placeholder="Escribe el nombre de la materia..." 
+                 class="dd-search-input">
+        </div>
+        <div class="dd-filter-group">
+          <label class="dd-filter-label">Filtrar por malla:</label>
+          <app-custom-select
+            [items]="mallasDisponibles"
+            [(selectedValue)]="selectedMalla"
+            placeholder="Todas las mallas"
+            [searchable]="true">
+          </app-custom-select>
+        </div>
+        <div class="dd-filter-group">
+          <label class="dd-filter-label">Filtrar por paralelo:</label>
+          <app-custom-select
+            [items]="paralelosDisponibles"
+            [(selectedValue)]="selectedParalelo"
+            placeholder="Todos los paralelos"
+            [searchable]="true">
+          </app-custom-select>
+          <small *ngIf="paralelosDisponibles.length === 0" class="hint">No se detectaron paralelos para tus asignaturas.</small>
+        </div>
+        @if (searchTerm || selectedMalla || selectedParalelo) {
+          <div class="dd-filter-actions">
+            <button class="dd-btn-clear" type="button" (click)="limpiarFiltros()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="dd-btn-icon">
+                <line x1="4" y1="4" x2="20" y2="20" />
+                <line x1="20" y1="4" x2="4" y2="20" />
+              </svg>
+              Limpiar
+            </button>
           </div>
-        } @else {
-          <p-table [value]="asignaciones" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-                   currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} asignaturas">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Materia</th>
-                <th>Paralelo</th>
-                <th>Malla</th>
-                <th>Cantidad Alumnos</th>
-                <th>Plantilla Evaluación</th>
-                <th>Acciones</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-asignacion>
-              <tr>
-                <td>{{ asignacion.nombreMateria }}</td>
-                <td>{{ asignacion.nombreParalelo }}</td>
-                <td>{{ asignacion.nombreMalla }}</td>
-                <td>{{ asignacion.cantidadAlumnos }}</td>
-                <td>{{ asignacion.nombrePlantilla || 'Sin plantilla' }}</td>
-                <td>
-                  <button pButton
-                          label="Subir Contenido Malla"
-                          icon="pi pi-upload"
-                          class="p-button-sm p-button-outlined"
-                          (click)="subirContenidoMalla(asignacion)">
-                  </button>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
         }
-      </p-card>
-    </div>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (getMallasFiltradas().length === 0) {
+      <app-shared-empty-state 
+        materialIcon="inbox" 
+        title="Sin asignaturas registradas"
+        description="No tienes asignaciones de materias/paralelos activas o que coincidan con los filtros."
+        minHeight="max(320px, calc(100vh - 400px))">
+      </app-shared-empty-state>
+    } @else {
+      <div class="dd-content-section">
+        <div class="asignaciones-por-malla">
+          @for (malla of getMallasFiltradas(); track malla.idMalla) {
+            <div class="malla-group">
+              <h3 class="malla-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" class="malla-title-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                {{ malla.nombreMalla }}
+              </h3>
+
+              <div class="paralelos-por-malla">
+                @for (par of getParalelosPorMalla(malla); track par.idParalelo) {
+                  <div class="paralelo-block">
+                    <div class="paralelo-header">
+                      <span class="badge-paralelo">{{ paraleloLabel(par) }}</span>
+                      <span class="paralelo-count">{{ par.materias.length }} materia{{ par.materias.length === 1 ? '' : 's' }}</span>
+                    </div>
+                    <div class="paralelo-materias">
+                      @for (mat of par.materias; track mat.idDetalleMalla) {
+                        <div class="asignacion-card">
+                          <div class="asignacion-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round" class="book-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                          </div>
+                          <div class="asignacion-info">
+                            <div class="materia-row">
+                              <h4 class="materia-nombre">{{ mat.nombreMateria }}</h4>
+                              <span class="badge-horas">{{ mat.horas }}h</span>
+                            </div>
+                            <div class="plantilla-row">
+                              <span class="asignacion-alumnos">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                  stroke-linejoin="round" class="info-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                Alumnos Inscritos: <strong>{{ mat.cantidadAlumnos }}</strong>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
   }
 </div>
-
-<!-- Dialog para subir contenido -->
-<p-dialog
-  [(visible)]="displayDialog"
-  [modal]="true"
-  [style]="{width: '500px'}"
-  [closable]="true"
-  [closeOnEscape]="true"
-  header="Subir Contenido de Malla"
-  (onHide)="cancelarSubida()">
-
-  @if (selectedAsignacion) {
-    <div class="dialog-content">
-      <div class="asignacion-info">
-        <h4>{{ selectedAsignacion.nombreMateria }}</h4>
-        <p>{{ selectedAsignacion.nombreParalelo }} - {{ selectedAsignacion.nombreMalla }}</p>
-      </div>
-
-      <div class="form-group">
-        <label for="titulo">Título del Contenido *</label>
-        <input
-          pInputText
-          id="titulo"
-          [(ngModel)]="tituloContenido"
-          placeholder="Ingrese el título del contenido"
-          class="w-full"
-          required>
-      </div>
-
-      <div class="form-group">
-        <label for="descripcion">Descripción</label>
-        <textarea
-          pInputTextarea
-          id="descripcion"
-          [(ngModel)]="descripcionContenido"
-          placeholder="Ingrese una descripción opcional"
-          rows="3"
-          class="w-full">
-        </textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Archivo Adjunto</label>
-        <p-fileUpload
-          mode="basic"
-          chooseLabel="Seleccionar Archivo"
-          [auto]="false"
-          [multiple]="false"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
-          (onSelect)="onFileSelect($event)"
-          (onRemove)="onFileRemove()"
-          [maxFileSize]="10485760">
-        </p-fileUpload>
-        @if (archivoSeleccionado) {
-          <small class="file-info">Archivo seleccionado: {{ archivoSeleccionado.name }}</small>
-        }
-      </div>
-    </div>
-
-    <ng-template pTemplate="footer">
-      <button
-        pButton
-        label="Cancelar"
-        icon="pi pi-times"
-        class="p-button-text"
-        (click)="cancelarSubida()">
-      </button>
-      <button
-        pButton
-        label="Subir Contenido"
-        icon="pi pi-upload"
-        [loading]="uploading"
-        [disabled]="!tituloContenido.trim()"
-        (click)="guardarContenido()">
-      </button>
-    </ng-template>
-  }
-</p-dialog>

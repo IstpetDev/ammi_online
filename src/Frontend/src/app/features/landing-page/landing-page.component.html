@@ -1,209 +1,479 @@
 <div class="landing-page">
   <app-header></app-header>
 
-  <main class="mt-[70px]">
-    <!-- Hero Section - Full Screen -->
-    <section class="hero" id="inicio">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          Transforma tu futuro con
-          <span class="highlight">AMMI Online</span>
-        </h1>
-        <p class="hero-description">
-          Accede a programas virtuales diseñados para tu éxito profesional.
-          Aprende de forma flexible y certificada.
-        </p>
-        <div class="hero-actions">
-          <p-button 
-            label="Ver modalidades" 
-            icon="pi pi-arrow-down"
-            styleClass="p-button-lg"
-            (onClick)="scrollToModalidades()">
-          </p-button>
+  <main>
+    <!-- Hero Section - Two Columns -->
+    <section class="hero" id="inicio" aria-label="Inicio">
+      <div class="hero-container container">
+        <div class="hero-content-left">
+          <div class="hero-badge">
+            <span class="badge-dot"></span>
+            <span>100% VIRTUAL &amp; ACREDITADO MINEDUC</span>
+          </div>
+          <h1 class="hero-title">
+            Bachillerato Virtual en Ecuador con <span class="text-brand-yellow">AMMI Online</span>
+          </h1>
+          <p class="hero-description">
+            Obtén tu <strong>título de bachiller oficial</strong> de forma flexible y certificada por el Ministerio de
+            Educación del Ecuador. Modalidades Acelerada (6 meses) y Formal Virtual, diseñadas para personas con metas
+            claras que buscan calidad, autonomía y acompañamiento docente experto.
+          </p>
+          <div class="hero-actions">
+            <button class="btn-primary-cta" id="btn-postulate-hero" (click)="abrirPostulacion()"
+              aria-label="Postúlate ahora al bachillerato virtual">
+              <i class="pi pi-send"></i>
+              <span>¡Postúlate Ahora!</span>
+            </button>
+            <a id="btn-whatsapp-hero"
+              href="https://wa.me/593961181942?text=🎓 Es tu momento de terminar el bachillerato con 𝗔𝗠𝗠𝗜 𝗢𝗻𝗹𝗶𝗻𝗲 🎓"
+              target="_blank" rel="noopener noreferrer" class="btn-secondary-outline"
+              aria-label="Más información por WhatsApp">
+              <i class="pi pi-whatsapp"></i>
+              <span>Más Información</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-content-right">
+          <div class="image-wrapper">
+            <div class="dots-decoration-top"></div>
+            <div class="dots-decoration-bottom"></div>
+            <div class="accent-shape-1"></div>
+            <div class="accent-shape-2"></div>
+            <img src="assets/shared/modalidadVirtual.webp"
+              alt="Estudiante realizando bachillerato virtual en Ecuador con AMMI Online" class="hero-image" width="600"
+              height="450" loading="eager">
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ¿Por qué AMMI? Section -->
-    <section class="why-ammi" id="por-que-ammi">
+    <!-- ─── Trust Signals / Estadísticas ──────────────────────────────── -->
+    <section class="trust-section" aria-label="Logros y estadísticas de AMMI Online">
+      <div class="container trust-grid">
+        <div class="trust-item">
+          <span class="trust-number">100%</span>
+          <span class="trust-label">Virtual y Flexible</span>
+        </div>
+        <div class="trust-divider" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-number">6</span>
+          <span class="trust-label">Meses — Bachillerato Acelerado</span>
+        </div>
+        <div class="trust-divider" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-number">MINEDUC</span>
+          <span class="trust-label">Aval oficial del Estado ecuatoriano</span>
+        </div>
+        <div class="trust-divider" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-number">24/7</span>
+          <span class="trust-label">Plataforma siempre disponible</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ¿Por qué AMMI? Section (Highlights) -->
+    <section class="why-ammi" id="por-que-ammi" aria-label="Beneficios de estudiar en AMMI Online">
       <div class="container">
         <div class="section-header">
-          <h2>¿Por qué elegir AMMI Online?</h2>
-          <p>La mejor inversión en tu educación profesional</p>
+          <span class="section-subtitle">Beneficios Exclusivos</span>
+          <h2>¿Por qué elegir AMMI Online para tu bachillerato?</h2>
+          <p>La mejor inversión en tu educación: un <strong>bachillerato virtual avalado por el Ministerio de Educación
+              del Ecuador</strong>, adaptado a tu vida y horarios.</p>
         </div>
-        
+
         <div class="benefits-grid">
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-target benefit-icon"></i>
-              </div>
-            </ng-template>
+          <div class="benefit-card">
+            <div class="benefit-icon-wrapper">
+              <i class="pi pi-hammer benefit-icon" aria-hidden="true"></i>
+            </div>
             <h3 class="benefit-title">Enfoque práctico</h3>
-            <p class="benefit-text">Aprende haciendo con proyectos reales que aplicas desde el primer día.</p>
-          </p-card>
+            <p class="benefit-text">Aprende haciendo con proyectos reales que aplicas desde el primer día. Evaluación
+              continua en lugar de exámenes memorísticos.</p>
+          </div>
 
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-users benefit-icon"></i>
-              </div>
-            </ng-template>
+          <div class="benefit-card">
+            <div class="benefit-icon-wrapper">
+              <i class="pi pi-users benefit-icon" aria-hidden="true"></i>
+            </div>
             <h3 class="benefit-title">Docentes expertos</h3>
-            <p class="benefit-text">Aprende de profesionales activos en la industria con experiencia comprobada.</p>
-          </p-card>
+            <p class="benefit-text">Aprende de profesionales activos en la educación ecuatoriana con experiencia
+              comprobada y vocación por la enseñanza virtual.</p>
+          </div>
 
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-clock benefit-icon"></i>
-              </div>
-            </ng-template>
+          <div class="benefit-card">
+            <div class="benefit-icon-wrapper">
+              <i class="pi pi-clock benefit-icon" aria-hidden="true"></i>
+            </div>
             <h3 class="benefit-title">Flexibilidad total</h3>
-            <p class="benefit-text">Estudia cuando y donde quieras, adaptado a tu ritmo de vida.</p>
-          </p-card>
+            <p class="benefit-text">Estudia cuando y donde quieras, desde cualquier provincia del Ecuador o el exterior.
+              La plataforma está disponible las 24 horas.</p>
+          </div>
 
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-trophy benefit-icon"></i>
-              </div>
-            </ng-template>
+          <div class="benefit-card">
+            <div class="benefit-icon-wrapper">
+              <i class="pi pi-trophy benefit-icon" aria-hidden="true"></i>
+            </div>
             <h3 class="benefit-title">Certificación oficial</h3>
-            <p class="benefit-text">Recibe certificados reconocidos que impulsan tu carrera profesional.</p>
-          </p-card>
-
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-briefcase benefit-icon"></i>
-              </div>
-            </ng-template>
-            <h3 class="benefit-title">Orientación laboral</h3>
-            <p class="benefit-text">Accede a nuestra red de empresas y oportunidades laborales.</p>
-          </p-card>
-
-          <p-card styleClass="benefit-card">
-            <ng-template pTemplate="header">
-              <div class="benefit-icon-wrapper">
-                <i class="pi pi-globe benefit-icon"></i>
-              </div>
-            </ng-template>
-            <h3 class="benefit-title">Comunidad activa</h3>
-            <p class="benefit-text">Conecta con estudiantes y profesionales de todo el mundo.</p>
-          </p-card>
+            <p class="benefit-text">Recibe tu <strong>título de Bachiller registrado por el MINEDUC</strong>, con
+              validez para universidades públicas y privadas del Ecuador y trámites del Estado.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Modalidades Section -->
-    <section class="modalidades" id="modalidades">
+    <!-- Sobre Nosotros Section -->
+    <section class="about-us-section" id="sobre-nosotros" aria-label="Sobre AMMI Online">
+      <div class="container about-grid">
+        <div class="about-images">
+          <div class="about-dots"></div>
+          <div class="image-box box-large">
+            <img src="assets/shared/formalVirtual.webp"
+              alt="Estudiantes en Bachillerato Formal Virtual AMMI Online Ecuador" width="400" height="300"
+              loading="lazy">
+            <span class="floating-badge badge-top">Bachillerato Formal Virtual</span>
+          </div>
+          <div class="image-box box-small">
+            <img src="assets/shared/BachilleratoAce.webp" alt="Bachillerato Acelerado Virtual 6 meses AMMI Online"
+              width="280" height="210" loading="lazy">
+            <span class="floating-badge badge-bottom">Acelerado 6 meses</span>
+          </div>
+          <div class="experience-card">
+            <span class="exp-number">Años</span>
+            <span class="exp-text">de Trayectoria Educativa</span>
+          </div>
+        </div>
+
+        <div class="about-info">
+          <span class="section-subtitle">SOBRE NOSOTROS</span>
+          <h2>Educación Secundaria Virtual Sin Límites Ni Fronteras</h2>
+          <p class="about-description">
+            En <strong>AMMI Online</strong>, somos una institución educativa ecuatoriana comprometida con brindar
+            <strong>educación secundaria accesible, moderna y de alta calidad</strong>. Nuestra plataforma de
+            bachillerato virtual está diseñada para que puedas estudiar desde cualquier lugar del Ecuador, combinando
+            clases en vivo y grabadas con tutoría constante de nuestro equipo docente especializado.
+          </p>
+          <p class="about-description-secondary">
+            Ofrecemos dos programas de <strong>bachillerato en línea avalados por el Ministerio de Educación del Ecuador
+              (MINEDUC)</strong>: el Bachillerato Acelerado Virtual para personas con rezago educativo que desean
+            terminar en 6 meses, y el Bachillerato Formal Virtual de 10 meses para quienes buscan el currículo oficial
+            completo.
+          </p>
+
+          <ul class="about-features">
+            <li>
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span>Plataforma interactiva disponible 24/7 para tu comodidad desde cualquier dispositivo.</span>
+            </li>
+            <li>
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span>Evaluación continua y proyectos aplicados en lugar de exámenes memorísticos tradicionales.</span>
+            </li>
+            <li>
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span><strong>Título de Bachiller oficial</strong>, reconocido y registrado por el Ministerio de Educación
+                del Ecuador, válido para acceder a universidades y estudios superiores.</span>
+            </li>
+            <li>
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span>Estudia desde cualquier ciudad o provincia del Ecuador, e incluso desde el exterior.</span>
+            </li>
+          </ul>
+
+          <div class="about-contact-row">
+            <div class="about-phone-box">
+              <div class="phone-icon-wrapper">
+                <i class="pi pi-whatsapp" aria-hidden="true"></i>
+              </div>
+              <div class="phone-info">
+                <span class="phone-label">Atención y Soporte:</span>
+                <span class="phone-number">+593 96 118 1942</span>
+              </div>
+            </div>
+            <input type="button" value="Saber Más" id="btn-saber-mas-about" class="btn-primary-cta"
+              (click)="scrollToModalidades()">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modalidades Section (Our Courses) -->
+    <section class="modalidades" id="modalidades" aria-label="Programas de bachillerato virtual">
       <div class="container">
         <div class="section-header">
-          <h2>Elige tu modalidad de estudio</h2>
-          <p>Programas diseñados para adaptarse a tus objetivos</p>
+          <span class="section-subtitle">Programas Académicos</span>
+          <h2>Elige tu modalidad de bachillerato virtual</h2>
+          <p>Programas oficiales de bachillerato en línea, diseñados para adaptarse a tus tiempos y metas de vida en
+            Ecuador</p>
         </div>
 
         <div class="modalidades-grid">
-          <!-- Acelerado Virtual -->
-          <p-card styleClass="modalidad-card modalidad-featured">
-            <ng-template pTemplate="header">
-              <div class="modalidad-header">
-                <p-chip 
-                  label="Más popular" 
-                  icon="pi pi-rocket"
-                  styleClass="modalidad-badge">
-                </p-chip>
-                <h3 class="modalidad-title">Acelerado Virtual</h3>
-                <p class="modalidad-subtitle">Aprende rápido sin sacrificar calidad</p>
-              </div>
-            </ng-template>
-            <div class="modalidad-features">
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Duración: 3-6 meses</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Clases en vivo</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Proyectos prácticos</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Certificación inmediata</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Mentorías 1:1</span>
-              </div>
+          <!-- Acelerado Virtual Card -->
+          <article class="modalidad-card-new">
+            <div class="modalidad-image-header">
+              <img src="assets/shared/BachilleratoAce.webp"
+                alt="Bachillerato Acelerado Virtual en 6 meses AMMI Online Ecuador" width="400" height="220"
+                loading="lazy">
+              <span class="modalidad-badge-tag intensivo">Intensivo</span>
             </div>
-            <ng-template pTemplate="footer">
-              <p-button 
-                label="Saber más" 
-                icon="pi pi-arrow-right"
-                iconPos="right"
-                styleClass="w-full p-button-lg"
-                routerLink="/acelerado-virtual">
-              </p-button>
-            </ng-template>
-          </p-card>
+            <div class="modalidad-body">
+              <h3 class="modalidad-title">Bachillerato Acelerado Virtual</h3>
+              <p class="modalidad-subtitle">Termina tu bachillerato en 6 meses sin sacrificar calidad ni validez oficial
+              </p>
 
-          <!-- Formal Virtual -->
-          <p-card styleClass="modalidad-card">
-            <ng-template pTemplate="header">
-              <div class="modalidad-header">
-                <p-chip 
-                  label="Completo" 
-                  icon="pi pi-book"
-                  styleClass="modalidad-badge-secondary">
-                </p-chip>
-                <h3 class="modalidad-title">Formal Virtual</h3>
-                <p class="modalidad-subtitle">Programa estructurado y profundo</p>
+              <div class="modalidad-features-list">
+                <div class="feature-item-new">
+                  <i class="pi pi-calendar" aria-hidden="true"></i>
+                  <span>Duración: <strong>6 meses</strong></span>
+                </div>
+                <div class="feature-item-new">
+                  <i class="pi pi-video" aria-hidden="true"></i>
+                  <span>Clases grabadas y tutorías en vivo</span>
+                </div>
+                <div class="feature-item-new">
+                  <i class="pi pi-briefcase" aria-hidden="true"></i>
+                  <span>Proyectos prácticos reales</span>
+                </div>
+
               </div>
-            </ng-template>
-            <div class="modalidad-features">
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Duración: 12-18 meses</span>
+
+              <div class="modalidad-requisitos-box">
+                <h4>Requisitos mínimos:</h4>
+                <ul>
+                  <li>Mínimo 2 años de rezago educativo.</li>
+                  <li>Ser mayor de edad.</li>
+                </ul>
               </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Curriculum completo</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Evaluaciones continuas</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Diploma profesional</span>
-              </div>
-              <div class="feature-item">
-                <i class="pi pi-check-circle check-icon"></i>
-                <span>Bolsa de trabajo</span>
+
+              <div class="modalidad-footer">
+                <input type="button" id="btn-acelerado-ver-mas" value="Saber más sobre el Acelerado"
+                  class="btn-primary-cta w-full" routerLink="/acelerado-virtual">
               </div>
             </div>
-            <ng-template pTemplate="footer">
-              <p-button 
-                label="Saber más" 
-                icon="pi pi-arrow-right"
-                iconPos="right"
-                styleClass="w-full p-button-lg p-button-outlined"
-                routerLink="/formal-virtual">
-              </p-button>
-            </ng-template>
-          </p-card>
+          </article>
+
+          <!-- Formal Virtual Card -->
+          <article class="modalidad-card-new">
+            <div class="modalidad-image-header">
+              <img src="assets/shared/formalVirtual.webp" alt="Bachillerato Formal Virtual 10 meses AMMI Online Ecuador"
+                width="400" height="220" loading="lazy">
+              <span class="modalidad-badge-tag completo">Bachillerato Completo</span>
+            </div>
+            <div class="modalidad-body">
+              <h3 class="modalidad-title">Bachillerato Formal Virtual</h3>
+              <p class="modalidad-subtitle">Programa completo de bachillerato en línea estructurado y continuo</p>
+
+              <div class="modalidad-features-list">
+                <div class="feature-item-new">
+                  <i class="pi pi-calendar" aria-hidden="true"></i>
+                  <span>Duración: <strong>10 meses</strong></span>
+                </div>
+                <div class="feature-item-new">
+                  <i class="pi pi-book" aria-hidden="true"></i>
+                  <span>Currículum oficial completo del MINEDUC</span>
+                </div>
+                <div class="feature-item-new">
+                  <i class="pi pi-chart-bar" aria-hidden="true"></i>
+                  <span>Evaluaciones y seguimiento continuo</span>
+                </div>
+                <div class="feature-item-new">
+                  <i class="pi pi-clone" aria-hidden="true"></i>
+                  <span>Diploma oficial homologado y reconocido</span>
+                </div>
+              </div>
+
+              <div class="modalidad-requisitos-box">
+                <h4>Requisitos mínimos:</h4>
+                <ul>
+                  <li>Haber completado la Educación Básica (10mo año).</li>
+                  <li>Disponibilidad para cronograma formal.</li>
+                </ul>
+              </div>
+
+              <div class="modalidad-footer">
+                <input type="button" id="btn-formal-ver-mas" value="Saber más sobre el Formal"
+                  class="btn-primary-cta w-full" routerLink="/formal-virtual">
+              </div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
+    <!-- ─── FAQ Section ────────────────────────────────────────────────── -->
+    <section class="faq-section" id="preguntas-frecuentes"
+      aria-label="Preguntas frecuentes sobre bachillerato virtual en Ecuador">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">Resolvemos tus dudas</span>
+          <h2>Preguntas Frecuentes sobre el Bachillerato Virtual</h2>
+          <p>Todo lo que necesitas saber sobre el <strong>bachillerato en línea en Ecuador</strong> avalado por el
+            MINEDUC</p>
+        </div>
+
+        <div class="faq-list" role="list">
+
+          <!-- FAQ 1 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 0" (click)="toggleFaq(0)"
+              id="faq-btn-0" [attr.aria-expanded]="activeFaq === 0" aria-controls="faq-answer-0">
+              <span>¿El título de bachiller de AMMI Online es válido en Ecuador?</span>
+              <i class="pi" [ngClass]="activeFaq === 0 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-0" role="region" [attr.aria-labelledby]="'faq-btn-0'"
+              [class.faq-answer--open]="activeFaq === 0">
+              <p>
+                Sí. El título de Bachiller otorgado por AMMI Online está <strong>avalado y registrado por el Ministerio
+                  de Educación del Ecuador (MINEDUC)</strong>, con plena validez legal para acceder a estudios
+                universitarios, trabajo formal y cualquier trámite del Estado ecuatoriano. Tiene exactamente la misma
+                validez que un bachillerato presencial.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 1" (click)="toggleFaq(1)"
+              id="faq-btn-1" [attr.aria-expanded]="activeFaq === 1" aria-controls="faq-answer-1">
+              <span>¿Cuánto tiempo dura el bachillerato acelerado virtual?</span>
+              <i class="pi" [ngClass]="activeFaq === 1 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-1" role="region" [attr.aria-labelledby]="'faq-btn-1'"
+              [class.faq-answer--open]="activeFaq === 1">
+              <p>
+                La modalidad <strong>Bachillerato Acelerado Virtual tiene una duración de 6 meses</strong>. Está
+                diseñada para personas mayores de edad con al menos 2 años de rezago educativo. También ofrecemos el
+                <strong>Bachillerato Formal Virtual de 10 meses</strong>, que sigue el currículo oficial completo del
+                MINEDUC para quienes desean una formación integral.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 2" (click)="toggleFaq(2)"
+              id="faq-btn-2" [attr.aria-expanded]="activeFaq === 2" aria-controls="faq-answer-2">
+              <span>¿Puedo estudiar desde cualquier ciudad o provincia del Ecuador?</span>
+              <i class="pi" [ngClass]="activeFaq === 2 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-2" role="region" [attr.aria-labelledby]="'faq-btn-2'"
+              [class.faq-answer--open]="activeFaq === 2">
+              <p>
+                Sí. Al ser <strong>100% virtual</strong>, puedes estudiar el bachillerato desde cualquier ciudad del
+                Ecuador (Quito, Guayaquil, Cuenca, Manta, Loja, etc.) e incluso desde el exterior. Solo necesitas un
+                dispositivo con conexión a internet. Las clases están disponibles grabadas las 24 horas y también hay
+                sesiones en vivo con tutores docentes.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 3" (click)="toggleFaq(3)"
+              id="faq-btn-3" [attr.aria-expanded]="activeFaq === 3" aria-controls="faq-answer-3">
+              <span>¿El bachillerato virtual me permite entrar a la universidad?</span>
+              <i class="pi" [ngClass]="activeFaq === 3 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-3" role="region" [attr.aria-labelledby]="'faq-btn-3'"
+              [class.faq-answer--open]="activeFaq === 3">
+              <p>
+                Absolutamente. El <strong>título de Bachiller de AMMI Online te permite acceder al sistema de educación
+                  superior ecuatoriano</strong>. Puedes rendir el examen Ser Bachiller del SNNA y postular a cualquier
+                universidad pública o privada del Ecuador. El título es reconocido por la SENESCYT y todas las
+                instituciones de educación superior del país.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 4" (click)="toggleFaq(4)"
+              id="faq-btn-4" [attr.aria-expanded]="activeFaq === 4" aria-controls="faq-answer-4">
+              <span>¿Cuáles son los requisitos para inscribirse en AMMI Online?</span>
+              <i class="pi" [ngClass]="activeFaq === 4 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-4" role="region" [attr.aria-labelledby]="'faq-btn-4'"
+              [class.faq-answer--open]="activeFaq === 4">
+              <p>
+                Los requisitos varían según la modalidad:<br><br>
+                <strong>Bachillerato Acelerado Virtual:</strong> Ser mayor de edad y tener mínimo 2 años de rezago
+                educativo (haber abandonado el bachillerato antes de completarlo).<br><br>
+                <strong>Bachillerato Formal Virtual:</strong> Haber completado la Educación General Básica (10mo año
+                aprobado) y disponibilidad para seguir un cronograma formal de clases virtuales.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 6 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 5" (click)="toggleFaq(5)"
+              id="faq-btn-5" [attr.aria-expanded]="activeFaq === 5" aria-controls="faq-answer-5">
+              <span>¿Cómo son las clases y qué necesito para estudiar?</span>
+              <i class="pi" [ngClass]="activeFaq === 5 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-5" role="region" [attr.aria-labelledby]="'faq-btn-5'"
+              [class.faq-answer--open]="activeFaq === 5">
+              <p>
+                Las clases son <strong>100% virtuales</strong> y combinan dos modalidades: <strong>videos grabados
+                  disponibles las 24 horas</strong> (para que estudies a tu propio ritmo) y <strong>tutorías en vivo con
+                  docentes expertos</strong> para resolver dudas en tiempo real. Solo necesitas un computador, tablet o
+                celular con conexión a internet. El aprendizaje se evalúa mediante proyectos prácticos, no exámenes
+                memorísticos.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 7 -->
+          <div class="faq-item" role="listitem">
+            <button class="faq-question" [class.faq-question--open]="activeFaq === 6" (click)="toggleFaq(6)"
+              id="faq-btn-6" [attr.aria-expanded]="activeFaq === 6" aria-controls="faq-answer-6">
+              <span>¿Cómo me inscribo al bachillerato virtual en AMMI Online?</span>
+              <i class="pi" [ngClass]="activeFaq === 6 ? 'pi-minus' : 'pi-plus'" aria-hidden="true"></i>
+            </button>
+            <div class="faq-answer" id="faq-answer-6" role="region" [attr.aria-labelledby]="'faq-btn-6'"
+              [class.faq-answer--open]="activeFaq === 6">
+              <p>
+                El proceso de inscripción es sencillo y 100% en línea. Puedes iniciar de dos formas: <strong>haciendo
+                  clic en "Inscribirme Ahora"</strong> en esta página para completar el formulario de postulación, o
+                <strong>contactándonos directamente por WhatsApp</strong> al +593 96 118 1942 para recibir asesoría
+                personalizada sobre la modalidad que mejor se adapta a tu situación.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Banner Section -->
+    <section class="cta-banner-section" aria-label="Llamada a la acción — Inscripción bachillerato virtual">
+      <div class="container cta-banner-container">
+        <div class="cta-banner-bg-lines" aria-hidden="true"></div>
+        <div class="cta-banner-text">
+          <h3>¿Listo para obtener tu título de bachiller en Ecuador?</h3>
+          <p>Termina tu <strong>bachillerato virtual</strong> con el respaldo oficial del Ministerio de Educación del
+            Ecuador. Más de miles de estudiantes ya confían en AMMI Online.</p>
+        </div>
+        <div class="cta-banner-button">
+          <button id="btn-inscribirme-cta" class="btn-primary-cta btn-large" (click)="inscribirse()"
+            aria-label="Inscribirme al bachillerato virtual en AMMI Online">
+            <span>Inscribirme Ahora</span>
+            <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- WhatsApp Floating Button -->
   <app-whatsapp-social-icon></app-whatsapp-social-icon>
 
   <app-footer></app-footer>
+
+  <!-- Modal Component de Postulación Rápida -->
+  <app-create-postulation-rapida
+    [(visible)]="isPostulacionModalVisible"
+    (close)="isPostulacionModalVisible = false">
+  </app-create-postulation-rapida>
 </div>

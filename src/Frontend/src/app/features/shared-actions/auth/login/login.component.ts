@@ -1,31 +1,39 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/index';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ToastService } from '../../../../shared/toast.service';
+import { ThemeService } from '../../../../core/services/theme.service';
+import { SharedToastComponent } from '../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink, ProgressSpinnerModule],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, ProgressSpinnerModule, SharedToastComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
-  loginError: string = '';
   isLoading: boolean = false;
+  showPassword: boolean = false;
+  currentYear: number = new Date().getFullYear();
   
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private toastService = inject(ToastService);
+  private themeService = inject(ThemeService);
+
+  logoSrc = computed(() => this.themeService.layoutConfig().darkTheme ? 'assets/shared/Logo-sin-fondo-oscuro.png' : 'assets/shared/Logo-sin-fondo.png');
 
 
   constructor() {
     this.loginForm = this.fb.group({
-      username: ['admin', [Validators.required]],
-      password: ['Admin123!', [Validators.required, Validators.minLength(6)]]
+      username: ['', [Validators.required]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
@@ -42,16 +50,19 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.valid) {
       const { username, password } = this.loginForm.value;
       this.isLoading = true;
-      this.loginError = '';
 
       this.authService.login(username, password).subscribe({
         next: (user) => {
           this.isLoading = false;
-          this.router.navigate(['/dashboard']);
+          if (user.requiereCambioContrasenia) {
+            this.router.navigate(['/cambiar-contrasenia']);
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
         },
         error: (error) => {
           this.isLoading = false;
-          this.loginError = error.message;
+          this.toastService.showError(error.message || 'Credenciales incorrectas o error en el servidor', 'Error de Autenticación');
         }
       });
     }

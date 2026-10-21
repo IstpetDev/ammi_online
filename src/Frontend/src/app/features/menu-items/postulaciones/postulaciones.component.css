@@ -1,5 +1,28 @@
-@media (max-width: 768px) {
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
+.btn-postulacion-rapida {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #2563eb; border: none; border-radius: 10px;
+  color: #ffffff; font-weight: 700; font-size: 0.9rem;
+  cursor: pointer; transition: all 0.2s ease; font-family: 'Poppins', sans-serif;
+  white-space: nowrap;
 }
+.btn-postulacion-rapida:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+}
+
+.btn-gestionar-requisitos {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent; border: 2px solid var(--brand-yellow-dark); border-radius: 10px;
+  color: var(--brand-yellow-dark); font-weight: 700; font-size: 0.9rem;
+  cursor: pointer; transition: all 0.2s ease; font-family: 'Poppins', sans-serif;
+  white-space: nowrap;
+}
+.btn-gestionar-requisitos:hover {
+  background: var(--brand-yellow-dark); color: var(--brand-black);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(233,185,2,0.35);
+}
+.btn-gestionar-icon { width: 18px; height: 18px; flex-shrink: 0; }

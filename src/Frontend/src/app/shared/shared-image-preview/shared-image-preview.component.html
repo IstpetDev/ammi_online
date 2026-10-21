@@ -1,0 +1,58 @@
+<div class="image-preview-wrapper">
+  <!-- Barra de información superior -->
+  <div class="preview-info-bar">
+    <span class="file-name" [title]="fileName">
+      <i class="pi pi-image"></i>
+      {{ fileName || 'Previsualización de Imagen' }}
+    </span>
+    <span class="zoom-level">{{ (scale * 100).toFixed(0) }}%</span>
+  </div>
+
+  <!-- Contenedor del lienzo de imagen con rejilla opcional -->
+  <div class="canvas-container" [class.show-grid]="showGrid">
+    <div class="image-viewport">
+      <img
+        [src]="src"
+        [alt]="fileName"
+        [style.transform]="'scale(' + scale + ') rotate(' + rotation + 'deg)'"
+        class="preview-img"
+      />
+    </div>
+
+    <!-- Guías visuales (reglas de alineación) -->
+    <div class="alignment-grid" *ngIf="showGrid">
+      <div class="grid-line horizontal h1"></div>
+      <div class="grid-line horizontal h2"></div>
+      <div class="grid-line horizontal h3"></div>
+      <div class="grid-line vertical v1"></div>
+      <div class="grid-line vertical v2"></div>
+      <div class="grid-line vertical v3"></div>
+    </div>
+  </div>
+
+  <!-- Controles flotantes en la parte inferior -->
+  <div class="floating-controls">
+    <button type="button" class="ctrl-btn" (click)="zoomIn()" title="Acercar">
+      <i class="pi pi-zoom-in"></i>
+    </button>
+    <button type="button" class="ctrl-btn" (click)="zoomOut()" title="Alejar">
+      <i class="pi pi-zoom-out"></i>
+    </button>
+    <button type="button" class="ctrl-btn" (click)="rotateLeft()" title="Rotar izquierda">
+      <i class="pi pi-refresh" style="transform: scaleX(-1);"></i>
+    </button>
+    <button type="button" class="ctrl-btn" (click)="rotateRight()" title="Rotar derecha">
+      <i class="pi pi-refresh"></i>
+    </button>
+    <button type="button" class="ctrl-btn" [class.active]="showGrid" (click)="toggleGrid()" title="Mostrar guías de alineación (reglas)">
+      <i class="pi pi-th-large"></i>
+    </button>
+    <div class="divider"></div>
+    <button type="button" class="ctrl-btn" (click)="reset()" title="Restablecer vista">
+      <i class="pi pi-undo"></i>
+    </button>
+    <button type="button" class="ctrl-btn download" (click)="downloadImage()" title="Descargar">
+      <i class="pi pi-download"></i>
+    </button>
+  </div>
+</div>

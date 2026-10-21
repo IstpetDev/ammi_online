@@ -1,110 +1,79 @@
-import { Component, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
-import { Table } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { TooltipModule } from 'primeng/tooltip';
-import { TagModule } from 'primeng/tag';
 import { FormsModule } from '@angular/forms';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { MessageModule } from 'primeng/message';
-import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { forkJoin, of, Subject, Subscription } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { VerDetallesComponent } from './ver-detalles/ver-detalles';
 import { CreditoService } from '../../../core/services/pagos/credito.service';
 import { PagoService } from '../../../core/services/pagos/pago.service';
 import { MatriculaService } from '../../../core/services/postulaciones/matricula.service';
-import { DetalleCreditoDTO, TipoPagoDTO, MatriculaDTO } from '../../../data/models/Entities';
-
-interface DetalleCredito {
-  idDetalleCredito: number;
-  valorCancelado: number;
-  pagado: boolean;
-  fechaPagoCredito: string | null;
-}
-
-interface Especie {
-  idEspecie: number;
-  nombre: string;
-  tipo: 'matricula' | 'pension';
-  ciclo: string;
-  valor: number;
-  valorPagado: number;
-  pagado: boolean;
-  fechaLimite: string;
-  detallesCredito: DetalleCredito[];
-  esPensionNoDiferida?: boolean;
-}
-
-interface PagoEstudiante {
-  idMatricula: number;
-  cedula: string;
-  nombreEstudiante: string;
-  modalidad: string;
-  detalleCiclo: string;
-  totalDeuda: number;
-  totalPagado: number;
-  especies: Especie[];
-}
+import { CicloService } from '../../../core/services/postulaciones/ciclo.service';
+import { PeriodoLectivoService } from '../../../core/services/postulaciones/periodo-lectivo.service';
+import { MatriculaDTO, MallaDTO, CicloDTO, PeriodoLectivoDTO, CreditoConDetallesDTO, EspecieDTO } from '../../../data/models/Entities';
+import { MallaService } from '../../../core/services/infrastructure/malla.service';
+import { EspecieService } from '../../../core/services/infrastructure/especie.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { PagoEstudiante, Especie, HistorialPago } from '../../../shared/models/pagos.model';
+import { CustomSelectComponent } from '../../../shared/custom-select/custom-select.component';
+import { SharedEmptyStateComponent } from '../../../shared/shared-empty-state/shared-empty-state.component';
+import { SharedHeaderComponent } from '../../../shared/shared-header/shared-header.component';
+import { SharedTableComponent, SharedTableColTemplateDirective } from '../../../shared/shared-table/shared-table.component';
+import { SharedModalComponent } from '../../../shared/shared-modal/shared-modal.component';
+import { SharedDrawerComponent } from '../../../shared/shared-drawer/shared-drawer.component';
+import { ConfirmationModalComponent } from '../../../shared/modal-confirmation/confirmation-modal.component';
+import { SharedToastComponent } from '../../../shared/shared-toast/shared-toast.component';
+import { ToastService } from '../../../shared/toast.service';
 
 @Component({
   selector: 'app-pagos',
   standalone: true,
   imports: [
-    CommonModule, 
-    TableModule, 
-    ButtonModule, 
-    CardModule, 
-    InputTextModule,
-    IconFieldModule,
-    InputIconModule,
-    TooltipModule,
-    TagModule,
+    CommonModule,
     FormsModule,
-    SelectModule,
-    DatePickerModule,
-    MultiSelectModule,
-    ProgressBarModule,
-    DialogModule,
-    InputNumberModule,
-    MessageModule,
-    ToastModule
+    VerDetallesComponent,
+    CustomSelectComponent,
+    SharedEmptyStateComponent,
+    SharedHeaderComponent,
+    SharedTableComponent,
+    SharedTableColTemplateDirective,
+    SharedModalComponent,
+    SharedDrawerComponent,
+    ConfirmationModalComponent,
+    SharedToastComponent
   ],
-  providers: [MessageService],
   templateUrl: './pagos.component.html',
   styleUrls: ['./pagos.component.css']
 })
-export class PagosComponent implements OnInit {
-  @ViewChild('dt') dt!: Table;
-  
-  // Inyección de servicios
+export class PagosComponent implements OnInit, OnDestroy {
   private creditoService = inject(CreditoService);
   private pagoService = inject(PagoService);
+  private mallaInfraService = inject(MallaService);
   private matriculaService = inject(MatriculaService);
-  private messageService = inject(MessageService);
+  private cicloService = inject(CicloService);
+  private periodoService = inject(PeriodoLectivoService);
+  private especieService = inject(EspecieService);
+  private authService = inject(AuthService);
+  private toastService = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /**
+   * Asegura que los campos monetarios devueltos como Object{source, parsedValue} en el JSON 
+   * puedan extraerse sin corromper el Frontend (NaN / Object text)
+   */
+  private parseMonto(val: any): number {
+    if (val && typeof val === 'object' && val.parsedValue !== undefined) {
+      return Number(val.parsedValue) || 0;
+    }
+    return Number(val) || 0;
+  }
 
   private setTableLoading(value: boolean): void {
     this.ngZone.run(() => {
       this.loading = value;
-      this.cdr.detectChanges();
-    });
-  }
-
-  private setTiposLoading(value: boolean): void {
-    this.ngZone.run(() => {
-      this.loadingTiposPago = value;
       this.cdr.detectChanges();
     });
   }
@@ -117,39 +86,118 @@ export class PagosComponent implements OnInit {
   }
 
   searchValue: string = '';
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+  private currentMatriculasSub?: Subscription;
+  private currentProgresoSub?: Subscription;
+
   estudianteSeleccionado: PagoEstudiante | null = null;
   mostrarDetalle: boolean = false;
   loading: boolean = false;
   loadingDetalle: boolean = false;
-  
+
+  // Permisos de roles
+  esAdmin: boolean = false;
+  esSecretaria: boolean = false;
+  puedeAsignarCostos: boolean = false;
+
+  // Modal para ver observación
+  mostrarModalObs: boolean = false;
+  obsEstudianteNombre: string = '';
+  obsContenido: string = '';
+
+  // Drawer Asignar Costo Extra
+  mostrarDrawerCostoExtra: boolean = false;
+  alumnoCostoExtra: PagoEstudiante | null = null;
+  catalogoExtras: EspecieDTO[] = [];
+  especieSeleccionadaId: number | null = null;
+  montoAsignacion: number | null = null;
+  fechaLimiteAsignacion: string = '';
+  observacionesAsignacion: string = '';
+  guardandoAsignacion: boolean = false;
+  cargandoHistorialAlumno: boolean = false;
+  creditosExtrasAlumno: any[] = [];
+
+  // Modal Nuevo Arancel en Catálogo
+  mostrarModalNuevoCosto: boolean = false;
+  nombreNuevoCosto: string = '';
+  guardandoNuevoCosto: boolean = false;
+
+  // Modal Confirmación Anular Arancel
+  mostrarModalAnularCostoExtra: boolean = false;
+  creditoAAnular: any = null;
+  anulandoCreditoExtra: boolean = false;
+
+  // Modal Asignación Masiva de Arancel
+  mostrarModalAsignacionMasiva: boolean = false;
+  masivoPeriodoId: number | null = null;
+  masivoCiclos: CicloDTO[] = [];
+  masivoCicloId: number | null = null;
+  masivoCursos: MallaDTO[] = [];
+  masivoCursosSeleccionados: { [idMalla: number]: boolean } = {};
+  masivoSeleccionarTodosCursos: boolean = true;
+  masivoEspecieId: number | null = null;
+  masivoMonto: number | null = null;
+  masivoFechaLimite: string = '';
+  masivoObservaciones: string = '';
+  guardandoAsignacionMasiva: boolean = false;
+  cargandoCursosMasivo: boolean = false;
+
+  // Modal Resultado de Asignación Masiva
+  mostrarModalResultadoMasivo: boolean = false;
+  resultadoMasivo: { totalMatriculasEvaluadas: number; totalAsignados: number; totalOmitidosDuplicados: number; mensaje: string } | null = null;
+
+  abrirModalObservacion(pago: PagoEstudiante, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.obsEstudianteNombre = pago.nombreEstudiante;
+    this.obsContenido = pago.observaciones || 'Sin detalle de observación registrado.';
+    this.mostrarModalObs = true;
+  }
+
+  cerrarModalObservacion(): void {
+    this.mostrarModalObs = false;
+  }
+
   // Datos de matrículas
   pagos: PagoEstudiante[] = [];
-  
+  mallasFiltradas: MallaDTO[] = [];
+  loadingMatriculas: boolean = false;
+
+  tablaColumnas = [
+    { field: 'cedula', header: 'Cédula', width: '12rem', sortable: true },
+    { field: 'nombreEstudiante', header: 'Estudiante', width: '14rem', sortable: true },
+    { field: 'modalidad', header: 'Modalidad', width: '12rem', sortable: true },
+    { field: 'progreso', header: 'Progreso', width: '12rem' },
+    { field: 'detalleCiclo', header: 'Ciclo', width: '10rem', sortable: true },
+    { field: 'acciones', header: 'Acciones', width: '7.5rem', align: 'center' as const }
+  ];
+
+  // Filtros
+  periodos: PeriodoLectivoDTO[] = [];
+  todosLosCiclos: CicloDTO[] = [];
+  ciclos: CicloDTO[] = [];
+  filtroPeriodoId: number | null = null;
+  filtroCicloId: number | null = null;
+  filtroCursoId: number | null = null;
+
   // Caché de progresos ya cargados (evita repetir peticiones)
-  private progresoCache = new Map<number, { totalDeuda: number; totalPagado: number }>();
-  
+  private progresoCache = new Map<number, { 
+    totalDeuda: number; 
+    totalPagado: number; 
+    montoEnRevision?: number; 
+    tienePagosEnRevision?: boolean;
+    tieneObservaciones?: boolean;
+    observaciones?: string;
+  }>();
+
   // Control de paginación
-  private filaInicio: number = 0;
-  private filasPorPagina: number = 10;
-  
+  currentPage: number = 1;
+  filasPorPagina: number = 10;
+  totalRecords: number = 0;
+
   // Datos del API
-  detallesCreditoAPI: DetalleCreditoDTO[] = [];
-  
-  // Modal de pago
-  mostrarModalPago: boolean = false;
-  especieSeleccionada: Especie | null = null;
-  montoPago: number = 0;
-  tipoPagoSeleccionado: number | null = null;
-  
-  // Tipos de pago desde el API
-  tiposPago: TipoPagoDTO[] = [];
-  loadingTiposPago: boolean = false;
-  
-  // Modal de diferir pensión
-  mostrarModalDiferir: boolean = false;
-  creditoPensionPorDiferir: any = null;
-  numeroCuotasDiferir: number = 1;
-  
+  detallesCreditoAPI: any[] = [];
+
   modalidades = [
     { label: 'Formal virtual', value: 'Formal virtual' },
     { label: 'Acelerado', value: 'Acelerado' }
@@ -162,139 +210,334 @@ export class PagosComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.cargarTiposPago();
-    this.cargarMatriculas();
+    const user = this.authService.getCurrentUser();
+    const roles = user?.roles.map(r => r.nombre) || [];
+    this.esAdmin = roles.includes('ADMINISTRADOR') || roles.includes('ADMIN');
+    this.esSecretaria = roles.includes('SECRETARIA-GENERAL');
+    this.puedeAsignarCostos = this.esAdmin || this.esSecretaria;
+
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(350),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.loadData();
+    });
+
+    this.cargarDatosIniciales();
+
+    this.route.queryParams.subscribe(params => {
+      const idMatriculaParam = params['idMatricula'];
+      const documentoParam = params['documento'];
+      if (idMatriculaParam || documentoParam) {
+        this.verificarNavegacionDirecta(idMatriculaParam, documentoParam);
+      }
+    });
   }
 
-  cargarTiposPago(): void {
-    this.setTiposLoading(true);
-    this.pagoService.getTiposPago()
-      .subscribe({
-        next: (tipos) => {
-          this.ngZone.run(() => {
-            this.tiposPago = tipos;
-          });
-          this.setTiposLoading(false);
+  ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
+    this.currentMatriculasSub?.unsubscribe();
+    this.currentProgresoSub?.unsubscribe();
+  }
+
+  /**
+   * Si se navegó desde la aprobación de una postulación con un idMatricula o documento,
+   * carga esa matrícula directamente y abre la barra lateral de gestionar pagos.
+   */
+  verificarNavegacionDirecta(idMatriculaParam?: string | null, documentoParam?: string | null): void {
+    const idMat = idMatriculaParam ?? this.route.snapshot.queryParamMap.get('idMatricula');
+    const doc = (documentoParam ?? this.route.snapshot.queryParamMap.get('documento'))?.trim();
+
+    if (idMat) {
+      const idMatricula = Number(idMat);
+      if (idMatricula) {
+        this.matriculaService.getById(idMatricula).subscribe({
+          next: (matricula) => {
+            if (matricula) {
+              const pago = this.mapMatriculaToPagoEstudiante(matricula);
+              this.verDetalle(pago);
+            }
+          },
+          error: (err) => {
+            console.error('Error al cargar matrícula directa:', err);
+          }
+        });
+      }
+    } else if (doc) {
+      this.searchValue = doc;
+      this.matriculaService.getAllMatriculasPaginated(10, 1, undefined, undefined, doc).subscribe({
+        next: (res) => {
+          if (res && res.items && res.items.length > 0) {
+            const mat = res.items[0];
+            const pago = this.mapMatriculaToPagoEstudiante(mat);
+            this.verDetalle(pago);
+          } else {
+            this.loadData();
+          }
         },
         error: (err) => {
-          console.error('Error al cargar tipos de pago:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudieron cargar los tipos de pago'
-          });
-          this.setTiposLoading(false);
+          console.error('Error al buscar matrícula por documento:', err);
+          this.loadData();
         }
       });
+    }
   }
 
-  cargarMatriculas(): void {
+  cargarDatosIniciales(): void {
     this.setTableLoading(true);
-    this.matriculaService.getAllMatriculas()
-      .subscribe({
-        next: (matriculas) => {
-          // Mapear matrículas a PagoEstudiante (sin progreso aún)
-          const pagosBase = matriculas.map(m => this.mapMatriculaToPagoEstudiante(m));
-          
-          this.ngZone.run(() => {
-            this.pagos = pagosBase;
-          });
-          this.setTableLoading(false);
-          
-          // Cargar progreso solo de las filas visibles (primera página)
-          this.cargarProgresoFilasVisibles();
-        },
-        error: (err) => {
-          console.error('Error al cargar matrículas:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudieron cargar las matrículas'
-          });
-          this.ngZone.run(() => {
-            this.pagos = [];
-          });
-          this.setTableLoading(false);
+
+    forkJoin({
+      periodos: this.periodoService.getPeriodosLectivos(),
+      ciclos: this.cicloService.getAll()
+    }).subscribe({
+      next: ({ periodos, ciclos }) => {
+        this.periodos = periodos || [];
+        this.todosLosCiclos = ciclos || [];
+        this.setTableLoading(false);
+
+        if (this.periodos.length > 0) {
+          this.filtroPeriodoId = this.periodos[0].idPeriodoLectivo!;
+          this.onPeriodoChange();
+        } else {
+          this.loadData();
         }
+      },
+      error: (err) => {
+        console.error('Error al cargar datos iniciales:', err);
+        this.toastService.showError('No se pudieron cargar los datos iniciales', 'Error');
+        this.setTableLoading(false);
+        this.loadData();
+      }
+    });
+  }
+
+  onPeriodoChange(): void {
+    this.filtroCicloId = null;
+    this.filtroCursoId = null;
+    this.ciclos = [];
+    this.mallasFiltradas = [];
+    if (this.filtroPeriodoId) {
+      this.ciclos = this.todosLosCiclos.filter(c => c.idPeriodo === this.filtroPeriodoId && c.esActivo === true);
+      if (this.ciclos.length > 0) {
+        this.filtroCicloId = this.ciclos[0].idCiclo!;
+        this.onCicloChange();
+        return;
+      }
+    }
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onCicloChange(): void {
+    this.filtroCursoId = null;
+    this.mallasFiltradas = [];
+    if (this.filtroCicloId) {
+      this.mallaInfraService.getByCiclo(this.filtroCicloId).subscribe({
+        next: (data) => {
+          this.mallasFiltradas = this.ordenarCursos(data || []);
+        },
+        error: () => {}
       });
+    }
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onCursoChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  private ordenarCursos(cursos: MallaDTO[]): MallaDTO[] {
+    return [...(cursos || [])].sort((a, b) => {
+      const ordenA = a.ordenCurso ?? Number.MAX_SAFE_INTEGER;
+      const ordenB = b.ordenCurso ?? Number.MAX_SAFE_INTEGER;
+      if (ordenA !== ordenB) return ordenA - ordenB;
+      return (a.detalle || '').toLowerCase().localeCompare((b.detalle || '').toLowerCase());
+    });
+  }
+
+  onSearchInput(value: string): void {
+    this.searchValue = value;
+    this.searchSubject.next(value);
   }
 
   /**
-   * Evento cuando cambia la página o se aplica filtro
-   * Solo carga el progreso de las filas visibles
+   * Carga matrículas paginadas (10 por página) desde el backend aplicando ciclo y término de búsqueda
    */
-  onPageChange(event: any): void {
-    this.filaInicio = event.first;
-    this.filasPorPagina = event.rows;
-    this.cargarProgresoFilasVisibles();
-  }
+  loadData(): void {
+    this.currentMatriculasSub?.unsubscribe();
+    this.currentProgresoSub?.unsubscribe();
 
-  /**
-   * Carga el progreso SOLO de las filas actualmente visibles
-   * Usa caché para no repetir peticiones
-   */
-  private cargarProgresoFilasVisibles(): void {
-    // Obtener las filas visibles según paginación actual
-    const filasVisibles = this.pagos.slice(this.filaInicio, this.filaInicio + this.filasPorPagina);
-    
-    // Filtrar solo las que NO están en caché
-    const filasSinProgreso = filasVisibles.filter(p => !this.progresoCache.has(p.idMatricula));
-    
-    if (filasSinProgreso.length === 0) {
-      // Todas ya están en caché, solo actualizar desde caché
-      this.actualizarDesdeCache(filasVisibles);
+    this.loadingMatriculas = true;
+    const idCiclo = this.filtroCicloId ?? undefined;
+    const idMalla = this.filtroCursoId ?? undefined;
+
+    if (!idCiclo) {
+      this.ngZone.run(() => {
+        this.pagos = [];
+        this.totalRecords = 0;
+        this.loadingMatriculas = false;
+      });
       return;
     }
 
-    // Crear peticiones solo para las que faltan
-    const requests = filasSinProgreso.map(pago =>
-      this.creditoService.getDetallesCreditoByMatricula(pago.idMatricula).pipe(
-        catchError(() => of([]))
-      )
-    );
+    const searchTerm = this.searchValue ? this.searchValue.trim() : undefined;
 
-    forkJoin(requests).subscribe({
-      next: (resultados) => {
-        resultados.forEach((detalles, index) => {
-          const pago = filasSinProgreso[index];
-          const detallesArr = detalles as DetalleCreditoDTO[];
-          
-          let totalDeuda = 0;
-          let totalPagado = 0;
-          
-          if (detallesArr && detallesArr.length > 0) {
-            totalDeuda = detallesArr.reduce((sum, d) => sum + (d.valor || 0), 0);
-            totalPagado = detallesArr.reduce((sum, d) => sum + (d.valorCancelado || 0), 0);
-          }
-          
-          // Guardar en caché
-          this.progresoCache.set(pago.idMatricula, { totalDeuda, totalPagado });
+    this.currentMatriculasSub = this.matriculaService.getAllMatriculasPaginated(
+      this.filasPorPagina,
+      this.currentPage,
+      idCiclo,
+      undefined,
+      searchTerm,
+      idMalla
+    ).subscribe({
+      next: (response) => {
+        const pagosBase = response.items.map(m => ({
+          ...this.mapMatriculaToPagoEstudiante(m),
+          cargandoProgreso: true
+        }));
+
+        this.ngZone.run(() => {
+          this.pagos = pagosBase;
+          this.totalRecords = response.totalCount;
+          this.loadingMatriculas = false;
         });
-        
-        // Actualizar todas las filas visibles desde caché
-        this.actualizarDesdeCache(filasVisibles);
+
+        this.cargarProgresoMatriculasActuales();
       },
       error: (err) => {
-        console.error('Error al cargar progreso:', err);
+        console.error('Error cargando matrículas:', err);
+        this.toastService.showError('No se pudieron cargar las matrículas', 'Error');
+        this.ngZone.run(() => {
+          this.pagos = [];
+          this.totalRecords = 0;
+          this.loadingMatriculas = false;
+        });
       }
     });
   }
 
   /**
-   * Actualiza los datos de las filas desde el caché
+   * Evento cuando cambia la página o la cantidad de filas en la tabla
    */
-  private actualizarDesdeCache(filas: PagoEstudiante[]): void {
-    this.ngZone.run(() => {
-      filas.forEach(pago => {
-        const cached = this.progresoCache.get(pago.idMatricula);
-        if (cached) {
-          pago.totalDeuda = cached.totalDeuda;
-          pago.totalPagado = cached.totalPagado;
-        }
-      });
+  onPageChange(event: { page: number; rows: number }): void {
+    this.currentPage = event.page;
+    this.filasPorPagina = event.rows;
+    this.loadData();
+  }
+
+  /**
+   * Carga el progreso de los pagos de las matrículas actualmente devueltas
+   */
+  private cargarProgresoMatriculasActuales(): void {
+    if (this.pagos.length === 0) return;
+
+    const filasSinProgreso = this.pagos.filter(p => !this.progresoCache.has(p.idMatricula));
+
+    // Aplicar inmediatamente los que ya están en caché
+    this.pagos.forEach(pago => {
+      const cached = this.progresoCache.get(pago.idMatricula);
+      if (cached) {
+        pago.totalDeuda = cached.totalDeuda;
+        pago.totalPagado = cached.totalPagado;
+        pago.montoEnRevision = cached.montoEnRevision;
+        pago.tienePagosEnRevision = cached.tienePagosEnRevision;
+        pago.tieneObservaciones = cached.tieneObservaciones;
+        pago.observaciones = cached.observaciones;
+        pago.cargandoProgreso = false;
+      }
+    });
+
+    if (filasSinProgreso.length === 0) {
       this.cdr.detectChanges();
+      return;
+    }
+
+    const requests = filasSinProgreso.map(pago =>
+      forkJoin({
+        creditos: this.creditoService.getCreditosConDetallesByMatricula(pago.idMatricula).pipe(catchError(() => of([]))),
+        historial: this.pagoService.getHistorialPagos(pago.idMatricula).pipe(catchError(() => of({ isSuccess: false, data: [] })))
+      })
+    );
+
+    this.currentProgresoSub = forkJoin(requests).subscribe({
+      next: (resultados) => {
+        resultados.forEach((res: any, index: number) => {
+          const pago = filasSinProgreso[index];
+          const creditos: CreditoConDetallesDTO[] = res.creditos || [];
+          const historialResponse = res.historial;
+          const historialData: any[] = (historialResponse?.isSuccess && historialResponse?.data) ? historialResponse.data : [];
+
+          let totalDeuda = 0;
+          let totalPagado = 0;
+          let tienePagosEnRevision = false;
+          let montoEnRevision = 0;
+          let tieneObservaciones = false;
+          let observaciones = '';
+
+          // Revisar si en su historial hay pagos con observaciones
+          const pagoConObs = historialData.find((p: any) => p.observaciones && p.observaciones.trim() !== '');
+          if (pagoConObs) {
+            tieneObservaciones = true;
+            observaciones = pagoConObs.observaciones;
+          }
+
+          if (creditos && creditos.length > 0) {
+            creditos.forEach(credito => {
+              const montoOriginal = this.parseMonto(credito.montoOriginal) || this.parseMonto(credito.montoFinal) || 0;
+
+              if (credito.detallesCredito && credito.detallesCredito.length > 0) {
+                let deudaCredito = 0;
+                let pagadoCredito = 0;
+                credito.detallesCredito.forEach(d => {
+                  deudaCredito += this.parseMonto(d.valor);
+                  if (d.estado?.toUpperCase() === 'PENDIENTE_APROBACION') {
+                    tienePagosEnRevision = true;
+                    montoEnRevision += (this.parseMonto(d.valorCancelado) || this.parseMonto(d.valor) || 0);
+                  } else {
+                    pagadoCredito += this.parseMonto(d.valorCancelado);
+                  }
+                });
+                totalDeuda += deudaCredito;
+                totalPagado += pagadoCredito;
+              } else {
+                totalDeuda += montoOriginal;
+              }
+            });
+          }
+
+          this.progresoCache.set(pago.idMatricula, { 
+            totalDeuda, 
+            totalPagado, 
+            montoEnRevision, 
+            tienePagosEnRevision,
+            tieneObservaciones,
+            observaciones
+          });
+          pago.totalDeuda = totalDeuda;
+          pago.totalPagado = totalPagado;
+          pago.tienePagosEnRevision = tienePagosEnRevision;
+          pago.montoEnRevision = montoEnRevision;
+          pago.tieneObservaciones = tieneObservaciones;
+          pago.observaciones = observaciones;
+          pago.cargandoProgreso = false;
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar progreso de pagos:', err);
+        filasSinProgreso.forEach(pago => {
+          pago.cargandoProgreso = false;
+        });
+        this.cdr.detectChanges();
+      }
     });
   }
+
+
 
   mapMatriculaToPagoEstudiante(matricula: MatriculaDTO): PagoEstudiante {
     const nombreCompleto = [
@@ -312,14 +555,15 @@ export class PagosComponent implements OnInit {
       detalleCiclo: matricula.detalleCiclo || '',
       totalDeuda: 0,
       totalPagado: 0,
-      especies: []
+      especies: [],
+      idPersona: matricula.idUsuarioAlumno || 0
     };
   }
 
   getSeverity(totalDeuda: number, totalPagado: number): 'success' | 'info' | 'warn' | 'danger' {
     const pendiente = totalDeuda - totalPagado;
     const porcentajePagado = (totalDeuda > 0) ? (totalPagado / totalDeuda) * 100 : 0;
-    
+
     if (porcentajePagado === 100) return 'success';
     if (porcentajePagado >= 50) return 'info';
     if (porcentajePagado >= 25) return 'warn';
@@ -339,129 +583,143 @@ export class PagosComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.dt.clear();
     this.searchValue = '';
+    this.filtroPeriodoId = null;
+    this.filtroCicloId = null;
+    this.filtroCursoId = null;
+    this.ciclos = [];
+    this.mallasFiltradas = [];
+    this.loadData();
   }
 
-  onGlobalFilter(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.dt.filterGlobal(value, 'contains');
+  filteredPagos(): PagoEstudiante[] {
+    if (!this.searchValue.trim()) return this.pagos;
+    const term = this.searchValue.toLowerCase().trim();
+    return this.pagos.filter(p =>
+      p.cedula.toLowerCase().includes(term) ||
+      p.nombreEstudiante.toLowerCase().includes(term) ||
+      p.modalidad.toLowerCase().includes(term) ||
+      p.detalleCiclo.toLowerCase().includes(term)
+    );
   }
 
   verDetalle(pago: PagoEstudiante): void {
     this.setDetalleLoading(true);
     this.mostrarDetalle = true;
-    
-    // Obtener créditos completos para detectar pensiones no diferidas
+
+    // Única petición: créditos completos con detalles
     this.creditoService.getCreditosConDetallesByMatricula(pago.idMatricula)
       .subscribe({
-        next: (creditos) => {
-          console.log('Créditos completos:', creditos);
-          
-          // Buscar pensión que necesita diferirse (sin detalles de crédito creados)
-          // Una pensión necesita diferirse si:
-          // 1. Es de tipo PENSION
-          // 2. No tiene detalles de crédito (cuotas) creados aún
-          const pensionSinCuotas = creditos.find(c => {
-            const nombreEspecie = c.detalleEspecie?.toUpperCase() || '';
-            const esPension = nombreEspecie.includes('PENSION') || nombreEspecie.includes('PENSIÓN');
-            // Sin detalles si el array está vacío o no existe
-            const sinDetalles = !c.detallesCredito || c.detallesCredito.length === 0;
-            console.log(`Crédito ${c.idCredito}: especie=${c.detalleEspecie}, esPension=${esPension}, diferido=${c.diferido}, sinDetalles=${sinDetalles}, detallesLength=${c.detallesCredito?.length}`);
-            return esPension && sinDetalles;
-          });
-          
-          console.log('Pensión sin cuotas encontrada:', pensionSinCuotas);
+        next: (creditos: CreditoConDetallesDTO[]) => {
+          this.ngZone.run(() => {
+            const especies: Especie[] = creditos.map(credito => {
+              const detalleEspecie = credito.detalleEspecie || 'Especie';
+              const upperDetalle = detalleEspecie.toUpperCase();
+              const esPension = upperDetalle.includes('PENSION') || upperDetalle.includes('PENSIÓN');
+              const esMatricula = upperDetalle.includes('MATRICULA') || upperDetalle.includes('MATRÍCULA');
+              const tipoEspecie: 'matricula' | 'pension' | 'extra' = esPension ? 'pension' : (esMatricula ? 'matricula' : 'extra');
+              const montoOriginal = this.parseMonto(credito.montoOriginal) || this.parseMonto(credito.montoFinal) || 0;
+              const montoFinal = this.parseMonto(credito.montoFinal);
+              const montoBeneficio = this.parseMonto(credito.montoBeneficio);
+              const esPendienteDiferir = credito.estado === 'PENDIENTE_DIFERIR';
 
-          // Llamar al servicio para obtener detalles de crédito
-          this.creditoService.getDetallesCreditoByMatricula(pago.idMatricula)
-            .subscribe({
-              next: (detalles) => {
-                console.log('Detalles de crédito desde API:', detalles);
-                this.ngZone.run(() => {
-                  this.detallesCreditoAPI = detalles;
-                  
-                  // Calcular totales desde el API
-                  const totalDeuda = detalles.reduce((sum, d) => sum + (d.valor || 0), 0);
-                  const totalPagado = detalles.reduce((sum, d) => sum + (d.valorCancelado || 0), 0);
-                  
-                  // Procesar especies: primer registro es matrícula, los demás son pensiones
-                  const especies: Especie[] = detalles.map((detalle, index) => {
-                    const esMatricula = index === 0;
-                    const pendiente = (detalle.valor || 0) - (detalle.valorCancelado || 0);
-                    const estaPagado = detalle.pagado || pendiente === 0;
-                    
-                    return {
-                      idEspecie: detalle.idDetalleCredito || index + 1,
-                      nombre: esMatricula ? 'Matrícula' : `Cuota ${index}`,
-                      tipo: esMatricula ? 'matricula' : 'pension',
-                      ciclo: pago.detalleCiclo || 'Sin ciclo',
-                      valor: detalle.valor || 0,
-                      valorPagado: detalle.valorCancelado || 0,
-                      pagado: estaPagado,
-                      fechaLimite: detalle.fechaLimite || 'Sin fecha',
-                      detallesCredito: [{
-                        idDetalleCredito: detalle.idDetalleCredito || 0,
-                        valorCancelado: detalle.valorCancelado || 0,
-                        pagado: detalle.pagado || false,
-                        fechaPagoCredito: detalle.fechaPago || null
-                      }],
-                      esPensionNoDiferida: false
-                    };
-                  });
+              // Calcular valorPagado y deuda por especie:
+              let valorPagado = 0;
+              let valorDeudaEspecie = montoOriginal;
 
-                  // Verificar si la matrícula está pagada (primer registro)
-                  const matriculaPagada = especies.length > 0 && especies[0].tipo === 'matricula' && especies[0].pagado;
-
-                  // Solo agregar card de pensión para diferir si la matrícula está pagada
-                  if (pensionSinCuotas && matriculaPagada) {
-                    especies.push({
-                      idEspecie: -1, // ID especial para identificarla
-                      nombre: 'Pensión',
-                      tipo: 'pension',
-                      ciclo: pago.detalleCiclo || 'Sin ciclo',
-                      valor: pensionSinCuotas.valorEspecie || 0,
-                      valorPagado: 0,
-                      pagado: false,
-                      fechaLimite: 'Por definir al diferir',
-                      detallesCredito: [],
-                      esPensionNoDiferida: true
-                    });
+              if (credito.detallesCredito && credito.detallesCredito.length > 0) {
+                valorDeudaEspecie = 0;
+                credito.detallesCredito.forEach(d => {
+                  valorDeudaEspecie += this.parseMonto(d.valor);
+                  if (d.estado?.toUpperCase() === 'PENDIENTE_APROBACION') {
+                    // excluir de totales hasta validación
+                  } else {
+                    valorPagado += this.parseMonto(d.valorCancelado);
                   }
-                  
-                  // Actualizar estudiante seleccionado con datos del API
-                  this.estudianteSeleccionado = {
-                    ...pago,
-                    totalDeuda: totalDeuda + (pensionSinCuotas?.valorEspecie || 0),
-                    totalPagado: totalPagado,
-                    especies: especies
-                  };
-                  
-                  // Verificar cuotas vencidas y mostrar notificaciones
-                  this.verificarCuotasVencidas(especies);
                 });
-                this.setDetalleLoading(false);
-              },
-              error: (err) => {
-                console.error('Error al obtener detalles de crédito:', err);
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Error',
-                  detail: 'No se pudieron cargar los detalles del crédito'
+              }
+
+              // Fecha límite: primera cuota si existe
+              const primeraFecha = credito.detallesCredito?.[0]?.fechaLimite ?? null;
+
+              // Pagado: todas las cuotas tienen pagado === true
+              const todasCuotasLiquidadas =
+                (credito.detallesCredito?.length ?? 0) > 0 &&
+                (credito.detallesCredito ?? []).every(
+                  d => d.pagado === true
+                );
+              const pagado = todasCuotasLiquidadas;
+
+              return {
+                idEspecie: credito.idCredito ?? 0,
+                idCredito: credito.idCredito ?? 0,
+                nombre: detalleEspecie,
+                tipo: tipoEspecie,
+                estado: credito.estado ?? 'ACTIVO',
+                ciclo: pago.detalleCiclo || 'Sin ciclo',
+                valor: valorDeudaEspecie,
+                montoFinal: montoFinal,
+                montoBeneficio: montoBeneficio,
+                valorPagado: valorPagado,
+                pagado: pagado,
+                fechaLimite: primeraFecha ?? (esPendienteDiferir ? 'Por definir al diferir' : 'Sin fecha'),
+                detallesCredito: (credito.detallesCredito ?? []).map(d => ({
+                  idDetalleCredito: d.idDetalleCredito ?? 0,
+                  numeroCuota: d.numeroCuota ?? 0,
+                  valor: this.parseMonto(d.valor),
+                  valorCancelado: this.parseMonto(d.valorCancelado),
+                  valorOriginal: this.parseMonto(d.valorOriginal),
+                  saldoCuota: this.parseMonto(d.saldoCuota),
+                  fechaLimite: d.fechaLimite ?? null,
+                  estado: d.estado ?? 'PENDIENTE',
+                  pagado: d.pagado ?? false
+                })),
+                esPensionNoDiferida: esPendienteDiferir,
+                esExtra: tipoEspecie === 'extra'
+              } as Especie;
+            });
+
+            let totalDeuda = 0;
+            let totalPagado = 0;
+            let tienePagosEnRevision = false;
+            let montoEnRevision = 0;
+
+            creditos.forEach(c => {
+              if (c.detallesCredito && c.detallesCredito.length > 0) {
+                let deudaCredito = 0;
+                c.detallesCredito.forEach(d => {
+                  deudaCredito += this.parseMonto(d.valor);
+                  if (d.estado?.toUpperCase() === 'PENDIENTE_APROBACION') {
+                    tienePagosEnRevision = true;
+                    montoEnRevision += (this.parseMonto(d.valorCancelado) || this.parseMonto(d.valor) || 0);
+                  } else {
+                    totalPagado += this.parseMonto(d.valorCancelado);
+                  }
                 });
-                this.ngZone.run(() => {
-                  this.estudianteSeleccionado = pago;
-                });
-                this.setDetalleLoading(false);
+                totalDeuda += deudaCredito;
+              } else {
+                totalDeuda += (this.parseMonto(c.montoOriginal) || this.parseMonto(c.montoFinal) || 0);
               }
             });
+
+            this.estudianteSeleccionado = {
+              ...pago,
+              totalDeuda,
+              totalPagado,
+              tienePagosEnRevision,
+              montoEnRevision,
+              especies
+            };
+
+            this.detallesCreditoAPI = creditos;
+          });
+          this.setDetalleLoading(false);
         },
         error: (err) => {
-          console.error('Error al obtener créditos completos:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudieron cargar los créditos del estudiante'
+          console.error('Error al obtener créditos:', err);
+          this.toastService.showError('No se pudieron cargar los detalles del crédito', 'Error');
+          this.ngZone.run(() => {
+            this.estudianteSeleccionado = pago;
           });
           this.setDetalleLoading(false);
         }
@@ -473,523 +731,392 @@ export class PagosComponent implements OnInit {
     this.mostrarDetalle = false;
   }
 
-  getEspecieSeverity(especie: Especie): 'success' | 'warn' | 'danger' {
-    if (especie.pagado) return 'success';
-    const porcentaje = (especie.valorPagado / especie.valor) * 100;
-    if (porcentaje > 0) return 'warn';
-    return 'danger';
+  navigateToPostulaciones(): void {
+    this.router.navigate(['/dashboard/postulaciones/manage-postulations']);
   }
 
-  getEspecieEstado(especie: Especie): string {
-    if (especie.pagado) return 'Pagado';
-    if (especie.valorPagado > 0) return 'Parcial';
-    return 'Pendiente';
+  /** Limpia la caché del estudiante visitado y recarga el progreso de las filas visibles */
+  recargarProgresoLista(): void {
+    if (this.estudianteSeleccionado) {
+      this.progresoCache.delete(this.estudianteSeleccionado.idMatricula);
+    }
+    this.cargarProgresoMatriculasActuales();
   }
 
-  /**
-   * Verifica si hay cuotas vencidas y no pagadas, y muestra notificaciones toast
-   */
-  private verificarCuotasVencidas(especies: Especie[]): void {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Normalizar a inicio del día
-    
-    const cuotasVencidas = especies.filter(especie => {
-      // Solo verificar cuotas no pagadas completamente
-      if (especie.pagado) return false;
-      
-      // Ignorar las que no tienen fecha válida
-      if (!especie.fechaLimite || especie.fechaLimite === 'Sin fecha' || especie.fechaLimite === 'Por definir al diferir') {
-        return false;
-      }
-      
-      // Parsear la fecha límite
-      const fechaLimite = new Date(especie.fechaLimite);
-      if (isNaN(fechaLimite.getTime())) return false;
-      
-      fechaLimite.setHours(0, 0, 0, 0); // Normalizar a inicio del día
-      
-      // Verificar si la fecha ya pasó
-      return fechaLimite < hoy;
-    });
+  // ==========================================
+  // GESTIÓN DE COSTOS EXTRAS / ARANCELES
+  // ==========================================
 
-    // Mostrar notificaciones para cada cuota vencida
-    if (cuotasVencidas.length > 0) {
-      // Pequeño delay para que las notificaciones aparezcan después de cargar la vista
-      setTimeout(() => {
-        cuotasVencidas.forEach((cuota, index) => {
-          // Delay escalonado para que las notificaciones no se apilen todas juntas
-          setTimeout(() => {
-            const pendiente = cuota.valor - cuota.valorPagado;
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Pago Vencido',
-              detail: `${cuota.nombre} venció el ${this.formatearFecha(cuota.fechaLimite)}. Pendiente: $${pendiente.toFixed(2)}`,
-              life: 8000,
-              sticky: false
-            });
-          }, index * 300); // 300ms de delay entre cada notificación
-        });
-      }, 500);
+  abrirDrawerCostoExtra(pago: PagoEstudiante, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.alumnoCostoExtra = pago;
+    this.especieSeleccionadaId = null;
+    this.montoAsignacion = null;
+    this.fechaLimiteAsignacion = '';
+    this.observacionesAsignacion = '';
+    this.mostrarDrawerCostoExtra = true;
+
+    this.cargarCatalogoEspeciesExtras();
+    this.cargarHistorialExtrasAlumno(pago.idMatricula);
+  }
+
+  cerrarDrawerCostoExtra(): void {
+    this.mostrarDrawerCostoExtra = false;
+    this.alumnoCostoExtra = null;
+    this.creditosExtrasAlumno = [];
+  }
+
+  onDrawerVisibleChange(visible: boolean): void {
+    this.mostrarDrawerCostoExtra = visible;
+    if (!visible) {
+      this.alumnoCostoExtra = null;
+      this.creditosExtrasAlumno = [];
     }
   }
 
-  /**
-   * Formatea una fecha a formato legible
-   */
-  private formatearFecha(fecha: string): string {
-    try {
-      const date = new Date(fecha);
-      if (isNaN(date.getTime())) return fecha;
-      
-      return date.toLocaleDateString('es-EC', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return fecha;
-    }
-  }
-
-  pagarEspecie(especie: Especie): void {
-    this.especieSeleccionada = especie;
-    this.montoPago = especie.valor - especie.valorPagado; // Valor pendiente por defecto
-    this.tipoPagoSeleccionado = null;
-    this.mostrarModalPago = true;
-    
-    // Mostrar mensaje informativo
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Realizar Pago',
-      detail: `Seleccione el tipo de pago y el monto para ${especie.nombre}`,
-      life: 3000
-    });
-  }
-
-  cerrarModalPago(): void {
-    this.mostrarModalPago = false;
-    this.especieSeleccionada = null;
-    this.montoPago = 0;
-    this.tipoPagoSeleccionado = null;
-  }
-
-  // Obtiene el monto pendiente de la especie actual
-  getMontoPendienteEspecie(): number {
-    if (!this.especieSeleccionada) return 0;
-    return this.especieSeleccionada.valor - this.especieSeleccionada.valorPagado;
-  }
-
-  // Obtiene el total pendiente de todas las especies no pagadas (incluyendo siguientes)
-  getTotalPendienteRestante(): number {
-    if (!this.estudianteSeleccionado || !this.especieSeleccionada) return 0;
-    
-    const especiesNoPagadas = this.estudianteSeleccionado.especies.filter(e => !e.pagado);
-    const indiceActual = especiesNoPagadas.findIndex(e => e.idEspecie === this.especieSeleccionada!.idEspecie);
-    
-    // Suma el pendiente desde la especie actual hasta la última
-    let totalPendiente = 0;
-    for (let i = indiceActual; i < especiesNoPagadas.length; i++) {
-      totalPendiente += especiesNoPagadas[i].valor - especiesNoPagadas[i].valorPagado;
-    }
-    
-    return totalPendiente;
-  }
-
-  // Verifica si es la última especie pendiente
-  esUltimaEspecie(): boolean {
-    if (!this.estudianteSeleccionado || !this.especieSeleccionada) return true;
-    
-    const especiesNoPagadas = this.estudianteSeleccionado.especies.filter(e => !e.pagado);
-    const indiceActual = especiesNoPagadas.findIndex(e => e.idEspecie === this.especieSeleccionada!.idEspecie);
-    
-    return indiceActual === especiesNoPagadas.length - 1;
-  }
-
-  // Obtiene el monto máximo permitido
-  getMontoMaximo(): number {
-    return this.getTotalPendienteRestante();
-  }
-
-  // Valida si el pago es válido
-  isPagoValido(): boolean {
-    if (!this.tipoPagoSeleccionado) return false;
-    if (this.montoPago <= 0) return false;
-    // Solo bloquear si es la última especie y quiere pagar más del pendiente
-    if (this.esUltimaEspecie() && this.montoPago > this.getMontoPendienteEspecie()) return false;
-    return true;
-  }
-
-  // Mensaje de validación
-  getMensajeValidacion(): string {
-    if (!this.tipoPagoSeleccionado) {
-      return 'Seleccione un tipo de pago';
-    }
-    if (this.montoPago <= 0) {
-      return 'El monto debe ser mayor a $0.00';
-    }
-    // Solo mostrar error si es la última especie y quiere pagar más
-    if (this.esUltimaEspecie() && this.montoPago > this.getMontoPendienteEspecie()) {
-      return `No puede pagar más del saldo pendiente ($${this.getMontoPendienteEspecie().toFixed(2)})`;
-    }
-    return '';
-  }
-
-  // Calcula cómo se distribuirá el pago
-  getDistribucionPago(): { especie: string; monto: number }[] {
-    if (!this.estudianteSeleccionado || !this.especieSeleccionada || this.montoPago <= 0) return [];
-    
-    const distribucion: { especie: string; monto: number }[] = [];
-    const especiesNoPagadas = this.estudianteSeleccionado.especies.filter(e => !e.pagado);
-    const indiceActual = especiesNoPagadas.findIndex(e => e.idEspecie === this.especieSeleccionada!.idEspecie);
-    
-    let montoRestante = this.montoPago;
-    
-    for (let i = indiceActual; i < especiesNoPagadas.length && montoRestante > 0; i++) {
-      const especie = especiesNoPagadas[i];
-      const pendienteEspecie = especie.valor - especie.valorPagado;
-      const montoAplicar = Math.min(montoRestante, pendienteEspecie);
-      
-      if (montoAplicar > 0) {
-        distribucion.push({
-          especie: especie.nombre,
-          monto: montoAplicar
-        });
-        montoRestante -= montoAplicar;
-      }
-    }
-    
-    return distribucion;
-  }
-
-  // Confirmar pago
-  confirmarPago(): void {
-    // Validar y mostrar mensaje específico si no es válido
-    if (!this.tipoPagoSeleccionado) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Campos Requeridos',
-        detail: 'Por favor seleccione un tipo de pago'
-      });
-      return;
-    }
-    
-    if (this.montoPago <= 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Monto Inválido',
-        detail: 'El monto a pagar debe ser mayor a $0.00'
-      });
-      return;
-    }
-    
-    if (this.esUltimaEspecie() && this.montoPago > this.getMontoPendienteEspecie()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Monto Excedido',
-        detail: `No puede pagar más del saldo pendiente ($${this.getMontoPendienteEspecie().toFixed(2)})`
-      });
-      return;
-    }
-    
-    if (!this.especieSeleccionada || !this.estudianteSeleccionado) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se ha seleccionado una especie o estudiante'
-      });
-      return;
-    }
-    
-    // Obtener el idCredito desde los detalles de la especie
-    const idCredito = this.obtenerIdCreditoDeLaEspecie(this.especieSeleccionada);
-    if (!idCredito) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo obtener la información del crédito'
-      });
-      return;
-    }
-
-    // Construir los datos de pagos (distribución entre cuotas)
-    const datosPagosCredito = this.construirDatosPagoCredito();
-    
-    // Construir el request
-    const request: any = {
-      pagoCredito: {
-        idCredito: idCredito,
-        idTipoPago: this.tipoPagoSeleccionado,
-        fechaPago: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-        valorPago: this.montoPago,
-        esValidado: true,
-        datosPagosCredito: datosPagosCredito
-      },
-      distribuirExcedente: true
-    };
-
-    console.log('=== PROCESANDO PAGO ===');
-    console.log('Request:', request);
-
-    // Llamar al servicio para procesar el pago
-    this.pagoService.crearPagoCredito(request).subscribe({
-      next: (response) => {
-        console.log('Pago procesado exitosamente:', response);
-        if (response.isSuccess) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Pago Exitoso',
-            detail: 'El pago se ha procesado correctamente'
-          });
-          
-          this.cerrarModalPago();
-          
-          // Verificar si se pagó la matrícula para diferir pensión
-          const esPagoMatricula = this.especieSeleccionada?.tipo === 'matricula';
-          if (esPagoMatricula) {
-            this.verificarYDiferirPension();
-          } else {
-            // Recargar los detalles del estudiante
-            this.verDetalle(this.estudianteSeleccionado!);
-          }
-        } else {
-          console.error('Error en el pago:', response.message);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error en el Pago',
-            detail: response.message || 'No se pudo procesar el pago'
-          });
+  cargarCatalogoEspeciesExtras(): void {
+    this.especieService.getAll().subscribe({
+      next: (especies) => {
+        const lista = especies || [];
+        this.catalogoExtras = lista.filter(e => (e.activo !== false && (e as any).esActivo !== false) && (e.tipoEspecie === 'EXTRA' || (e as any).tipo === 'EXTRA'));
+        if (this.catalogoExtras.length === 0) {
+          this.catalogoExtras = lista.filter(e => 
+            (e.activo !== false && (e as any).esActivo !== false) && 
+            !e.detalle?.toUpperCase().includes('MATRICULA') && 
+            !e.detalle?.toUpperCase().includes('MATRÍCULA') && 
+            !e.detalle?.toUpperCase().includes('PENSION') && 
+            !e.detalle?.toUpperCase().includes('PENSIÓN')
+          );
         }
       },
       error: (err) => {
-        console.error('Error al procesar el pago:', err);
-        const errorMessage = err.error?.message || err.error?.errores || err.message || 'Error al procesar el pago. Por favor intente nuevamente.';
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error del Servidor',
-          detail: typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage
-        });
+        console.error('Error al cargar catálogo de especies extras:', err);
       }
     });
   }
 
-  // Obtener el idCredito desde los detalles de crédito del API
-  private obtenerIdCreditoDeLaEspecie(especie: Especie): number | null {
-    // Buscar en detallesCreditoAPI el idCredito correspondiente
-    const detalle = this.detallesCreditoAPI.find(d => d.idDetalleCredito === especie.idEspecie);
-    return detalle?.idCredito || null;
-  }
-
-  // Construir los datos de pago crédito con la distribución
-  private construirDatosPagoCredito(): any[] {
-    if (!this.estudianteSeleccionado || !this.especieSeleccionada) return [];
-    
-    const datosPagos: any[] = [];
-    const especiesNoPagadas = this.estudianteSeleccionado.especies.filter(e => !e.pagado);
-    const indiceActual = especiesNoPagadas.findIndex(e => e.idEspecie === this.especieSeleccionada!.idEspecie);
-    
-    let montoRestante = this.montoPago;
-    const fechaPago = new Date().toISOString().split('T')[0];
-    
-    // Distribuir el pago entre las cuotas
-    for (let i = indiceActual; i < especiesNoPagadas.length && montoRestante > 0; i++) {
-      const especie = especiesNoPagadas[i];
-      const pendienteEspecie = especie.valor - especie.valorPagado;
-      const montoAplicar = Math.min(montoRestante, pendienteEspecie);
-      
-      if (montoAplicar > 0) {
-        const estaPagado = montoAplicar >= pendienteEspecie;
-        
-        datosPagos.push({
-          idDetalleCredito: especie.idEspecie,
-          valorCancelado: montoAplicar,
-          pagado: estaPagado,
-          fechaPagoCredito: fechaPago
-        });
-        
-        montoRestante -= montoAplicar;
+  cargarHistorialExtrasAlumno(idMatricula: number): void {
+    this.cargandoHistorialAlumno = true;
+    this.creditoService.getCreditosExtras(idMatricula).subscribe({
+      next: (res) => {
+        this.cargandoHistorialAlumno = false;
+        if (res.isSuccess && res.data) {
+          this.creditosExtrasAlumno = res.data;
+        } else {
+          this.creditosExtrasAlumno = [];
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar historial de extras del alumno:', err);
+        this.cargandoHistorialAlumno = false;
+        this.creditosExtrasAlumno = [];
+        this.cdr.detectChanges();
       }
-    }
-    
-    return datosPagos;
+    });
   }
 
-  // Verificar y diferir pensión después de pagar matrícula
-  private verificarYDiferirPension(): void {
-    if (!this.estudianteSeleccionado) return;
-
-    this.creditoService.getCreditosConDetallesByMatricula(this.estudianteSeleccionado.idMatricula)
-      .subscribe({
-        next: (creditos) => {
-          console.log('Créditos obtenidos:', creditos);
-          
-          // Buscar crédito de pensión sin cuotas creadas
-          const creditoPension = creditos.find(c => {
-            const nombreEspecie = c.detalleEspecie?.toUpperCase() || '';
-            const esPension = nombreEspecie.includes('PENSION') || nombreEspecie.includes('PENSIÓN');
-            const sinDetalles = !c.detallesCredito || c.detallesCredito.length === 0;
-            return esPension && sinDetalles;
-          });
-
-          if (creditoPension) {
-            // Mostrar modal para diferir pensión
-            this.creditoPensionPorDiferir = creditoPension;
-            this.numeroCuotasDiferir = 1;
-            this.mostrarModalDiferir = true;
-            
-            // Mostrar mensaje informativo
-            this.messageService.add({
-              severity: 'info',
-              summary: 'Diferir Pensión',
-              detail: 'Ahora puede diferir el pago de la pensión en cuotas',
-              life: 4000
-            });
-          } else {
-            // No hay pensión por diferir, solo recargar detalles
-            this.verDetalle(this.estudianteSeleccionado!);
-          }
-        },
-        error: (err) => {
-          console.error('Error al obtener créditos:', err);
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'Advertencia',
-            detail: 'No se pudo verificar si hay pensión por diferir'
-          });
-          // Recargar detalles aunque haya error
-          this.verDetalle(this.estudianteSeleccionado!);
-        }
-      });
-  }
-
-  // Mostrar modal para diferir pensión manualmente
-  mostrarModalDiferirPension(especie: Especie): void {
-    if (!this.estudianteSeleccionado) return;
-
-    // Obtener los créditos para encontrar el crédito de pensión
-    this.creditoService.getCreditosConDetallesByMatricula(this.estudianteSeleccionado.idMatricula)
-      .subscribe({
-        next: (creditos) => {
-          // Buscar el crédito de pensión correspondiente a esta especie (sin cuotas creadas)
-          const creditoPension = creditos.find(c => {
-            const nombreEspecie = c.detalleEspecie?.toUpperCase() || '';
-            const esPension = nombreEspecie.includes('PENSION') || nombreEspecie.includes('PENSIÓN');
-            const sinDetalles = !c.detallesCredito || c.detallesCredito.length === 0;
-            return esPension && sinDetalles;
-          });
-
-          if (creditoPension) {
-            this.creditoPensionPorDiferir = creditoPension;
-            this.numeroCuotasDiferir = 1;
-            this.mostrarModalDiferir = true;
-            
-            // Mostrar mensaje informativo
-            this.messageService.add({
-              severity: 'info',
-              summary: 'Diferir Pago',
-              detail: 'Seleccione en cuántas cuotas desea diferir la pensión',
-              life: 3000
-            });
-          } else {
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Advertencia',
-              detail: 'No se encontró crédito de pensión para diferir'
-            });
-          }
-        },
-        error: (err) => {
-          console.error('Error al obtener créditos:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al obtener información del crédito'
-          });
-        }
-      });
-  }
-
-  // Confirmar diferimiento de pensión
-  confirmarDiferimiento(): void {
-    if (!this.creditoPensionPorDiferir) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se ha seleccionado un crédito para diferir'
-      });
-      return;
-    }
-    
-    if (this.numeroCuotasDiferir < 1) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Número Inválido',
-        detail: 'El número de cuotas debe ser al menos 1'
-      });
+  asignarCostoExtra(): void {
+    if (!this.alumnoCostoExtra || !this.especieSeleccionadaId || !this.montoAsignacion || this.montoAsignacion <= 0) {
+      this.toastService.showWarning('Por favor seleccione un arancel y defina un monto válido', 'Campos Incompletos');
       return;
     }
 
-    const request = {
-      idCredito: this.creditoPensionPorDiferir.idCredito,
-      numeroCuotas: this.numeroCuotasDiferir
+    this.guardandoAsignacion = true;
+    const payload = {
+      idMatricula: this.alumnoCostoExtra.idMatricula,
+      idEspecie: this.especieSeleccionadaId,
+      monto: Number(this.montoAsignacion),
+      fechaLimite: this.fechaLimiteAsignacion ? this.fechaLimiteAsignacion : null,
+      observaciones: this.observacionesAsignacion?.trim() ? this.observacionesAsignacion.trim() : null
     };
 
-    console.log('=== DIFERIR CRÉDITO ===');
-    console.log('Request:', request);
-    console.log('Crédito completo:', this.creditoPensionPorDiferir);
-
-    this.creditoService.diferirCredito(request).subscribe({
-      next: (response) => {
-        console.log('Respuesta diferir:', response);
-        if (response.isSuccess) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Diferimiento Exitoso',
-            detail: `La pensión se ha diferido en ${this.numeroCuotasDiferir} cuota(s)`
-          });
-          this.cerrarModalDiferir();
-          // Recargar detalles del estudiante
-          this.verDetalle(this.estudianteSeleccionado!);
+    this.creditoService.asignarCreditoExtra(payload).subscribe({
+      next: (res) => {
+        this.guardandoAsignacion = false;
+        if (res.isSuccess) {
+          this.toastService.showSuccess(res.message || 'Arancel extra asignado correctamente', 'Éxito');
+          // Limpiar inputs del form
+          this.especieSeleccionadaId = null;
+          this.montoAsignacion = null;
+          this.fechaLimiteAsignacion = '';
+          this.observacionesAsignacion = '';
+          
+          if (this.alumnoCostoExtra) {
+            this.cargarHistorialExtrasAlumno(this.alumnoCostoExtra.idMatricula);
+            this.progresoCache.delete(this.alumnoCostoExtra.idMatricula);
+            this.cargarProgresoMatriculasActuales();
+          }
         } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error del Servidor',
-            detail: response.message || 'No se pudo diferir la pensión'
-          });
+          this.toastService.showError(res.message || 'No se pudo asignar el arancel', 'Error');
         }
       },
       error: (err) => {
-        console.error('Error al diferir pensión:', err);
-        // Extraer mensaje de error del backend
-        let errorMessage = 'Error al diferir la pensión. Por favor intente nuevamente.';
-        if (err.error?.message) {
-          errorMessage = err.error.message;
-        } else if (err.error?.errores) {
-          errorMessage = typeof err.error.errores === 'object' 
-            ? Object.values(err.error.errores).flat().join(', ') 
-            : err.error.errores;
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-        
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error del Servidor',
-          detail: errorMessage
-        });
+        this.guardandoAsignacion = false;
+        console.error('Error al asignar arancel extra:', err);
+        const errMsg = err?.error?.message || 'Ocurrió un error al procesar la asignación';
+        this.toastService.showError(errMsg, 'Error');
       }
     });
   }
 
-  // Cerrar modal de diferir
-  cerrarModalDiferir(): void {
-    this.mostrarModalDiferir = false;
-    this.creditoPensionPorDiferir = null;
-    this.numeroCuotasDiferir = 1;
+  // Modal Nuevo Costo en Catálogo
+  abrirModalNuevoCosto(): void {
+    this.nombreNuevoCosto = '';
+    this.mostrarModalNuevoCosto = true;
   }
 
-  // Omitir diferimiento y recargar
-  omitirDiferimiento(): void {
-    this.cerrarModalDiferir();
-    this.verDetalle(this.estudianteSeleccionado!);
+  cerrarModalNuevoCosto(): void {
+    this.mostrarModalNuevoCosto = false;
+    this.nombreNuevoCosto = '';
+  }
+
+  guardarNuevoCosto(): void {
+    if (!this.nombreNuevoCosto || !this.nombreNuevoCosto.trim()) {
+      this.toastService.showWarning('Ingrese el nombre del arancel', 'Campo Requerido');
+      return;
+    }
+
+    this.guardandoNuevoCosto = true;
+    const nuevaEspecie: any = {
+      detalle: this.nombreNuevoCosto.trim().toUpperCase(),
+      tipoEspecie: 'EXTRA',
+      esActivo: true
+    };
+
+    this.especieService.create(nuevaEspecie).subscribe({
+      next: (created) => {
+        this.guardandoNuevoCosto = false;
+        this.toastService.showSuccess('Arancel creado en catálogo', 'Éxito');
+        this.mostrarModalNuevoCosto = false;
+        this.nombreNuevoCosto = '';
+        this.especieService.getAll().subscribe(list => {
+          const arr = list || [];
+          this.catalogoExtras = arr.filter(e => (e.activo !== false && (e as any).esActivo !== false) && (e.tipoEspecie === 'EXTRA' || (e as any).tipo === 'EXTRA'));
+          if (created && created.idEspecie) {
+            this.especieSeleccionadaId = created.idEspecie;
+          }
+          this.cdr.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.guardandoNuevoCosto = false;
+        console.error('Error al crear especie en catálogo:', err);
+        const msg = err?.error?.message || 'No se pudo crear el arancel en el catálogo';
+        this.toastService.showError(msg, 'Error');
+      }
+    });
+  }
+
+  // Anulación de Arancel Extra
+  abrirModalAnularCosto(item: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.creditoAAnular = item;
+    this.mostrarModalAnularCostoExtra = true;
+  }
+
+  cerrarModalAnularCosto(): void {
+    this.mostrarModalAnularCostoExtra = false;
+    this.creditoAAnular = null;
+  }
+
+  confirmarAnularCostoExtra(): void {
+    if (!this.creditoAAnular) return;
+
+    this.anulandoCreditoExtra = true;
+    this.creditoService.anularCreditoExtra(this.creditoAAnular.idCredito).subscribe({
+      next: (res) => {
+        this.anulandoCreditoExtra = false;
+        if (res.isSuccess) {
+          this.toastService.showSuccess(res.message || 'Arancel extra anulado correctamente', 'Éxito');
+          this.mostrarModalAnularCostoExtra = false;
+          this.creditoAAnular = null;
+          if (this.alumnoCostoExtra) {
+            this.cargarHistorialExtrasAlumno(this.alumnoCostoExtra.idMatricula);
+            this.progresoCache.delete(this.alumnoCostoExtra.idMatricula);
+            this.cargarProgresoMatriculasActuales();
+          }
+        } else {
+          this.toastService.showError(res.message || 'No se pudo anular el arancel', 'Error');
+        }
+      },
+      error: (err) => {
+        this.anulandoCreditoExtra = false;
+        console.error('Error al anular arancel:', err);
+        const errMsg = err?.error?.message || 'Error al procesar la anulación';
+        this.toastService.showError(errMsg, 'Error');
+      }
+    });
+  }
+
+  // ==========================================
+  // ASIGNACIÓN MASIVA DE ARANCELES / COSTOS
+  // ==========================================
+
+  abrirModalAsignacionMasiva(): void {
+    this.cargarCatalogoEspeciesExtras();
+    this.masivoEspecieId = null;
+    this.masivoMonto = null;
+    this.masivoFechaLimite = '';
+    this.masivoObservaciones = '';
+    this.masivoCursosSeleccionados = {};
+    this.masivoSeleccionarTodosCursos = true;
+
+    this.masivoPeriodoId = this.filtroPeriodoId || (this.periodos.length > 0 ? this.periodos[0].idPeriodoLectivo! : null);
+    
+    if (this.masivoPeriodoId) {
+      this.masivoCiclos = this.todosLosCiclos.filter(c => c.idPeriodo === this.masivoPeriodoId && c.esActivo === true);
+      this.masivoCicloId = this.filtroCicloId || (this.masivoCiclos.length > 0 ? this.masivoCiclos[0].idCiclo! : null);
+    } else {
+      this.masivoCiclos = [];
+      this.masivoCicloId = null;
+    }
+
+    if (this.masivoCicloId) {
+      this.cargarCursosMasivo(this.masivoCicloId);
+    } else {
+      this.masivoCursos = [];
+    }
+
+    this.mostrarModalAsignacionMasiva = true;
+  }
+
+  cerrarModalAsignacionMasiva(): void {
+    this.mostrarModalAsignacionMasiva = false;
+  }
+
+  onMasivoPeriodoChange(): void {
+    this.masivoCiclos = [];
+    this.masivoCicloId = null;
+    this.masivoCursos = [];
+    this.masivoCursosSeleccionados = {};
+
+    if (this.masivoPeriodoId) {
+      this.masivoCiclos = this.todosLosCiclos.filter(c => c.idPeriodo === this.masivoPeriodoId && c.esActivo === true);
+      if (this.masivoCiclos.length > 0) {
+        this.masivoCicloId = this.masivoCiclos[0].idCiclo!;
+        this.onMasivoCicloChange();
+      }
+    }
+  }
+
+  onMasivoCicloChange(): void {
+    this.masivoCursos = [];
+    this.masivoCursosSeleccionados = {};
+    if (this.masivoCicloId) {
+      this.cargarCursosMasivo(this.masivoCicloId);
+    }
+  }
+
+  private cargarCursosMasivo(idCiclo: number): void {
+    this.cargandoCursosMasivo = true;
+    this.mallaInfraService.getByCiclo(idCiclo).subscribe({
+      next: (cursos) => {
+        this.cargandoCursosMasivo = false;
+        this.masivoCursos = this.ordenarCursos(cursos || []);
+        this.masivoCursosSeleccionados = {};
+        this.masivoCursos.forEach(c => {
+          if (c.idMalla) {
+            this.masivoCursosSeleccionados[c.idMalla] = true;
+          }
+        });
+        this.masivoSeleccionarTodosCursos = true;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.cargandoCursosMasivo = false;
+        console.error('Error al cargar cursos para asignación masiva:', err);
+        this.toastService.showError('No se pudieron cargar los cursos del ciclo', 'Error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleTodosCursosMasivo(event: any): void {
+    const checked = event.target ? event.target.checked : !!event;
+    this.masivoSeleccionarTodosCursos = checked;
+    this.masivoCursos.forEach(c => {
+      if (c.idMalla) {
+        this.masivoCursosSeleccionados[c.idMalla] = checked;
+      }
+    });
+  }
+
+  onCursoMasivoCheckChange(): void {
+    const seleccionados = this.getCursosSeleccionadosIds();
+    this.masivoSeleccionarTodosCursos = (seleccionados.length === this.masivoCursos.length && this.masivoCursos.length > 0);
+  }
+
+  isCursoSeleccionado(idMalla?: number): boolean {
+    return !!(idMalla && this.masivoCursosSeleccionados[idMalla]);
+  }
+
+  setCursoSeleccionado(idMalla: number | undefined, checked: boolean): void {
+    if (idMalla) {
+      this.masivoCursosSeleccionados[idMalla] = checked;
+      this.onCursoMasivoCheckChange();
+    }
+  }
+
+  getCursosSeleccionadosIds(): number[] {
+    return Object.keys(this.masivoCursosSeleccionados)
+      .filter(id => this.masivoCursosSeleccionados[+id])
+      .map(id => +id);
+  }
+
+  getCursosSeleccionadosCount(): number {
+    return this.getCursosSeleccionadosIds().length;
+  }
+
+  ejecutarAsignacionMasiva(): void {
+    const idsMallas = this.getCursosSeleccionadosIds();
+    if (idsMallas.length === 0) {
+      this.toastService.showWarning('Debe seleccionar al menos un curso para la asignación', 'Validación');
+      return;
+    }
+    if (!this.masivoEspecieId) {
+      this.toastService.showWarning('Debe seleccionar un arancel o concepto', 'Validación');
+      return;
+    }
+    if (!this.masivoMonto || this.masivoMonto <= 0) {
+      this.toastService.showWarning('El monto debe ser mayor a 0', 'Validación');
+      return;
+    }
+
+    this.guardandoAsignacionMasiva = true;
+    const payload = {
+      idsMallas: idsMallas,
+      idEspecie: this.masivoEspecieId,
+      monto: Number(this.masivoMonto),
+      fechaLimite: this.masivoFechaLimite ? this.masivoFechaLimite : null,
+      observaciones: this.masivoObservaciones?.trim() ? this.masivoObservaciones.trim() : null
+    };
+
+    this.creditoService.asignarCreditoExtraMasivo(payload).subscribe({
+      next: (res) => {
+        this.guardandoAsignacionMasiva = false;
+        if (res.isSuccess && res.data) {
+          this.resultadoMasivo = res.data;
+          this.mostrarModalAsignacionMasiva = false;
+          this.mostrarModalResultadoMasivo = true;
+
+          this.progresoCache.clear();
+          this.loadData();
+        } else {
+          this.toastService.showError(res.message || 'No se pudo completar la asignación masiva', 'Error');
+        }
+      },
+      error: (err) => {
+        this.guardandoAsignacionMasiva = false;
+        console.error('Error en asignación masiva:', err);
+        const msg = err?.error?.message || 'Ocurrió un error al procesar la asignación masiva';
+        this.toastService.showError(msg, 'Error');
+      }
+    });
+  }
+
+  cerrarModalResultadoMasivo(): void {
+    this.mostrarModalResultadoMasivo = false;
+    this.resultadoMasivo = null;
   }
 }

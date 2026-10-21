@@ -18,21 +18,18 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<Response<int>> CreateEspecialidad(
             [FromBody] CreateEspecialidadCommand command,
             CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
         public async Task<Response<bool>> UpdateEspecialidad(
             [FromBody] UpdateEspecialidadCommand command,
             CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<Response<bool>> DeleteEspecialidad(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteEspecialidadCommand(id), cancellationToken);
     }

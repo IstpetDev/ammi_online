@@ -1,0 +1,270 @@
+<app-shared-toast></app-shared-toast>
+
+<div class="ingreso-container">
+  <!-- Info bar -->
+  <div class="ingreso-header">
+    <div class="ingreso-header-left">
+      <button class="btn-back" (click)="volver()" title="Volver a selección">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-back">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
+      <div>
+        <h2 class="ingreso-title">{{ nombreMateria }}</h2>
+        <p class="ingreso-subtitle">
+          Paralelo {{ nombreParalelo }}
+          @if (nombrePlantilla) { — {{ nombrePlantilla }} }
+        </p>
+      </div>
+    </div>
+    <div class="ingreso-header-right" style="display: flex; align-items: center; gap: 0.85rem;">
+      <div class="autosave-badge" [ngClass]="estadoAutoguardado">
+        @if (estadoAutoguardado === 'guardando') {
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+          </svg>
+          <span>Guardando...</span>
+        } @else if (estadoAutoguardado === 'guardado') {
+          <i class="pi pi-check-circle" style="color: #28a745;"></i>
+          <span>Autoguardado</span>
+        } @else if (estadoAutoguardado === 'pendiente') {
+          <i class="pi pi-clock" style="color: var(--brand-yellow-dark);"></i>
+          <span>Cambios pendientes</span>
+        } @else if (estadoAutoguardado === 'error') {
+          <i class="pi pi-exclamation-circle" style="color: #dc3545;"></i>
+          <span>Error al guardar</span>
+        }
+      </div>
+
+      <button class="btn-save" [disabled]="guardando || notasBloqueadas" (click)="guardarTodasLasNotas()">
+        @if (guardando) {
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-save">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        }
+        Guardar Notas
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="statusPeriodo === 'GracePeriod'" class="banner grace-period">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>⚠️ Prórroga: Te quedan <strong>{{ diasRestantes }} día(s)</strong> para subir notas. Fecha límite: <strong>{{ fechaLimite }}</strong>.</span>
+  </div>
+  <div *ngIf="statusPeriodo === 'Closed'" class="banner period-closed">
+    <i class="pi pi-lock"></i>
+    <span>🔒 Plazo de calificaciones vencido. No se pueden modificar las notas.</span>
+  </div>
+
+  <!-- Toolbar: Search Alumno & Paralelos Switch -->
+  <div class="ingreso-toolbar">
+    <div class="search-alumno-group">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="text" [(ngModel)]="searchTermAlumno" placeholder="Buscar alumno por nombre completo o documento..." class="search-input-alumno">
+    </div>
+
+    @if (paralelosDisponibles.length > 1) {
+    <div class="paralelos-switch">
+      <span class="switch-label"><i class="pi pi-users"></i> Paralelo:</span>
+      <div class="switch-buttons">
+        @for (paralelo of paralelosDisponibles; track paralelo.idMallaParalelo) {
+        <button type="button" class="switch-btn" [class.active]="idMallaParalelo === paralelo.idMallaParalelo" (click)="cambiarParalelo(paralelo)">
+          {{ paralelo.nombreParalelo }}
+        </button>
+        }
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Loading -->
+  @if (loading) {
+  <div class="loading-container">
+    <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    <p>Cargando alumnos y notas...</p>
+  </div>
+  }
+
+  <!-- Grades table -->
+  @if (!loading && alumnos.length > 0) {
+  <div class="table-responsive">
+    <p-table [value]="getAlumnosFiltrados()" [scrollable]="true" scrollHeight="calc(100vh - 320px)" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="sticky-col" rowspan="2">#</th>
+          <th class="sticky-col nombre-col" rowspan="2">Alumno</th>
+          @for (grupo of gruposHeaderNodos; track grupo.id) {
+          <th class="nota-col" [attr.colspan]="grupo.hojas.length || 1">
+            <div class="nodo-grupo-header">
+              <span>{{ grupo.nombre }}</span>
+              <small>({{ grupo.peso }}%)</small>
+            </div>
+          </th>
+          }
+          <th class="nota-final-col" rowspan="2">Nota Final</th>
+          <th class="estado-col" rowspan="2">Estado</th>
+          <th class="remedial-col" rowspan="2">Remedial</th>
+        </tr>
+        <tr>
+          @for (nodo of nodosHoja; track nodo.idPlantillaEstructura) {
+          <th class="nota-col">
+            <div class="nodo-header">
+              <span class="nodo-ruta">{{ getNombreHojaVisible(nodo) }}</span>
+              <small>(Peso: {{ getPesoNodoVisible(nodo) }}%)</small>
+            </div>
+          </th>
+          }
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-alumno let-i="rowIndex">
+        <tr [class.row-locked]="notasBloqueadas">
+          <td class="sticky-col">{{ i + 1 }}</td>
+          <td class="sticky-col nombre-col">
+            <div class="alumno-info">
+              <span class="alumno-nombre">{{ alumno.nombreAlumno }}</span>
+              <span class="alumno-documento">{{ alumno.documentoAlumno }}</span>
+            </div>
+          </td>
+          @for (nodo of nodosHoja; track nodo.idPlantillaEstructura; let j = $index) {
+          <td class="nota-col" [id]="'nota-cell-' + i + '-' + j">
+            <div class="nota-cell-wrapper">
+              <p-inputNumber [(ngModel)]="alumno.notas[nodo.idPlantillaEstructura]" [min]="0" [max]="10"
+                [minFractionDigits]="0" [maxFractionDigits]="2" mode="decimal" inputStyleClass="nota-input"
+                [disabled]="notasBloqueadas"
+                [ngClass]="{'nota-baja': esNotaBaja(alumno.notas[nodo.idPlantillaEstructura]), 'invalid-nota': !validarNota(alumno.notas[nodo.idPlantillaEstructura])}"
+                (ngModelChange)="onNotaChange(alumno)"
+                (keydown)="onKeyDown($event, i, j)">
+              </p-inputNumber>
+              <button type="button" class="btn-obs-trigger" 
+                      [class.has-obs]="!!alumno.observaciones[nodo.idPlantillaEstructura]"
+                      [disabled]="notasBloqueadas"
+                      [title]="alumno.observaciones[nodo.idPlantillaEstructura] ? 'Comentario: ' + alumno.observaciones[nodo.idPlantillaEstructura] : 'Añadir retroalimentación'"
+                      (click)="abrirModalObservacion(alumno, nodo)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="obs-icon">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                @if (alumno.observaciones[nodo.idPlantillaEstructura]) {
+                  <span class="obs-dot"></span>
+                }
+              </button>
+            </div>
+          </td>
+          }
+          <td class="nota-final-col">
+            <span class="nota-final-value"
+              [ngClass]="{'nota-aprobada': alumno.notaFinal && alumno.notaFinal >= 7, 'nota-reprobada': alumno.notaFinal && alumno.notaFinal < 7}">
+              {{ alumno.notaFinal ? (alumno.notaFinal | number:'1.2-2') : '-' }}
+            </span>
+          </td>
+          <td class="estado-col">
+            @if (alumno.notaFinal !== null && alumno.notaFinal !== undefined) {
+              @if (getEstadoAlumno(alumno) === 'aprobado') {
+              <p-tag severity="success" value="Aprobado" icon="pi pi-check"></p-tag>
+              } @else if (getEstadoAlumno(alumno) === 'remedial') {
+              <p-tag severity="warn" value="Remedial" icon="pi pi-exclamation-triangle"></p-tag>
+              } @else {
+              <p-tag severity="danger" value="Reprobado" icon="pi pi-times"></p-tag>
+              }
+            } @else {
+            <span class="sin-estado">-</span>
+            }
+          </td>
+          <td class="remedial-col">
+            @if (getEstadoAlumno(alumno) === 'remedial' || (alumno.notaRemedial !== null && alumno.notaRemedial !== undefined)) {
+            <div class="remedial-input-group">
+              <p-inputNumber [(ngModel)]="alumno.notaRemedial" [min]="0" [max]="10" [minFractionDigits]="0"
+                [maxFractionDigits]="2" mode="decimal" inputStyleClass="nota-input" placeholder="0.00"
+                [disabled]="notasBloqueadas"
+                (ngModelChange)="calcularNotaFinal(alumno)">
+              </p-inputNumber>
+              <button class="btn-save-remedial" [disabled]="alumno.guardandoRemedial || notasBloqueadas" title="Guardar nota remedial" (click)="guardarRemedialAlumno(alumno)">
+                @if (alumno.guardandoRemedial) {
+                  <svg class="spinner-icon" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-save-remedial">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                }
+              </button>
+            </div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="nodosHoja.length + 5" class="text-center">No hay alumnos en este paralelo</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+
+  <!-- Sin alumnos -->
+  @if (!loading && alumnos.length === 0 && nodosHoja.length > 0) {
+  <app-shared-empty-state icon="pi pi-users" title="Sin alumnos"
+    description="No hay alumnos matriculados en este paralelo para la materia seleccionada." minHeight="300px">
+  </app-shared-empty-state>
+  }
+
+  <!-- Sin estructura de evaluacion -->
+  @if (!loading && nodosHoja.length === 0) {
+  <app-shared-empty-state icon="pi pi-exclamation-circle" title="Sin estructura de evaluación"
+    description="Esta materia no tiene una plantilla de evaluación configurada. Contacta al administrador para habilitarla."
+    minHeight="300px">
+  </app-shared-empty-state>
+  }
+
+  <!-- Modal de Retroalimentación / Observaciones -->
+  @if (modalObsVisible && modalObsAlumno && modalObsNodo) {
+    <div class="modal-obs-backdrop" (click)="cerrarModalObservacion()">
+      <div class="modal-obs-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-obs-header">
+          <div class="modal-obs-title-group">
+            <div class="modal-obs-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div>
+              <h3>Retroalimentación de Calificación</h3>
+              <span class="modal-obs-subtitle">{{ modalObsAlumno.nombreAlumno }} &mdash; {{ modalObsNodo.nodoNombre }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="cerrarModalObservacion()">&times;</button>
+        </div>
+
+        <div class="modal-obs-body">
+          <div class="modal-obs-info-row">
+            <span class="info-pill">Criterio: <strong>{{ modalObsNodo.nodoNombre }}</strong></span>
+            <span class="info-pill">Peso: <strong>{{ modalObsNodo.peso }}%</strong></span>
+            <span class="info-pill">Nota asignada: <strong>{{ modalObsAlumno.notas[modalObsNodo.idPlantillaEstructura] ?? '--' }}</strong></span>
+          </div>
+
+          <label class="modal-obs-label" for="obsTextarea">Comentario u observación para el estudiante:</label>
+          <textarea id="obsTextarea" [(ngModel)]="modalObsTexto" rows="4" class="modal-obs-textarea"
+            placeholder="Escribe aquí la retroalimentación u observaciones sobre el trabajo o desempeño del alumno... (Opcional)"></textarea>
+        </div>
+
+        <div class="modal-obs-footer">
+          <button type="button" class="btn-modal-clear" (click)="modalObsTexto = ''">Limpiar texto</button>
+          <div class="modal-obs-footer-right">
+            <button type="button" class="btn-modal-cancel" (click)="cerrarModalObservacion()">Cancelar</button>
+            <button type="button" class="btn-modal-save" (click)="guardarObservacionModal()">Guardar Comentario</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

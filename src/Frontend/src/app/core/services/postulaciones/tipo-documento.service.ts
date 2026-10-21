@@ -28,5 +28,11 @@ export class TipoDocumentoService {
       map(tipos => tipos.find(t => t.idTipoDocumento === id))
     );
   }
+
+  create(data: Partial<TipoDocumentoDTO>): Observable<TipoDocumentoDTO> {
+    return this.http.post<IResponse<TipoDocumentoDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.tipoDocumento.create}`, data).pipe(
+      map(response => response.data)
+    );
+  }
 }
 

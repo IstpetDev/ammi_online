@@ -1,43 +1,19 @@
-<div class="menu-container">
-<p-toast></p-toast>
-  <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
+<div class="settings-page">
 
-      <div class="title-section">
-        <div class="title-icon">
-          <i class="pi pi-shield"></i>
-        </div>
-        <div>
-          <h1 class="page-title">Módulos y Permisos</h1>
-          <p class="page-subtitle">Configurar módulos del sistema y permisos</p>
-        </div>
-      </div>
+  <nav class="settings-tabs">
+    <button class="settings-tab" [class.active]="activeTab === 'roles'" (click)="setActiveTab('roles')">
+      <i class="pi pi-shield"></i>
+      Gestión Roles
+    </button>
+    <button class="settings-tab" [class.active]="activeTab === 'asignaciones'" (click)="setActiveTab('asignaciones')">
+      <i class="pi pi-lock"></i>
+      Asignaciones de Módulos a Rol
+    </button>
+  </nav>
 
-            <button pButton
-              label="Volver"
-              icon="pi pi-arrow-left"
-              class="p-button-outlined"
-              routerLink="/dashboard/configuraciones">
-      </button>
-    </div>
+  <div>
+    <app-roles *ngIf="activeTab === 'roles'"></app-roles>
+    <app-rol-modulo-operaciones *ngIf="activeTab === 'asignaciones'"></app-rol-modulo-operaciones>
   </div>
 
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="tabs">
-      <button pButton [class.active]="activeTab === 'roles'" (click)="setActiveTab('roles')" label="Gestion Roles"></button>
-      <button pButton [class.active]="activeTab === 'modulos'" (click)="setActiveTab('modulos')" label="Gestion Operacion por modulos"></button>
-      <button pButton [class.active]="activeTab === 'asignaciones'" (click)="setActiveTab('asignaciones')" label="Asignaciones de modulos a Rol"></button>
-    </div>
-    <div *ngIf="activeTab === 'roles'">
-      <app-roles></app-roles>
-    </div>
-    <div *ngIf="activeTab === 'modulos'">
-      <app-modulo-operaciones></app-modulo-operaciones>
-    </div>
-    <div *ngIf="activeTab === 'asignaciones'">
-      <app-rol-modulo-operaciones></app-rol-modulo-operaciones>
-    </div>
-  </div>
 </div>

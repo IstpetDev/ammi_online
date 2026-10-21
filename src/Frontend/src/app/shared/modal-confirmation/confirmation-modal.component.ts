@@ -16,10 +16,12 @@ export class ConfirmationModalComponent {
   @Input() message: string = '';
   @Input() acceptLabel: string = 'Aceptar';
   @Input() rejectLabel: string = 'Rechazar';
+  @Input() loading: boolean = false;
 
   @Output() accept = new EventEmitter<void>();
   @Output() reject = new EventEmitter<void>();
   @Output() hide = new EventEmitter<void>();
+  @Output() visibleChange = new EventEmitter<boolean>();
 
   onAccept(): void {
     this.accept.emit();
@@ -31,5 +33,6 @@ export class ConfirmationModalComponent {
 
   onHide(): void {
     this.hide.emit();
+    this.visibleChange.emit(false);
   }
 }

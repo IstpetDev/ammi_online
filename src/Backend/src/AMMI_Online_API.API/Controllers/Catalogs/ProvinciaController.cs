@@ -21,17 +21,17 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
             => await Mediator.Send(new GetProvinciasByPaisQuery(idPais), cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
+        
         public async Task<Response<int>> CreateProvincia([FromBody] CreateProvinciaCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
+        
         public async Task<Response<bool>> UpdateProvincia([FromBody] UpdateProvinciaCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
+        
         public async Task<Response<bool>> DeleteProvincia(int id, CancellationToken cancellationToken)
             => await Mediator.Send(new DeleteProvinciaCommand(id), cancellationToken);
     }

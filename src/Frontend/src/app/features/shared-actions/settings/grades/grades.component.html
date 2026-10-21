@@ -1,26 +1,40 @@
-<ng-container [ngSwitch]="activeView">
+<app-shared-toast></app-shared-toast>
 
-  <app-plantilla-list *ngSwitchCase="'list'"
-    (create)="showCreate()"
-    (edit)="showEdit($event)"
-    (configure)="showConfigure($event)">
-  </app-plantilla-list>
+<app-plantilla-list
+  (create)="showCreate()"
+  (edit)="showEdit($event)"
+  (configure)="showConfigure($event)">
+</app-plantilla-list>
 
-  <app-plantilla-form *ngSwitchCase="'create'"
-    (save)="onFormSave()"
-    (cancel)="showList()">
-  </app-plantilla-form>
-
-  <app-plantilla-form *ngSwitchCase="'edit'"
+<!-- Modal para crear/editar plantilla -->
+<app-shared-modal
+  [(visible)]="showFormDialog"
+  [title]="(isEditing ? 'Editar' : 'Nueva') + ' Plantilla de Evaluación'"
+  [size]="'lg'"
+  cancelText="Cancelar"
+  confirmText="Guardar"
+  (close)="closeFormDialog()"
+  (confirm)="submitForm()">
+  <app-plantilla-form
     [plantilla]="selectedPlantilla"
-    [isEditing]="true"
+    [isEditing]="isEditing"
     (save)="onFormSave()"
-    (cancel)="showList()">
+    (cancel)="closeFormDialog()">
   </app-plantilla-form>
+</app-shared-modal>
 
-  <app-configurar-plantilla *ngSwitchCase="'configure'"
-    [plantilla]="selectedPlantilla!"
-    (back)="showList()">
+<!-- Drawer para configurar estructura -->
+<app-shared-drawer
+  [(visible)]="showConfigureDialog"
+  title="Configurar Estructura de Plantilla"
+  [mode]="'drawer'"
+  [position]="'right'"
+  [size]="'xl'"
+  [showFooter]="false"
+  (close)="closeConfigureDialog()">
+  <app-configurar-plantilla
+    *ngIf="selectedPlantilla"
+    [plantilla]="selectedPlantilla"
+    (back)="closeConfigureDialog()">
   </app-configurar-plantilla>
-
-</ng-container>
+</app-shared-drawer>

@@ -26,6 +26,8 @@ public class PlantillaEstructuraRepository : IPlantillaEstructuraRepository
         return await _context.PlantillaEstructura
             .Where(pe => pe.IdPlantillaEvaluacion == idPlantillaEvaluacion)
             .Include(pe => pe.IdTipoPlantillaEstrucutraNavigation)
+            .Include(pe => pe.ReglasCalculo)
+                .ThenInclude(r => r.IdTipoReglaCalculoNavigation)
             .OrderBy(pe => pe.Orden)
             .ToListAsync(cancellationToken);
     }

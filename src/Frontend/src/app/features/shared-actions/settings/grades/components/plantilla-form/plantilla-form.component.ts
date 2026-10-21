@@ -10,7 +10,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-plantilla-form',
@@ -21,10 +20,8 @@ import { ToastModule } from 'primeng/toast';
     InputTextModule,
     TextareaModule,
     ToggleSwitchModule,
-    ButtonModule,
-    ToastModule
+    ButtonModule
   ],
-  providers: [MessageService],
   templateUrl: './plantilla-form.component.html',
   styleUrls: ['./plantilla-form.component.css']
 })

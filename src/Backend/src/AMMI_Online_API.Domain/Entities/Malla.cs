@@ -13,17 +13,17 @@ public partial class Malla
 
     public int IdCursos { get; set; }
 
-    public int IdTipoOferta { get; set; }
-
     public int IdCiclo { get; set; }
 
     public virtual ICollection<DetalleMalla> DetalleMalla { get; set; } = new List<DetalleMalla>();
+
+    public virtual ICollection<EspecieCiclo> EspecieCiclo { get; set; } = new List<EspecieCiclo>();
 
     public virtual Ciclo IdCicloNavigation { get; set; }
 
     public virtual Cursos IdCursosNavigation { get; set; }
 
-    public virtual TipoOferta IdTipoOfertaNavigation { get; set; }
+    public virtual ICollection<MallaParalelo> MallaParalelo { get; set; } = new List<MallaParalelo>();
 
     public virtual ICollection<MallaRequisitos> MallaRequisitos { get; set; } = new List<MallaRequisitos>();
 

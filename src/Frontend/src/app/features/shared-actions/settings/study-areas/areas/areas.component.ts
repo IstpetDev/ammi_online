@@ -5,17 +5,17 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { AreaDTO } from '../../../../../data/models/Entities';
 import { AreaService } from '../../../../../core/services/infrastructure/area.service';
 import { ConfirmationModalComponent } from '../../../../../shared/modal-confirmation/confirmation-modal.component';
 import { MessageService } from 'primeng/api';
+import { SharedToastComponent } from '../../../../../shared/shared-toast/shared-toast.component';
 
 @Component({
   selector: 'app-areas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, ToastModule, TooltipModule, ConfirmationModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, DialogModule, ButtonModule, InputTextModule, TooltipModule, ConfirmationModalComponent, SharedToastComponent],
   templateUrl: './areas.component.html',
   styleUrls: ['./areas.component.css'],
   providers: [MessageService]

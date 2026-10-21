@@ -8,3 +8,9 @@ public record CreateDistributivoCommand(DistributivoCreateDTO Data) : IRequest<R
 public record UpdateDistributivoCommand(DistributivoUpdateDTO Data) : IRequest<Response<bool>>;
 public record DeleteDistributivoCommand(int Id) : IRequest<Response<bool>>;
 public record CreateDistributivoMasivoCommand(DistributivoMasivoDTO Data) : IRequest<Response<bool>>;
+
+// Nuevos PLAN_DISTRIBUTIVO
+public record DesactivarDistributivoCommand(int Id) : IRequest<Response<bool>>;
+public record ActivarDistributivoCommand(int Id) : IRequest<Response<bool>>;
+public record ClonarDistributivosCommand(int IdMallaParaleloOrigen, int IdMallaParaleloDestino) : IRequest<Response<int>>;
+

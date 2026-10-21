@@ -1,4 +1,5 @@
-﻿using AMMI_Online_API.Domain.Interfaces.Infrastructure;
+﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Interfaces.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
@@ -66,4 +67,5 @@ public class FileStorageService : IFileStorageService
 
         return await File.ReadAllBytesAsync(fullPath, cancellationToken);
     }
+
 }

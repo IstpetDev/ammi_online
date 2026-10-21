@@ -15,4 +15,6 @@ public interface IDetalleMallaRepository
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken);
     Task<bool> ExistsAsync(int id, CancellationToken cancellationToken);
     Task<bool> ExistsMateriaInMallaAsync(int idMalla, int idMateria, CancellationToken cancellationToken);
+    Task<bool> TieneNotasAsync(int idDetalleMalla, CancellationToken cancellationToken);
+    Task<(DateOnly? FechaInicio, DateOnly? FechaFin)> GetFechasSugeridasModuloAsync(int idCiclo, int modulo, CancellationToken cancellationToken);
 }

@@ -15,12 +15,12 @@ namespace AMMI_Online_API.API.Controllers.Person
             => await Mediator.Send(query, cancellationToken);
 
         [HttpPost]
-        [AllowAnonymous]
+        
         public async Task<Response<int>> CreateDocumentosPersonales([FromForm] CreateDocumentosPersonalesCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        [AllowAnonymous]
+        
         public async Task<Response<bool>> UpdateDocumentosPersonales([FromForm] UpdateDocumentosPersonalesCommand command, CancellationToken cancellationToken)
             => await Mediator.Send(command, cancellationToken);
 

@@ -21,16 +21,24 @@ public class MatriculaRepository : IMatriculaRepository
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .ToListAsync(cancellationToken);
     }
 
@@ -62,9 +70,12 @@ public class MatriculaRepository : IMatriculaRepository
                     .ThenInclude(p => p.PersonaDiscapacidad) 
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
-                    .ThenInclude(p => p.PersonaAlergias) 
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .ToListAsync(cancellationToken);
     }
 
@@ -77,7 +88,9 @@ public class MatriculaRepository : IMatriculaRepository
     {
          return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
@@ -85,21 +98,29 @@ public class MatriculaRepository : IMatriculaRepository
             .FirstOrDefaultAsync(m => m.IdMatricula == id, ct);
     }
 
-    public async Task<IEnumerable<Matricula>> GetByParaleloAsync(int idParalelo, CancellationToken ct)
+    public async Task<IEnumerable<Matricula>> GetByMallaParaleloAsync(int idMallaParalelo, CancellationToken ct)
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
-            .Where(m => m.IdParalelo == idParalelo)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
+            .Where(m => m.IdMallaParalelo == idMallaParalelo)
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .ToListAsync(ct);
     }
 
@@ -115,19 +136,31 @@ public class MatriculaRepository : IMatriculaRepository
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMateriaNavigation)
             .Include(m => m.DetalleMatricula)
+                .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+                    .ThenInclude(dmal => dmal.IdAreaCompetenciaNavigation)
+            .Include(m => m.DetalleMatricula)
+                .ThenInclude(dm => dm.IdDetalleMallaNavigation)
+                    .ThenInclude(dmal => dmal.Distributivo)
+                        .ThenInclude(dist => dist.IdPersonaNavigation)
+                            .ThenInclude(u => u.IdPersonaNavigation)
+            .Include(m => m.DetalleMatricula)
                  .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
             .Where(m => m.IdUsuarioAlumno == idUsuarioAlumno)
             .ToListAsync(ct);
     }
@@ -138,70 +171,168 @@ public class MatriculaRepository : IMatriculaRepository
             .AsNoTracking()
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-            .FirstOrDefaultAsync(m => 
-                m.IdUsuarioAlumno == idUsuarioAlumno && 
-                m.Credito.Any(c => c.IdEspecieCicloNavigation.IdCiclo == idCiclo), ct);
+            .FirstOrDefaultAsync(m =>
+                m.IdUsuarioAlumno == idUsuarioAlumno &&
+                m.Credito.Any(c => c.IdEspecieCicloNavigation.IdMallaNavigation.IdCiclo == idCiclo), ct);
     }
 
     public async Task<IEnumerable<Matricula>> GetByMallaAsync(int idMalla, CancellationToken ct)
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
             .Where(m => m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMalla == idMalla))
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<Matricula>> GetAllMatriculasPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public async Task<int> CountAllMatriculasAsync(int? idCiclo, int? idOfertaAcademica, string? documentoNombre, int? idMalla, CancellationToken cancellationToken)
     {
-        return await _context.Matricula
-            .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+        var query = _context.Matricula.AsNoTracking();
+
+        if (idCiclo.HasValue)
+        {
+            query = query.Where(m => m.IdMallaParaleloNavigation.IdMallaNavigation.IdCiclo == idCiclo.Value);
+        }
+
+        if (idMalla.HasValue && idMalla.Value > 0)
+        {
+            query = query.Where(m => m.IdMallaParaleloNavigation.IdMalla == idMalla.Value
+                                  || m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMalla == idMalla.Value));
+        }
+
+        if (idOfertaAcademica.HasValue)
+        {
+            query = query.Where(m => m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idOfertaAcademica.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(documentoNombre))
+        {
+            var term = documentoNombre.Trim().ToLower();
+            query = query.Where(m =>
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido.ToLower().Contains(term)) ||
+                ((m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre).ToLower().Contains(term)) ||
+                ((m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido).ToLower().Contains(term))
+            );
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Matricula>> GetAllMatriculasPagedAsync(int pageNumber, int pageSize, int? idCiclo, int? idOfertaAcademica, string? documentoNombre, int? idMalla, CancellationToken cancellationToken)
+    {
+        var query = _context.Matricula.AsNoTracking();
+
+        if (idCiclo.HasValue)
+        {
+            query = query.Where(m => m.IdMallaParaleloNavigation.IdMallaNavigation.IdCiclo == idCiclo.Value);
+        }
+
+        if (idMalla.HasValue && idMalla.Value > 0)
+        {
+            query = query.Where(m => m.IdMallaParaleloNavigation.IdMalla == idMalla.Value
+                                  || m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMalla == idMalla.Value));
+        }
+
+        if (idOfertaAcademica.HasValue)
+        {
+            query = query.Where(m => m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMallaNavigation.IdCicloNavigation.IdTipoOferta == idOfertaAcademica.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(documentoNombre))
+        {
+            var term = documentoNombre.Trim().ToLower();
+            query = query.Where(m =>
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido.ToLower().Contains(term)) ||
+                (m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido != null && m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido.ToLower().Contains(term)) ||
+                ((m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre).ToLower().Contains(term)) ||
+                ((m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido + " " + m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido).ToLower().Contains(term))
+            );
+        }
+
+        return await query
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
+                    .ThenInclude(p => p.DocumentosPersonales)
+                        .ThenInclude(dp => dp.IdAdjuntoNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
-            .OrderBy(m => m.IdMatricula)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> CountAllMatriculasAsync(CancellationToken cancellationToken)
+    public async Task<List<string>> GetFotoRequisitoCodigosAsync(CancellationToken ct)
     {
-        return await _context.Matricula.AsNoTracking().CountAsync(cancellationToken);
+        var ids = await _context.Requisitos
+            .Where(r => r.EsFoto)
+            .Select(r => r.IdRequisitos)
+            .ToListAsync(ct);
+        return ids.Select(id => id.ToString()).ToList();
     }
 
     public async Task<IEnumerable<Matricula>> GetByMallaPagedAsync(int idMalla, int pageNumber, int pageSize, CancellationToken ct)
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
+            .Include(m => m.IdEstadoMatriculaNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
+                    .ThenInclude(p => p.DocumentosPersonales)
+                        .ThenInclude(dp => dp.IdAdjuntoNavigation)
             .Include(m => m.DetalleMatricula)
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdMallaNavigation)
-                        .ThenInclude(mal => mal.IdTipoOfertaNavigation)
+                        .ThenInclude(mal => mal.IdCicloNavigation)
+                            .ThenInclude(c => c.IdTipoOfertaNavigation)
             .Include(m => m.Credito)
                 .ThenInclude(c => c.IdEspecieCicloNavigation)
-                    .ThenInclude(ec => ec.IdCicloNavigation)
+                    .ThenInclude(ec => ec.IdMallaNavigation)
+                        .ThenInclude(m => m.IdCicloNavigation)
             .Where(m => m.DetalleMatricula.Any(dm => dm.IdDetalleMallaNavigation.IdMalla == idMalla))
-            .OrderBy(m => m.IdMatricula)
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -235,7 +366,8 @@ public class MatriculaRepository : IMatriculaRepository
     {
         return await _context.Matricula
             .AsNoTracking()
-            .Include(m => m.IdParaleloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdParaleloNavigation)
             .Include(m => m.IdUsuarioAlumnoNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
             .Include(m => m.DetalleMatricula)
@@ -245,6 +377,14 @@ public class MatriculaRepository : IMatriculaRepository
                 .ThenInclude(dm => dm.IdDetalleMallaNavigation)
                     .ThenInclude(dmal => dmal.IdPlantillaEvaluacionNavigation)
             .FirstOrDefaultAsync(m => m.IdMatricula == idMatricula, ct);
+    }
+
+    public async Task ActualizarEstadoMatriculaAsync(int idMatricula, int idEstadoMatricula, CancellationToken ct)
+    {
+        var matricula = await _context.Matricula.FindAsync(new object[] { idMatricula }, ct);
+        if (matricula == null) return;
+        matricula.IdEstadoMatricula = idEstadoMatricula;
+        await _context.SaveChangesAsync(ct);
     }
 
     // NUEVO IMPLEMENTACIONES
@@ -266,7 +406,7 @@ public class MatriculaRepository : IMatriculaRepository
             .FirstOrDefaultAsync(dm => dm.IdMatricula == idMatricula && dm.IdDetalleMalla == idDetalleMalla, ct);
     }
 
-    public async Task<IEnumerable<DetalleMatricula>> GetDetallesMatriculaByParaleloYMateriaAsync(int idParalelo, int idDetalleMalla, CancellationToken ct)
+    public async Task<IEnumerable<DetalleMatricula>> GetDetallesMatriculaByMallaParaleloYMateriaAsync(int idMallaParalelo, int idDetalleMalla, CancellationToken ct)
     {
         return await _context.DetalleMatricula
             .AsNoTracking()
@@ -274,9 +414,69 @@ public class MatriculaRepository : IMatriculaRepository
                 .ThenInclude(m => m.IdUsuarioAlumnoNavigation)
                     .ThenInclude(u => u.IdPersonaNavigation)
             .Include(dm => dm.IdDetalleMallaNavigation)
-            .Where(dm => dm.IdMatriculaNavigation.IdParalelo == idParalelo && dm.IdDetalleMalla == idDetalleMalla)
+            .Where(dm => dm.IdMatriculaNavigation.IdMallaParalelo == idMallaParalelo && dm.IdDetalleMalla == idDetalleMalla)
             .OrderBy(dm => dm.IdMatriculaNavigation.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
             .ThenBy(dm => dm.IdMatriculaNavigation.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ToListAsync(ct);
+    }
+
+    public async Task<bool> TieneMatriculadosAsync(int idMalla, CancellationToken ct)
+    {
+        // MallaParalelo → Matricula: si algún paralelo de esta malla tiene al menos 1 matricula
+        return await _context.MallaParalelo
+            .AsNoTracking()
+            .Where(mp => mp.IdMalla == idMalla)
+            .SelectMany(mp => mp.Matricula)
+            .AnyAsync(ct);
+    }
+
+    public async Task<bool> TieneMatriculadosPorCicloAsync(int idCiclo, CancellationToken ct)
+    {
+        // Malla → MallaParalelo → Matricula: si alguna malla del ciclo tiene al menos 1 matricula
+        return await _context.MallaParalelo
+            .AsNoTracking()
+            .Where(mp => mp.IdMallaNavigation.IdCiclo == idCiclo)
+            .SelectMany(mp => mp.Matricula)
+            .AnyAsync(ct);
+    }
+
+    public async Task<IEnumerable<Matricula>> GetResumenContabilidadAsync(int idCiclo, int? idCurso, string? documento, CancellationToken ct)
+    {
+        var query = _context.Matricula
+            .AsNoTracking()
+            .Include(m => m.IdUsuarioAlumnoNavigation)
+                .ThenInclude(u => u.IdPersonaNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdMallaNavigation)
+                    .ThenInclude(m => m.IdCicloNavigation)
+            .Include(m => m.IdMallaParaleloNavigation)
+                .ThenInclude(mp => mp.IdMallaNavigation)
+                    .ThenInclude(m => m.IdCursosNavigation)
+            .Include(m => m.Credito)
+                .ThenInclude(c => c.DetalleCredito)
+                    .ThenInclude(dc => dc.PagoCuota)
+                        .ThenInclude(pc => pc.IdPagoNavigation)
+                            .ThenInclude(p => p.IdEstadoPagoNavigation)
+            .Include(m => m.Credito)
+                .ThenInclude(c => c.IdEspecieCicloNavigation)
+                    .ThenInclude(ec => ec.IdEspecieNavigation)
+            .Where(m => m.IdMallaParaleloNavigation.IdMallaNavigation.IdCiclo == idCiclo);
+
+        if (idCurso.HasValue)
+        {
+            query = query.Where(m => m.IdMallaParaleloNavigation.IdMallaNavigation.IdCursos == idCurso.Value);
+        }
+
+        if (!string.IsNullOrEmpty(documento))
+        {
+            query = query.Where(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento == documento);
+        }
+
+        return await query
+            .OrderBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoApellido)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.PrimerNombre)
+            .ThenBy(m => m.IdUsuarioAlumnoNavigation.IdPersonaNavigation.SegundoNombre)
             .ToListAsync(ct);
     }
 }

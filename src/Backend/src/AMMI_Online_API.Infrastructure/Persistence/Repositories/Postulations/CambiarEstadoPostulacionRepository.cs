@@ -85,7 +85,7 @@ public class CambiarEstadoPostulacionRepository : ICambiarEstadoPostulacion
                 var matricula = new Matricula
                 {
                     IdUsuarioAlumno = idPersonaPostulacion,  // Ajusta según tu entidad Matricula
-                    IdParalelo = idParalelo
+                    IdMallaParalelo = idParalelo
                 };
 
                 await _context.Matricula.AddAsync(matricula, cancellationToken);
@@ -131,10 +131,10 @@ public class CambiarEstadoPostulacionRepository : ICambiarEstadoPostulacion
                     throw new InvalidOperationException($"No se encontró ningún ciclo asociado a la Malla ID {idMallaPostulacion}. Verifique la columna 'id_ciclo' en la tabla 'malla'.");
                 }
 
-                // 4. Obtener todas las EspecieCiclo del ciclo activo, incluyendo la especie para conocer si es diferible
+                // 4. Obtener todas las EspecieCiclo de la malla, incluyendo la especie
                 var especiesCiclo = await _context.EspecieCiclo
-                    .Include(ec => ec.IdEspecieNavigation)  // Necesario para acceder a EsDiferible
-                    .Where(ec => ec.IdCiclo == cicloActivo.IdCiclo)
+                    .Include(ec => ec.IdEspecieNavigation)
+                    .Where(ec => ec.IdMalla == idMallaPostulacion)
                     .ToListAsync(cancellationToken);
 
                 if (!especiesCiclo.Any())
@@ -154,7 +154,7 @@ public class CambiarEstadoPostulacionRepository : ICambiarEstadoPostulacion
                     if (!existeCredito)
                     {
                         var especie = especieCiclo.IdEspecieNavigation;
-                        var esDiferible = especie?.EsDiferible ?? false;
+                        var esDiferible = (especie?.EsPension ?? false) && !(especie?.EsMatricula ?? false);
 
                         // Crear el crédito
                         var credito = new Credito
@@ -162,9 +162,11 @@ public class CambiarEstadoPostulacionRepository : ICambiarEstadoPostulacion
                             IdMatricula = matricula.IdMatricula,
                             IdEspecieCiclo = especieCiclo.IdEspecieCiclo,
                             MontoOriginal = especieCiclo.ValorEspecie,
-                            MontoBeneficio = null,
-                            MontoFinal = especieCiclo.ValorEspecie,
-                            SaldoPendiente = esDiferible ? 0 : especieCiclo.ValorEspecie,
+                            MontoBeneficio = null,  // Se asignará después si aplican beneficios
+                            MontoFinal = especieCiclo.ValorEspecie, // Inicialmente igual al original
+                            SaldoPendiente = especieCiclo.ValorEspecie,
+                            // Si es diferible, el saldo pendiente es 0 porque aún no se ha generado la deuda (se generará al diferir)
+                            // Si no es diferible, el saldo pendiente es el valor total de la especie
                             Estado = esDiferible ? "PENDIENTE_DIFERIR" : "ACTIVO",
                             FechaGeneracion = DateOnly.FromDateTime(DateTime.Now),
                             CreatedAt = DateTime.Now,

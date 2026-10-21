@@ -1,58 +1,295 @@
-<p-treeTable [value]="treeNodes" [columns]="cols" [loading]="loading" styleClass="p-treetable-sm">
-  <ng-template pTemplate="header" let-columns>
-    <tr>
-      <th *ngFor="let col of columns">{{ col.header }}</th>
-      <th class="text-center" style="width: 180px">Acciones</th>
-    </tr>
-  </ng-template>
+<!-- Control Toolbar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 px-1">
+  <div class="flex items-center gap-2 text-xs text-slate-500">
+    <span class="font-semibold text-slate-700">Estructura Jerárquica</span>
+    <span class="text-slate-300">•</span>
+    <span>Despliega cada nivel haciendo clic en la fila</span>
+  </div>
 
-  <ng-template pTemplate="body" let-rowNode let-rowData="rowData" let-columns="columns">
-    <tr>
-      <td *ngFor="let col of columns; let i = index">
-        <p-treeTableToggler [rowNode]="rowNode" *ngIf="i === 0"></p-treeTableToggler>
-        
-        <ng-container *ngIf="col.field === 'nombre'">
-           <i [class]="getIconClass(rowData.tipo)" class="mr-2 text-lg vertical-align-middle"></i>
-           <span class="font-medium vertical-align-middle">{{ rowData.nombre }}</span>
-        </ng-container>
+  <div class="flex items-center gap-2">
+    <button type="button"
+            (click)="expandAll()"
+            class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs flex items-center gap-1 cursor-pointer">
+      <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+      Expandir Todo
+    </button>
+    <button type="button"
+            (click)="collapseAll()"
+            class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs flex items-center gap-1 cursor-pointer">
+      <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+      Contraer Todo
+    </button>
+  </div>
+</div>
 
-        <ng-container *ngIf="col.field === 'peso'">
-          <div class="flex align-items-center gap-2">
-            <p-tag [value]="rowData.peso + '%'"
-                   [severity]="getPesoSeverity(rowData.peso)"
-                   [rounded]="true"></p-tag>
+<!-- Formulario inline a nivel raíz (si activeInlineParentId === null) -->
+<div *ngIf="activeInlineParentId === null" class="mb-4 p-3 bg-slate-50/50 border border-slate-200/80 rounded-xl">
+  <div class="flex flex-col gap-2">
+    <div class="flex items-center justify-between mb-1 px-1">
+      <span class="text-xs font-semibold text-slate-700">Agregar Nodos Raíz</span>
+      <button type="button" class="text-slate-400 hover:text-slate-600 text-xs cursor-pointer" (click)="cancelInlineAdd()">✕ Cancelar</button>
+    </div>
+
+    <!-- List of Draft Rows -->
+    <div *ngFor="let draft of draftRows; let idx = index"
+         class="inline-compact-form flex flex-wrap md:flex-nowrap items-center gap-3 py-1.5 px-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+      
+      <span class="text-[11px] font-mono font-semibold text-slate-500 w-5">
+        #{{ idx + 1 }}
+      </span>
+
+      <div class="min-w-[140px] flex-1">
+        <input pInputText type="text"
+               [(ngModel)]="draft.nombre"
+               placeholder="Nombre *"
+               class="w-full p-inputtext-sm text-xs font-medium text-slate-800" />
+      </div>
+
+      <div class="w-24">
+        <p-inputNumber [(ngModel)]="draft.peso"
+                       [min]="0"
+                       [max]="100"
+                       suffix="%"
+                       placeholder="Peso %"
+                       [minFractionDigits]="0"
+                       [maxFractionDigits]="1"
+                       styleClass="w-full p-inputtext-sm text-xs"></p-inputNumber>
+      </div>
+
+      <div class="flex items-center gap-3 px-2.5 py-1 rounded border border-slate-200/80 text-[11px] text-slate-700 bg-slate-50/50" *ngIf="tiposEstructura && tiposEstructura.length > 0">
+        <label *ngFor="let tipo of tiposEstructura" class="inline-flex items-center gap-1 cursor-pointer hover:text-slate-900 whitespace-nowrap">
+          <input type="radio"
+                 [name]="'draftTipoRadio_root_' + draft.id"
+                 [value]="tipo.idTipoPlantillaEstrucutra"
+                 [checked]="draft.idTipoPlantillaEstructura === tipo.idTipoPlantillaEstrucutra"
+                 (change)="draft.idTipoPlantillaEstructura = tipo.idTipoPlantillaEstrucutra"
+                 class="text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer" />
+          <span>{{ tipo.detalle }}</span>
+        </label>
+      </div>
+
+      <button type="button"
+              (click)="removeDraftRow(idx)"
+              pTooltip="Quitar esta fila"
+              tooltipPosition="top"
+              class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer ml-auto">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="flex items-center justify-between pt-1 px-1">
+      <button type="button"
+              (click)="addDraftRow()"
+              class="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 rounded-lg hover:bg-blue-100/80 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs">
+        <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        + Agregar otra fila
+      </button>
+
+      <div class="flex items-center gap-2">
+        <button type="button"
+                (click)="saveInlineAdd(null)"
+                class="px-3.5 py-1 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Guardar Todo ({{ draftRows.length }})
+        </button>
+        <button type="button"
+                (click)="cancelInlineAdd()"
+                class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+          Cancelar
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Contenedor minimalista para TreeTable -->
+<div class="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-2xs">
+  <p-treeTable [value]="treeNodes"
+               [columns]="cols"
+               [loading]="loading"
+               (onNodeExpand)="onNodeToggle()"
+               (onNodeCollapse)="onNodeToggle()">
+    <ng-template pTemplate="header" let-columns>
+      <tr>
+        <th *ngFor="let col of columns"
+            [ngStyle]="{'width': col.field === 'orden' ? '90px' : (col.field === 'peso' ? '130px' : (col.field === 'tipo' ? '150px' : 'auto'))}">
+          {{ col.header }}
+        </th>
+        <th class="text-right" style="width: 140px">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-rowNode let-rowData="rowData" let-columns="columns">
+      <tr (click)="onRowClick($event, rowNode)" class="cursor-pointer hover:bg-slate-50/80 transition-colors">
+        <td *ngFor="let col of columns; let i = index">
+          
+          <ng-container *ngIf="col.field === 'nombre'">
+             <div class="flex items-center gap-2 whitespace-nowrap min-w-0">
+               <p-treeTableToggler [rowNode]="rowNode" *ngIf="i === 0"></p-treeTableToggler>
+               <span [innerHTML]="getIconSvg(rowData.tipo)" class="shrink-0 text-slate-400"></span>
+               <span class="font-medium text-slate-800 text-sm truncate max-w-[320px]" [title]="rowData.nombre">{{ rowData.nombre }}</span>
+             </div>
+          </ng-container>
+
+          <ng-container *ngIf="col.field === 'peso'">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border border-emerald-200/60': rowData.peso === 100,
+                      'bg-sky-50 text-sky-700 border border-sky-200/60': rowData.peso > 0 && rowData.peso < 100,
+                      'bg-slate-100 text-slate-600 border border-slate-200/60': rowData.peso === 0
+                    }">
+                {{ rowData.peso }}%
+              </span>
+              
+              <span *ngIf="rowData.formula && rowData.formula !== 'NONE'"
+                    [pTooltip]="'Regla: ' + rowData.formula"
+                    tooltipPosition="top"
+                    class="inline-flex items-center justify-center w-5 h-5 rounded text-amber-600 bg-amber-50 border border-amber-200/50 cursor-pointer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+                  <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="18" y2="18"/><line x1="16" y1="18" x2="18" y2="18"/>
+                </svg>
+              </span>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="col.field === 'tipo'">
+            <span class="inline-block px-2 py-0.5 text-[11px] font-medium tracking-wide rounded text-slate-500 bg-slate-100 border border-slate-200/50 whitespace-nowrap">
+              {{ rowData.tipo }}
+            </span>
+          </ng-container>
+
+          <ng-container *ngIf="col.field === 'orden'">
+            <span class="text-xs font-mono text-slate-400 whitespace-nowrap">#{{ rowData.orden }}</span>
+          </ng-container>
+        </td>
+
+        <td class="text-right whitespace-nowrap no-row-click" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-end gap-1">
+            <button type="button"
+                    (click)="onAddChildInline(rowNode, $event)"
+                    pTooltip="Agregar Sub-nivel"
+                    tooltipPosition="top"
+                    *ngIf="canAddChild(rowData.tipo)"
+                    class="p-1.5 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
             
-            <i *ngIf="rowData.formula && rowData.formula !== 'NONE'" 
-               class="pi pi-calculator text-primary" 
-               [pTooltip]="'Regla: ' + rowData.formula"
-               tooltipPosition="top"></i>
+            <button type="button"
+                    (click)="onEdit(rowNode)"
+                    pTooltip="Editar"
+                    tooltipPosition="top"
+                    class="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            
+            <button type="button"
+                    (click)="onDelete(rowNode)"
+                    pTooltip="Eliminar"
+                    tooltipPosition="top"
+                    class="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+            </button>
           </div>
-        </ng-container>
+        </td>
+      </tr>
 
-        <ng-container *ngIf="col.field === 'tipo'">
-          <span class="text-sm text-gray-600">{{ rowData.tipo }}</span>
-        </ng-container>
+      <!-- Subnivel Inline Add Form Row (Multi-Fila Acumulable) -->
+      <tr *ngIf="activeInlineParentId === rowData.nodo.idPlantillaEstructura" class="no-row-click">
+        <td [attr.colspan]="cols.length + 1" class="p-2.5 bg-slate-50/50 border-y border-slate-200/80">
+          
+          <div class="flex flex-col gap-2">
+            
+            <!-- List of Draft Rows -->
+            <div *ngFor="let draft of draftRows; let idx = index"
+                 class="inline-compact-form flex flex-wrap md:flex-nowrap items-center gap-3 py-1.5 px-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              
+              <span class="text-[11px] font-mono font-semibold text-slate-500 w-5">
+                #{{ idx + 1 }}
+              </span>
 
-        <ng-container *ngIf="col.field === 'orden'">
-          {{ rowData.orden }}
-        </ng-container>
-      </td>
-      <td class="text-center">
-        <p-button icon="pi pi-plus" [rounded]="true" [text]="true" size="small"
-                  (onClick)="onAddChild(rowNode)" pTooltip="Agregar Sub-nivel" tooltipPosition="top"
-                  *ngIf="canAddChild(rowData.tipo)"></p-button>
-        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="info"
-                  (onClick)="onEdit(rowNode)" pTooltip="Editar" tooltipPosition="top"></p-button>
-        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" size="small" severity="danger"
-                  (onClick)="onDelete(rowNode)" pTooltip="Eliminar" tooltipPosition="top"></p-button>
-      </td>
-    </tr>
-  </ng-template>
-  <ng-template pTemplate="emptymessage">
-    <tr>
-      <td [attr.colspan]="cols.length + 1" class="text-center p-4">
-        No hay estructura definida. Agregue un nodo raíz comenzar.
-      </td>
-    </tr>
-  </ng-template>
-</p-treeTable>
+              <div class="min-w-[140px] flex-1">
+                <input pInputText type="text"
+                       [(ngModel)]="draft.nombre"
+                       placeholder="Nombre *"
+                       class="w-full p-inputtext-sm text-xs font-medium text-slate-800" />
+              </div>
+
+              <div class="w-24">
+                <p-inputNumber [(ngModel)]="draft.peso"
+                               [min]="0"
+                               [max]="100"
+                               suffix="%"
+                               placeholder="Peso %"
+                               [minFractionDigits]="0"
+                               [maxFractionDigits]="1"
+                               styleClass="w-full p-inputtext-sm text-xs"></p-inputNumber>
+              </div>
+
+              <div class="flex items-center gap-3 px-2.5 py-1 rounded border border-slate-200/80 text-[11px] text-slate-700 bg-slate-50/50" *ngIf="tiposEstructura && tiposEstructura.length > 0">
+                <label *ngFor="let tipo of tiposEstructura" class="inline-flex items-center gap-1 cursor-pointer hover:text-slate-900 whitespace-nowrap">
+                  <input type="radio"
+                         [name]="'draftTipoRadio_' + draft.id"
+                         [value]="tipo.idTipoPlantillaEstrucutra"
+                         [checked]="draft.idTipoPlantillaEstructura === tipo.idTipoPlantillaEstrucutra"
+                         (change)="draft.idTipoPlantillaEstructura = tipo.idTipoPlantillaEstrucutra"
+                         class="text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer" />
+                  <span>{{ tipo.detalle }}</span>
+                </label>
+              </div>
+
+              <button type="button"
+                      (click)="removeDraftRow(idx)"
+                      pTooltip="Quitar esta fila"
+                      tooltipPosition="top"
+                      class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer ml-auto">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <!-- Action Toolbar (Add another row & Global Save/Cancel) -->
+            <div class="flex items-center justify-between pt-1 px-1">
+              <button type="button"
+                      (click)="addDraftRow()"
+                      class="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 rounded-lg hover:bg-blue-100/80 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs">
+                <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                + Agregar otra fila
+              </button>
+
+              <div class="flex items-center gap-2">
+                <button type="button"
+                        (click)="saveInlineAdd(rowData.nodo.idPlantillaEstructura)"
+                        class="px-3.5 py-1 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Guardar Todo ({{ draftRows.length }})
+                </button>
+                <button type="button"
+                        (click)="cancelInlineAdd()"
+                        class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="cols.length + 1" class="text-center py-8 px-4 text-slate-400 text-sm">
+          No hay estructura definida. Agregue un nodo raíz para comenzar.
+        </td>
+      </tr>
+    </ng-template>
+  </p-treeTable>
+</div>

@@ -61,4 +61,24 @@ public interface IPersonaPostulacion
     Task<IEnumerable<DetalleMalla>> GetDetallesMallaByMallaIdAsync(
     int idMalla,
     CancellationToken cancellationToken);
+
+    Task<int> ActualizarPostulacionContactoAsync(
+        int idPersona,
+        Persona persona,
+        PersonaInfo personaInfo,
+        List<DatosContacto> datosContacto,
+        PersonaDireccion direccion,
+        PersonaActividadEconomica? actividadEconomica,
+        PersonaDiscapacidad? discapacidad,
+        PersonaNacionalidad nacionalidad,
+        List<DocumentosPersonales> documentosPersonales,
+        Postulacion postulacion,
+        IFormFile? archivoDiscapacidad,
+        List<IFormFile> archivosDocumentosPersonales,
+        List<bool>? documentosRequierenArchivo = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExisteDocumentoAsync(string documento, CancellationToken cancellationToken);
+
+    Task<List<string>> ObtenerContactosDuplicadosAsync(IEnumerable<string> detalles, CancellationToken cancellationToken);
 }

@@ -1,1 +1,173 @@
-ÿþ
+/* === DESIGN SYSTEM: Settings Tables & Forms === */
+
+.seasons-container { padding: 0; }
+
+/* Header */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--brand-yellow-dark);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seasons-header-title h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: unset;
+}
+
+.seasons-header-title p {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  margin: 0.25rem 0 0 0;
+  font-style: normal;
+}
+
+/* Card table */
+.seasons-content-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* Primary action button (Nuevo) */
+:host ::ng-deep .btn-nuevo.p-button {
+  background-color: var(--brand-yellow-dark) !important;
+  border-color: var(--brand-yellow-dark) !important;
+  color: var(--brand-black) !important;
+  font-weight: 600;
+}
+
+:host ::ng-deep .btn-nuevo.p-button:hover {
+  background-color: var(--brand-yellow) !important;
+  border-color: var(--brand-yellow) !important;
+}
+
+/* First column emphasis */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td.col-primary {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Table overrides */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-ground) !important;
+  color: var(--text-color) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--brand-yellow-dark) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+:host ::ng-deep .p-datatable .p-paginator {
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+  padding: 0.75rem 1.25rem;
+}
+
+/* Action buttons */
+.seasons-actions-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+:host ::ng-deep .seasons-actions-cell .btn-edit {
+  background-color: rgba(233, 185, 2, 0.12) !important;
+  border: none !important;
+  color: var(--brand-yellow-dark) !important;
+  border-radius: 8px !important;
+}
+
+:host ::ng-deep .seasons-actions-cell .btn-edit:hover {
+  background-color: rgba(233, 185, 2, 0.25) !important;
+}
+
+:host ::ng-deep .seasons-actions-cell .btn-delete {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: none !important;
+  color: #ef4444 !important;
+  border-radius: 8px !important;
+}
+
+:host ::ng-deep .seasons-actions-cell .btn-delete:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Dialog form */
+.seasons-dialog-content { padding: 0; }
+
+.seasons-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.seasons-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.seasons-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.seasons-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.seasons-form-control {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seasons-form-control:focus {
+  outline: none;
+  border-color: var(--brand-yellow-dark);
+  box-shadow: 0 0 0 3px rgba(233, 185, 2, 0.15);
+}
+
+.seasons-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--surface-border);
+}

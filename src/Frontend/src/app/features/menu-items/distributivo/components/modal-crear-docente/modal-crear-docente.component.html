@@ -1,0 +1,102 @@
+<app-shared-drawer [visible]="show" title="Nuevo Docente" mode="modal" size="md"
+  [showCloseButton]="true" [closeOnOverlayClick]="false"
+  [showFooter]="true" cancelText="Cancelar" confirmText="Crear Docente"
+  [confirmDisabled]="form.invalid || saving || loadingCatalogs" [confirmLoading]="saving"
+  (close)="onClose()" (confirm)="onSave()">
+
+  @if (loadingCatalogs) {
+    <div class="loading-catalogs">
+      <i class="pi pi-spin pi-spinner" style="font-size:1.5rem;"></i>
+      <p style="margin:0;">Cargando catálogos…</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" class="form-grid" (ngSubmit)="onSave()">
+
+      @if (errorMsg) {
+        <div class="alert-error">
+          <i class="pi pi-exclamation-circle"></i>
+          {{ errorMsg }}
+        </div>
+      }
+
+      <div class="form-section">
+        <div class="section-title"><i class="pi pi-id-card"></i> Identificación</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-list"></i> Tipo Documento <span class="required">*</span></label>
+            <app-custom-select [items]="tiposDocumentoOptions" labelField="label" valueField="value"
+              [selectedValue]="form.get('idTipoDocumento')?.value"
+              (selectedValueChange)="onTipoDocumentoChange($event)"
+              placeholder="Seleccione…" [searchable]="true">
+            </app-custom-select>
+            @if (f['idTipoDocumento'].invalid && f['idTipoDocumento'].touched) {
+              <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-hashtag"></i> N° Documento <span class="required">*</span></label>
+            <input class="form-input" formControlName="documento" type="text" placeholder="Ej. 1234567890">
+            @if (f['documento'].invalid && f['documento'].touched) {
+              <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title"><i class="pi pi-user"></i> Datos Personales</div>
+        <div class="form-row" style="margin-bottom:0.75rem;">
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-user"></i> Primer Nombre <span class="required">*</span></label>
+            <input class="form-input" formControlName="primerNombre" type="text" placeholder="Primer nombre">
+            @if (f['primerNombre'].invalid && f['primerNombre'].touched) {
+              <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-user"></i>Segundo Nombre</label>
+            <input class="form-input" formControlName="segundoNombre" type="text" placeholder="(Opcional)">
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0.75rem;">
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-user"></i> Primer Apellido <span class="required">*</span></label>
+            <input class="form-input" formControlName="primerApellido" type="text" placeholder="Primer apellido">
+            @if (f['primerApellido'].invalid && f['primerApellido'].touched) {
+              <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-user"></i>Segundo Apellido</label>
+            <input class="form-input" formControlName="segundoApellido" type="text" placeholder="(Opcional)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-venus-mars"></i> Género <span class="required">*</span></label>
+            <app-custom-select [items]="generosOptions" labelField="label" valueField="value"
+              [selectedValue]="form.get('idGenero')?.value"
+              (selectedValueChange)="onGeneroChange($event)"
+              placeholder="Seleccione…" [searchable]="true">
+            </app-custom-select>
+            @if (f['idGenero'].invalid && f['idGenero'].touched) {
+              <span class="error-text"><i class="pi pi-times-circle"></i>Requerido</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label"><i class="pi pi-envelope"></i> Correo electrónico <span class="required">*</span></label>
+            <input class="form-input" formControlName="email" type="email" placeholder="correo@dominio.com">
+            @if (f['email'].invalid && f['email'].touched) {
+              <span class="error-text">
+                <i class="pi pi-times-circle"></i>
+                {{ f['email'].hasError('required') ? 'Requerido' : 'Correo inválido' }}
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+    </form>
+  }
+
+</app-shared-drawer>

@@ -1,0 +1,162 @@
+<div class="documents-container">
+  <!-- Hidden file input for uploading requirements -->
+  <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none;"
+    accept=".pdf,.png,.jpg,.jpeg,.webp" />
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="loading">
+    <p-progressSpinner strokeWidth="4" animationDuration=".5s"></p-progressSpinner>
+    <span>Cargando documentos y requisitos...</span>
+  </div>
+
+  <div class="documents-layout" *ngIf="!loading">
+    <!-- Columna Izquierda: Requisitos y Documentos -->
+    <div class="left-panel">
+      <div class="section-header">
+        <h3>Requisitos y Documentos</h3>
+        <small class="requisitos-info">
+          <i class="pi pi-info-circle"></i> Peso máximo: 15MB
+        </small>
+      </div>
+
+      <div class="left-scroll-content">
+        @if (requisitos.length === 0) {
+          <div class="empty-requirements">
+            <i class="pi pi-file-excel"></i>
+            <p>No se encontraron requisitos configurados para este curso.</p>
+          </div>
+        }
+
+        <div class="requisitos-grid">
+          <div *ngFor="let req of requisitos" class="requisito-card"
+            [class.card-selected]="selectedRequisitoId === req.idRequisitos">
+            
+            <div class="requisito-header">
+              <span class="requisito-name">{{ req.detalle }}</span>
+              <div class="requisito-badges">
+                <span class="requisito-status" [class.required]="req.esObligatorio">
+                  {{ req.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Acciones según estado del documento -->
+            <div class="requisito-actions">
+              <!-- Requisitos de tipo booleano (confirmación/aprobación sin archivo digital) -->
+              @if (isBoolRequisito(req)) {
+                <div class="estado-badge-row">
+                  @if (isBoolAprobado(req)) {
+                    <div class="estado-badge estado-aprobado">
+                      <i class="pi pi-check-circle"></i>
+                      <span>Aprobado</span>
+                    </div>
+                  } @else {
+                    <div class="estado-badge estado-no-aprobado">
+                      <i class="pi pi-clock"></i>
+                      <span>No Aprobado</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <!-- Requisitos tipo ADJUNTO / Archivo -->
+                <!-- Estado: sin documento -->
+                @if (getEstadoRequisito(req) === 'sin-documento') {
+                  <button type="button" class="btn-action btn-subir-doc"
+                    (click)="iniciarSubida(req)" title="Subir documento">
+                    <i class="pi pi-upload"></i>
+                    <span>Subir documento</span>
+                  </button>
+                }
+
+                <!-- Estado: subiendo -->
+                @if (getEstadoRequisito(req) === 'subiendo') {
+                  <div class="estado-badge estado-subido">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <span>Subiendo...</span>
+                  </div>
+                }
+
+                <!-- Estado: subido o aprobado -->
+                @if (getEstadoRequisito(req) === 'subido' || getEstadoRequisito(req) === 'aprobado') {
+                  <div class="estado-badge-row">
+                    <div class="estado-badge" [class.estado-aprobado]="getEstadoRequisito(req) === 'aprobado'" [class.estado-subido]="getEstadoRequisito(req) === 'subido'">
+                      <i class="pi" [class.pi-check-circle]="getEstadoRequisito(req) === 'aprobado'" [class.pi-file]="getEstadoRequisito(req) === 'subido'"></i>
+                      <span>{{ getEstadoRequisito(req) === 'aprobado' ? 'Aprobado' : 'Subido' }}</span>
+                    </div>
+                    <div class="doc-action-group">
+                      <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+                        (click)="verDocumento(req)"
+                        [class.active-view]="selectedRequisitoId === req.idRequisitos"
+                        title="Ver documento">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+                        (click)="iniciarSubida(req)"
+                        title="Reemplazar archivo">
+                        <i class="pi pi-upload"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-reject-brand btn-icon-only"
+                        *ngIf="req.completado && req.documentoExistente?.idDocumentosPersonales"
+                        (click)="abrirDialogEliminar(req)"
+                        title="Eliminar documento">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                <!-- Estado: rechazado -->
+                @if (getEstadoRequisito(req) === 'rechazado') {
+                  <div class="estado-badge estado-rechazado">
+                    <i class="pi pi-times-circle"></i>
+                    <span>Rechazado</span>
+                  </div>
+                  <div class="doc-action-group">
+                    <button type="button" class="btn-action btn-ver-doc btn-icon-only"
+                      (click)="verDocumento(req)"
+                      title="Ver documento">
+                      <i class="pi pi-eye"></i>
+                    </button>
+                    <button type="button" class="btn-action btn-subir-doc btn-icon-only"
+                      (click)="iniciarSubida(req)"
+                      title="Subir nuevo archivo">
+                      <i class="pi pi-upload"></i>
+                    </button>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Visor de Documento -->
+    <div class="right-panel">
+      <app-documento-preview
+        [previewUrl]="previewUrl"
+        [previewFileName]="previewFileName"
+        [previewFileType]="previewFileType">
+      </app-documento-preview>
+    </div>
+  </div>
+
+  <!-- Modal Eliminar Documento -->
+  <app-shared-modal
+    [(visible)]="mostrarDialogEliminar"
+    title="Eliminar documento"
+    size="sm"
+    cancelText="Cancelar"
+    confirmText="Eliminar"
+    confirmClass="btn-danger"
+    [confirmLoading]="eliminando"
+    (confirm)="confirmarEliminar()"
+    (close)="cancelarDialogEliminar()">
+    <div style="padding: 0.5rem 0;">
+      <p style="margin: 0 0 0.5rem; font-size: 0.95rem; color: #374151;">
+        ¿Estás seguro de que deseas eliminar el documento <strong>"{{ requisitoParaEliminar?.detalle }}"</strong>?
+      </p>
+      <small style="color: #6b7280; display: block;">Esta acción quitará el archivo digital del expediente del estudiante.</small>
+    </div>
+  </app-shared-modal>
+</div>

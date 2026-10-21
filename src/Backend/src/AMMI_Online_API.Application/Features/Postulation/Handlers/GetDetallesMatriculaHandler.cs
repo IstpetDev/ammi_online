@@ -10,7 +10,7 @@ namespace AMMI_Online_API.Application.Features.Postulation.Handlers;
 
 public class GetDetallesMatriculaHandler : 
     IRequestHandler<GetDetalleMatriculaByMatriculaYMateriaQuery, Response<DetalleMatriculaConAlumnoDTO>>,
-    IRequestHandler<GetDetallesMatriculaByParaleloYMateriaQuery, Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>>
+    IRequestHandler<GetDetallesMatriculaByMallaParaleloYMateriaQuery, Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>>
 {
     private readonly IMatriculaRepository _matriculaRepo;
 
@@ -29,9 +29,9 @@ public class GetDetallesMatriculaHandler :
         return Response<DetalleMatriculaConAlumnoDTO>.Success(MapToDTO(entity), "Detalle encontrado");
     }
 
-    public async Task<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>> Handle(GetDetallesMatriculaByParaleloYMateriaQuery request, CancellationToken ct)
+    public async Task<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>> Handle(GetDetallesMatriculaByMallaParaleloYMateriaQuery request, CancellationToken ct)
     {
-        var result = await _matriculaRepo.GetDetallesMatriculaByParaleloYMateriaAsync(request.IdParalelo, request.IdDetalleMalla, ct);
+        var result = await _matriculaRepo.GetDetallesMatriculaByMallaParaleloYMateriaAsync(request.IdMallaParalelo, request.IdDetalleMalla, ct);
         var dtos = result.Select(MapToDTO);
         return Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>.Success(dtos, "Detalles obtenidos exitosamente");
     }
@@ -39,12 +39,17 @@ public class GetDetallesMatriculaHandler :
     private static DetalleMatriculaConAlumnoDTO MapToDTO(DetalleMatricula entity)
     {
         var persona = entity.IdMatriculaNavigation?.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
+        var nombreCompleto = persona != null
+            ? string.Join(" ", new[] { persona.PrimerApellido, persona.SegundoApellido, persona.PrimerNombre, persona.SegundoNombre }
+                .Where(s => !string.IsNullOrWhiteSpace(s))).Trim()
+            : "Sin Nombre";
+
         return new DetalleMatriculaConAlumnoDTO
         {
             IdDetalleMatricula = entity.IdDetalleMatricula,
             IdMatricula = entity.IdMatricula,
             IdDetalleMalla = entity.IdDetalleMalla,
-            NombreAlumno = persona != null ? $"{persona.PrimerApellido} {persona.PrimerNombre}" : "Sin Nombre",
+            NombreAlumno = string.IsNullOrWhiteSpace(nombreCompleto) ? "Sin Nombre" : nombreCompleto,
             DocumentoAlumno = persona?.Documento ?? string.Empty
         };
     }

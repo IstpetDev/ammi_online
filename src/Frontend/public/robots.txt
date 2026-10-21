@@ -1,0 +1,25 @@
+# robots.txt — AMMI Online | ammionline.ammi.edu.ec
+# Actualizado: 2026-07-13
+
+# Reglas para todos los crawlers principales
+User-agent: *
+Allow: /
+Allow: /acelerado-virtual
+Allow: /formal-virtual
+
+# Bloquear rutas de aplicación interna (dashboard y autenticación)
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /cambiar-contrasenia
+Disallow: /verify-email-token
+
+# Bloquear parámetros de query innecesarios para indexación
+Disallow: /*?openPostulation=*
+
+# Sitemap
+Sitemap: https://ammionline.ammi.edu.ec/sitemap.xml
+
+# Crawl-delay para ser respetuosos con el servidor
+Crawl-delay: 1

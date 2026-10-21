@@ -42,4 +42,10 @@ export class TipoActividadEconomicaService {
       map(tipos => tipos.filter(t => !t.esFormal))
     );
   }
+
+  create(data: Partial<TipoActividadEconomicaDTO>): Observable<TipoActividadEconomicaDTO> {
+    return this.http.post<IResponse<TipoActividadEconomicaDTO>>(`${this.apiUrl}${API_ENDPOINTS.postulaciones.tipoActividadEconomica.create}`, data).pipe(
+      map(response => response.data)
+    );
+  }
 }

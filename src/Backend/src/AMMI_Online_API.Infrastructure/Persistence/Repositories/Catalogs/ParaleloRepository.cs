@@ -15,18 +15,18 @@ public class ParaleloRepository : IParalelo
 
     public async Task<IEnumerable<Paralelo>> FindAsync (
         int? idParalelo,
-        string? nombreParalelo,
-        int? cupoMaximo,
+        string? detalle,
+        int? orden,
         CancellationToken cancellationToken)
     {
         IQueryable<Paralelo> query =
             _context.Paralelo.AsNoTracking();
         if (idParalelo.HasValue)
             query = query.Where(x => x.IdParalelo == idParalelo.Value);
-        if (!string.IsNullOrEmpty(nombreParalelo))
-            query = query.Where(x => x.NombreParalelo.Contains(nombreParalelo));
-        if (cupoMaximo.HasValue)
-            query = query.Where(x => x.CupoMaximo == cupoMaximo.Value);
+        if (!string.IsNullOrEmpty(detalle))
+            query = query.Where(x => x.Detalle.Contains(detalle));
+        if (orden.HasValue)
+            query = query.Where(x => x.Orden == orden.Value);
         return await query.ToListAsync(cancellationToken);
     }
 

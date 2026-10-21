@@ -5,7 +5,6 @@ public record MallaDTO
     public int IdMalla { get; set; }
     public string Detalle { get; set; }
     public int IdCursos { get; set; }
-    public int IdTipoOferta { get; set; }
     public int IdCiclo { get; set; }
 
     // Datos relacionados
@@ -22,7 +21,6 @@ public record MallaCreateDTO
 {
     public string Detalle { get; set; } = string.Empty;
     public int IdCursos { get; set; }
-    public int IdTipoOferta { get; set; }
     public int IdCiclo { get; set; }
 }
 
@@ -31,7 +29,6 @@ public record MallaUpdateDTO
     public int IdMalla { get; set; }
     public string Detalle { get; set; } = string.Empty;
     public int IdCursos { get; set; }
-    public int IdTipoOferta { get; set; }
     public int IdCiclo { get; set; }
 }
 

@@ -10,6 +10,7 @@ namespace AMMI_Online_API.API.Controllers.Distributive;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DistributivoController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -20,31 +21,31 @@ public class DistributivoController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _mediator.Send(new GetAllDistributivosQuery()));
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetById(int id)
     {
         return Ok(await _mediator.Send(new GetDistributivoByIdQuery(id)));
     }
 
     [HttpGet("ByDocente/{idPersona}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetByDocente(int idPersona)
     {
         return Ok(await _mediator.Send(new GetAsignacionesDocenteQuery(idPersona)));
     }
 
-    [HttpGet("ByParalelo/{idParalelo}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetByParalelo(int idParalelo)
+    [HttpGet("ByMallaParalelo/{idMallaParalelo}")]
+    
+    public async Task<IActionResult> GetByMallaParalelo(int idMallaParalelo)
     {
-        return Ok(await _mediator.Send(new GetDistributivoByParaleloQuery(idParalelo)));
+        return Ok(await _mediator.Send(new GetDistributivoByMallaParaleloQuery(idMallaParalelo)));
     }
 
     [HttpPost]
@@ -72,30 +73,81 @@ public class DistributivoController : ControllerBase
     }
 
     [HttpGet("ByMalla/{idMalla}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetByMalla(int idMalla, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         return Ok(await _mediator.Send(new GetDistributivoByMallaQuery(idMalla, pageNumber, pageSize)));
     }
 
     [HttpGet("ByCiclo/{idCiclo}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetByCiclo(int idCiclo, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetByCiclo(int idCiclo)
     {
-        return Ok(await _mediator.Send(new GetDistributivoByCicloQuery(idCiclo, pageNumber, pageSize)));
+        return Ok(await _mediator.Send(new GetDistributivoByCicloQuery(idCiclo)));
+    }
+
+    [HttpGet("ByCiclo/{idCiclo}/Agrupado")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetByCicloAgrupado(int idCiclo)
+    {
+        return Ok(await _mediator.Send(new GetDistributivoByCicloAgrupadoQuery(idCiclo)));
     }
 
     [HttpGet("CargaDocente/{idPersona}")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetCargaDocente(int idPersona)
     {
         return Ok(await _mediator.Send(new GetCargaDocenteQuery(idPersona)));
     }
 
     [HttpGet("Docentes")]
-    [AllowAnonymous]
+    
     public async Task<IActionResult> GetDocentesDisponibles()
     {
         return Ok(await _mediator.Send(new GetDocentesDisponiblesQuery()));
+    }
+
+    [HttpPut("{id}/desactivar")]
+    public async Task<IActionResult> Desactivar(int id)
+    {
+        return Ok(await _mediator.Send(new DesactivarDistributivoCommand(id)));
+    }
+
+    [HttpPut("{id}/activar")]
+    public async Task<IActionResult> Activar(int id)
+    {
+        return Ok(await _mediator.Send(new ActivarDistributivoCommand(id)));
+    }
+
+    [HttpGet("ByMalla/{idMalla}/SlotsSinDocente")]
+    
+    public async Task<IActionResult> GetSlotsSinDocente(int idMalla)
+    {
+        return Ok(await _mediator.Send(new GetSlotsSinDocenteByMallaQuery(idMalla)));
+    }
+
+    [HttpPost("Clonar")]
+    public async Task<IActionResult> Clonar(int idMallaParaleloOrigen, int idMallaParaleloDestino)
+    {
+        return Ok(await _mediator.Send(new ClonarDistributivosCommand(idMallaParaleloOrigen, idMallaParaleloDestino)));
+    }
+
+    [HttpGet("Filtrar")]
+    
+    public async Task<IActionResult> Filtrar(
+        [FromQuery] int? idMalla,
+        [FromQuery] int? idMallaParalelo,
+        [FromQuery] int? idDetalleMalla,
+        [FromQuery] bool? soloActivos,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        return Ok(await _mediator.Send(new GetDistributivoFiltradoQuery(idMalla, idMallaParalelo, idDetalleMalla, soloActivos, pageNumber, pageSize)));
+    }
+
+    [HttpGet("CargaDocente/Documento/{documento}")]
+    
+    public async Task<IActionResult> GetCargaDocenteByDocumento(string documento)
+    {
+        return Ok(await _mediator.Send(new GetCargaDocenteByDocumentoQuery(documento)));
     }
 }

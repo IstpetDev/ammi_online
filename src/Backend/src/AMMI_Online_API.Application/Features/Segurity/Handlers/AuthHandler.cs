@@ -131,7 +131,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Response<
         {
             IdPersona = request.Request.IdPersona,
             Username = usernameUnico,
-            Contrasenia = hashedPassword
+            Contrasenia = hashedPassword,
+            RequiereCambioContrasenia = true
         };
 
         var createdUser = await _authRepository.CreateUserAsync(usuario, cancellationToken);

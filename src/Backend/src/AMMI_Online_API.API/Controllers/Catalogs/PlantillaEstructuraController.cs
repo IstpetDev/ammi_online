@@ -20,7 +20,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpGet("Arbol/{idPlantilla}")]
-    [AllowAnonymous]
     public async Task<ActionResult<List<PlantillaEstructuraDTO>>> GetArbol(int idPlantilla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetPlantillaEstructuraArbolQuery(idPlantilla), cancellationToken);
@@ -28,7 +27,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpGet("Nodos/{idPlantilla}")]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<PlantillaEstructuraDTO>>> GetNodos(int idPlantilla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetPlantillaEstructuraNodosQuery(idPlantilla), cancellationToken);
@@ -36,7 +34,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<ActionResult<PlantillaEstructuraDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetPlantillaEstructuraByIdQuery(id), cancellationToken);
@@ -45,7 +42,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpGet("Validar/{idPlantilla}")]
-    [AllowAnonymous]
     public async Task<ActionResult<ValidacionPesosDTO>> Validar(int idPlantilla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetValidacionPesosQuery(idPlantilla), cancellationToken);
@@ -53,7 +49,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<ActionResult<PlantillaEstructuraDTO>> Create([FromBody] PlantillaEstructuraCreateDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreatePlantillaEstructuraCommand(dto), cancellationToken);
@@ -61,7 +56,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpPost("Completa")]
-    [AllowAnonymous]
     public async Task<ActionResult<bool>> CreateCompleta([FromBody] CrearEstructuraCompletaDTO dto, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateEstructuraCompletaCommand(dto), cancellationToken);
@@ -69,7 +63,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpPut]
-    [AllowAnonymous]
     public async Task<ActionResult<PlantillaEstructuraDTO>> Update([FromBody] PlantillaEstructuraUpdateDTO dto, CancellationToken cancellationToken)
     {
         try
@@ -84,7 +77,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpPut("Reordenar")]
-    [AllowAnonymous]
     public async Task<ActionResult<bool>> Reordenar([FromBody] List<int> idsOrdenados, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new ReordenarNodosCommand(idsOrdenados), cancellationToken);
@@ -92,7 +84,6 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AllowAnonymous]
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeletePlantillaEstructuraCommand(id), cancellationToken);
@@ -101,7 +92,7 @@ public class PlantillaEstructuraController : ControllerBase
     }
 
     [HttpPost("DuplicarPlantilla/{idOriginal}")]
-    [AllowAnonymous]
+    
     public async Task<ActionResult<PlantillaEvaluacion>> Duplicar(int idOriginal, [FromQuery] string nuevoNombre, CancellationToken cancellationToken)
     {
         try

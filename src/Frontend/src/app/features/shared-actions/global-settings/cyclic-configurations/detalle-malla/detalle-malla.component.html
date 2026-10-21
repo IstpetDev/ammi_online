@@ -1,0 +1,384 @@
+<div class="seasons-container">
+  <div class="seasons-header">
+    <div class="seasons-header-content">
+      <div class="seasons-header-title">
+        <h1>Gestión de Detalle Malla</h1>
+        <p>Gestione las materias asignadas a cada malla del ciclo seleccionado.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="seasons-content-card">
+    <div class="rol-filtros-container mb-4">
+      <div class="filtros-row-fullwidth">
+
+        <div class="filtro-item p-field p-fluid">
+          <label class="seasons-form-label">Período Lectivo</label>
+          <p-select [(ngModel)]="selectedPeriodo" [options]="periodos" optionLabel="detalle"
+            (onChange)="onPeriodoChange()" placeholder="Seleccione" [showClear]="true" appendTo="body"
+            styleClass="w-full"></p-select>
+        </div>
+
+        <div class="filtro-item p-field p-fluid">
+          <label class="seasons-form-label">Ciclo</label>
+          <p-select [(ngModel)]="selectedCiclo" [options]="ciclos" optionLabel="detalle" (onChange)="onCicloChange()"
+            [placeholder]="selectedPeriodo ? 'Seleccione' : 'Req. período'" [disabled]="!selectedPeriodo"
+            [showClear]="true" appendTo="body" styleClass="w-full"></p-select>
+        </div>
+
+        <div class="filtro-botones" style="white-space: nowrap;">
+          <p-button *ngIf="selectedCiclo" label="Replicar entre Ciclos" icon="pi pi-clone"
+            (onClick)="openReplicateDialog()" styleClass="btn-accion-agregar"></p-button>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!selectedPeriodo || !selectedCiclo">
+      <div class="select-warning-box">
+        <i class="pi pi-filter select-warning-icon"></i>
+        <span class="select-warning-text">Seleccione período y ciclo para visualizar las mallas.</span>
+      </div>
+    </ng-container>
+
+    <!-- Tabla agrupada por malla -->
+    <p-table *ngIf="selectedPeriodo && selectedCiclo" [value]="mallasGrouped" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mallas">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 28%;">Malla</th>
+          <th>Materias Asignadas</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-mallaGroup>
+        <tr>
+          <td style="font-weight: 600; vertical-align: top; padding-top: 0.75rem;">
+            {{ mallaGroup.malla.detalle }}
+            <div class="materia-tipo-oferta">{{ mallaGroup.malla.nombreTipoOferta || 'N/A' }}</div>
+          </td>
+          <td>
+            <div class="materia-chips-wrap">
+              <span *ngFor="let det of mallaGroup.detalles" class="materia-chip">
+                {{ det.nombreMateria }}
+                <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm materia-chip-edit"
+                  (click)="editarDetalle(det, mallaGroup.malla.idMalla!)" pTooltip="Editar plantilla / área"
+                  tooltipPosition="top">
+                </button>
+                <button pButton icon="pi pi-times" class="p-button-rounded p-button-text p-button-sm p-button-danger materia-chip-delete"
+                  (click)="confirmarEliminar(det, mallaGroup.malla.idMalla!)" pTooltip="Eliminar materia"
+                  tooltipPosition="top">
+                </button>
+              </span>
+              <span *ngIf="mallaGroup.detalles.length === 0" class="materia-sin-datos">
+                Sin materias asignadas
+              </span>
+              <button *ngIf="selectedPeriodo" pButton icon="pi pi-plus" label="Agregar" class="p-button-outlined p-button-sm p-button-secondary"
+                style="font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 20px;"
+                (click)="openAddMateriasDialog(mallaGroup)" pTooltip="Agregar materias" tooltipPosition="top">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2">
+            <div class="table-empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <span class="empty-text">
+                {{ selectedCiclo ? 'No hay mallas registradas para este ciclo.' : 'Seleccione un ciclo para ver las mallas.' }}
+              </span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog: Agregar materias a una malla -->
+<p-dialog [(visible)]="showAddMateriasDialog" [modal]="true" [style]="{width: '98vw', maxWidth: '1780px'}"
+  [contentStyle]="{'max-height':'84vh','overflow':'auto'}" styleClass="detalle-malla-add-dialog"
+  [header]="'Agregar Materias — ' + (selectedMallaForAdd?.malla?.detalle || '')" (onHide)="hideAddMateriasDialog()"
+  [draggable]="false" [resizable]="false">
+  <div style="padding-top: 0.5rem;">
+
+    <!-- Paso 1: picklist -->
+    <ng-container *ngIf="pendingDetalles.length === 0">
+
+    <small *ngIf="pickListSourceMaterias.length === 0 && pickListTargetMaterias.length === 0"
+      class="p-error block mb-2">
+      <i class="pi pi-info-circle mr-1"></i>No quedan materias disponibles para asignar a esta malla.
+    </small>
+
+    <p-pickList [(source)]="pickListSourceMaterias" [(target)]="pickListTargetMaterias"
+      sourceHeader="Materias Disponibles" targetHeader="Materias Seleccionadas" filterBy="detalle"
+      sourceFilterPlaceholder="Buscar materia" targetFilterPlaceholder="Buscar materia"
+      [sourceStyle]="{'height': '260px'}" [targetStyle]="{'height': '260px'}" [dragdrop]="true"
+      [showSourceControls]="false" [showTargetControls]="false" [stripedRows]="true">
+      <ng-template let-materia pTemplate="item">
+        <div style="font-size: 0.88rem; padding: 0.1rem 0;">{{ materia.detalle }}</div>
+      </ng-template>
+    </p-pickList>
+    </ng-container>
+
+    <!-- Paso 2: configurar plantilla + área por materia -->
+    <ng-container *ngIf="pendingDetalles.length > 0">
+    <div style="margin-bottom: 1rem;">
+      <h4 style="margin: 0 0 0.25rem; color: var(--text-color);">
+        <i class="pi pi-cog mr-1"></i> Asignar Plantilla y Área de Competencia
+      </h4>
+      <small style="color: var(--text-color-secondary);">Configure cada materia seleccionada ({{ pendingDetalles.length }})</small>
+    </div>
+
+    <div class="template-global-box">
+      <div class="template-global-title">
+        <i class="pi pi-sparkles"></i>
+        Plantilla base para todas
+      </div>
+      <div class="template-global-row">
+        <div class="p-field p-fluid">
+          <label class="seasons-form-label">Plantilla de Evaluación</label>
+          <p-select [(ngModel)]="globalPlantillaEvaluacionId" [ngModelOptions]="{standalone: true}" [options]="plantillas"
+            optionLabel="nombre" optionValue="idPlantillaEvaluacion" placeholder="Seleccione"
+            (onChange)="onGlobalPlantillaChange()" appendTo="body" styleClass="w-full"></p-select>
+        </div>
+      </div>
+      <small class="template-global-hint">
+        <i class="pi pi-info-circle"></i>
+        Al elegir una plantilla, se aplicará a todas las materias. Si luego cambia una materia a otra plantilla, se pedirá confirmación.
+      </small>
+    </div>
+
+    <div class="detalle-malla-table-wrapper">
+    <p-table [value]="pendingDetalles"
+      styleClass="detalle-malla-config-table" [tableStyle]="{'min-width': '1750px'}">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 18%;">Materia</th>
+          <th style="width: 8%;">Horas Base</th>
+          <th style="width: 10%;">Módulo</th>
+          <th style="width: 10%;">Duración Horas <span style="color: red;">*</span></th>
+          <th style="width: 11%;">Fecha Inicio <span style="color: red;">*</span></th>
+          <th style="width: 11%;">Fecha Fin <span style="color: red;">*</span></th>
+          <th style="width: 21%;">Plantilla de Evaluación <span style="color: red;">*</span></th>
+          <th style="width: 21%;">Área de Competencia <span style="color: red;">*</span></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-det let-rowIndex="rowIndex">
+        <tr [attr.id]="'pending-det-row-' + rowIndex" [ngClass]="{'pending-row-invalid': isDetalleInvalid(det)}">
+          <td>{{ det.nombreMateria }}</td>
+          <td>{{ det.horasMateria }}</td>
+          <td>
+            <input type="number" pInputText [(ngModel)]="det.modulo" [ngModelOptions]="{standalone: true}"
+              min="1" step="1" placeholder="Opcional" class="w-full" (ngModelChange)="onModuloChange(det)" />
+          </td>
+          <td>
+            <input type="number" pInputText [(ngModel)]="det.duracionHoras" [ngModelOptions]="{standalone: true}"
+              min="1" step="1" placeholder="Horas" class="w-full"
+              [ngClass]="{'required-invalid': hasFieldError(det, 'duracionHoras')}" />
+          </td>
+          <td>
+            <input type="date" pInputText [(ngModel)]="det.fechaInicio" [ngModelOptions]="{standalone: true}" class="w-full"
+              [disabled]="!isModuleDateEditable(det, rowIndex)"
+              (ngModelChange)="onModuloDateChange(det, 'fechaInicio', $event)"
+              [ngClass]="{'required-invalid': hasFieldError(det, 'fechaInicio')}" />
+          </td>
+          <td>
+            <input type="date" pInputText [(ngModel)]="det.fechaFin" [ngModelOptions]="{standalone: true}" class="w-full"
+              [disabled]="!isModuleDateEditable(det, rowIndex)"
+              (ngModelChange)="onModuloDateChange(det, 'fechaFin', $event)"
+              [ngClass]="{'required-invalid': hasFieldError(det, 'fechaFin')}" />
+          </td>
+          <td>
+            <p-select [ngModel]="det.idPlantillaEvaluacion" (ngModelChange)="onDetallePlantillaChange(det, $event)" [ngModelOptions]="{standalone: true}"
+              [options]="plantillas" optionLabel="nombre" optionValue="idPlantillaEvaluacion" placeholder="Seleccione"
+              appendTo="body" styleClass="w-full"
+              [ngClass]="{'required-invalid': hasFieldError(det, 'idPlantillaEvaluacion')}"
+              [style]="{'font-size': '0.88rem'}"></p-select>
+          </td>
+          <td>
+            <p-select [(ngModel)]="det.idAreaCompetencia" [ngModelOptions]="{standalone: true}"
+              [options]="areasCompetencia" optionLabel="detalle" optionValue="idAreaCompetencia"
+              placeholder="Seleccione" appendTo="body" styleClass="w-full"
+              [ngClass]="{'required-invalid': hasFieldError(det, 'idAreaCompetencia')}"
+              [style]="{'font-size': '0.88rem'}"></p-select>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+    </div>
+    </ng-container>
+
+  </div>
+  <ng-template pTemplate="footer">
+    <ng-container *ngIf="pendingDetalles.length === 0">
+      <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideAddMateriasDialog()" [text]="true"
+        severity="secondary"></p-button>
+      <p-button label="Continuar" icon="pi pi-arrow-right" (onClick)="prepareDetalles()"
+        [disabled]="!pickListTargetMaterias || pickListTargetMaterias.length === 0"></p-button>
+    </ng-container>
+    <ng-container *ngIf="pendingDetalles.length > 0">
+      <p-button label="Volver" icon="pi pi-arrow-left" (onClick)="backToMateriaSelection()" [text]="true"
+        severity="secondary"></p-button>
+      <p-button label="Guardar Todas" icon="pi pi-check" (onClick)="guardarMateriasAgregadas()"
+        [loading]="saving" severity="success"></p-button>
+    </ng-container>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog: Editar detalle (plantilla + área) -->
+<p-dialog [(visible)]="showEditDialog" [modal]="true" [style]="{width: '540px'}"
+  header="Editar Configuración de Materia" (onHide)="cancelarEdicion()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid formgrid grid" style="padding-top: 0.5rem;">
+
+    <div class="field col-12">
+      <label class="font-semibold block mb-2">Materia</label>
+      <input type="text" [value]="editingDetalle?.nombreMateria || ''" disabled pInputText class="w-full" />
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Plantilla de Evaluación <span class="text-red-400">*</span></label>
+      <p-select [(ngModel)]="selectedPlantilla" [ngModelOptions]="{standalone: true}" [options]="plantillas"
+        optionLabel="nombre" placeholder="Seleccione" appendTo="body" styleClass="w-full"></p-select>
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Área de Competencia <span class="text-red-400">*</span></label>
+      <p-select [(ngModel)]="selectedAreaCompetencia" [ngModelOptions]="{standalone: true}" [options]="areasCompetencia"
+        optionLabel="detalle" placeholder="Seleccione" appendTo="body" styleClass="w-full"></p-select>
+    </div>
+
+    <ng-container *ngIf="editingDetalle">
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Módulo</label>
+      <input type="number" pInputText [(ngModel)]="editingDetalle.modulo" [ngModelOptions]="{standalone: true}"
+        min="1" step="1" placeholder="Opcional" class="w-full" />
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Duración Horas <span class="text-red-400">*</span></label>
+      <input type="number" pInputText [(ngModel)]="editingDetalle.duracionHoras" [ngModelOptions]="{standalone: true}"
+        min="1" step="1" class="w-full" />
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Fecha Inicio <span class="text-red-400">*</span></label>
+      <input type="date" pInputText [(ngModel)]="editingDetalle.fechaInicio" [ngModelOptions]="{standalone: true}"
+        class="w-full" />
+    </div>
+
+    <div class="field col-12 md:col-6">
+      <label class="font-semibold block mb-2">Fecha Fin <span class="text-red-400">*</span></label>
+      <input type="date" pInputText [(ngModel)]="editingDetalle.fechaFin" [ngModelOptions]="{standalone: true}"
+        class="w-full" />
+    </div>
+    </ng-container>
+
+    <div class="field col-12">
+      <small class="text-color-secondary">
+        <i class="pi pi-calendar mr-1"></i>
+        Fechas precargadas desde el ciclo, editables si necesitas ajustar.
+      </small>
+    </div>
+
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="cancelarEdicion()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Guardar Cambios" icon="pi pi-check" (onClick)="guardarEdicion()"
+      [disabled]="!selectedPlantilla || !selectedAreaCompetencia" [loading]="saving" severity="success"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog: Replicar entre Ciclos -->
+<p-dialog [(visible)]="showReplicateDialog" [modal]="true" [style]="{width: '820px'}"
+  header="Replicar Materias entre Ciclos" (onHide)="hideReplicateDialog()" [draggable]="false" [resizable]="false">
+  <div style="padding-top: 0.5rem;">
+    <p class="text-color-secondary mb-3">
+      <i class="pi pi-info-circle mr-1"></i>
+      Seleccione el ciclo origen (inactivo) y el ciclo destino (activo). Las materias de cada malla del ciclo origen
+      se copiarán a la malla equivalente del ciclo destino.
+    </p>
+
+    <div class="p-fluid formgrid grid">
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Ciclo Origen</label>
+        <p-select [(ngModel)]="sourceCicloReplicate" [options]="sourceCiclosVisible" optionLabel="detalle"
+          (onChange)="onSourceCicloRepChange()" placeholder="Seleccione ciclo origen" appendTo="body"
+          styleClass="w-full"></p-select>
+        <div *ngIf="sourceCiclosTotalCount > 10 && !showAllSourceRep" style="margin-top: 0.4rem;">
+          <p-button label="Ver todos los ciclos" (onClick)="toggleShowAllSourceRep()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+        <small *ngIf="sourceMallasRep.length > 0" class="text-green-600 font-semibold block mt-1">
+          <i class="pi pi-check-circle mr-1"></i>{{ sourceMallasRep.length }} malla(s) encontradas
+        </small>
+      </div>
+
+      <div class="field col-12 md:col-6">
+        <label class="font-semibold block mb-2">Ciclo Destino</label>
+        <p-select [(ngModel)]="targetCicloReplicate" [options]="targetCiclosVisible" optionLabel="detalle"
+          (onChange)="onTargetCicloRepChange()" placeholder="Seleccione ciclo destino" appendTo="body"
+          styleClass="w-full"></p-select>
+        <div *ngIf="targetCiclosTotalCount > 10 && !showAllTargetRep" style="margin-top: 0.4rem;">
+          <p-button label="Ver todos los ciclos" (onClick)="toggleShowAllTargetRep()"
+            styleClass="p-button-link p-button-sm"></p-button>
+        </div>
+        <small *ngIf="targetMallasRep.length > 0" class="text-green-600 font-semibold block mt-1">
+          <i class="pi pi-check-circle mr-1"></i>{{ targetMallasRep.length }} malla(s) encontradas
+        </small>
+      </div>
+    </div>
+
+    <!-- Advertencia mallas sin equivalente -->
+    <div *ngIf="replicateMallaMismatch" class="flex align-items-start gap-2 p-3 border-round mt-2"
+      style="background: #fff3e0; border-left: 4px solid #ff9800;">
+      <i class="pi pi-exclamation-triangle mt-1" style="color: #e65100;"></i>
+      <div>
+        <strong style="color: #e65100;">Mallas sin equivalente en el ciclo destino</strong>
+        <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #bf360c;">Serán omitidas:</p>
+        <ul style="margin: 0.35rem 0 0 1rem; font-size: 0.88rem; color: #bf360c;">
+          <li *ngFor="let nombre of unmatchedSourceMallas">{{ nombre }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Vista previa -->
+    <div *ngIf="sourceMallasRep.length > 0" style="margin-top: 1rem;">
+      <p-divider></p-divider>
+      <h4 class="mb-2">Mallas del ciclo origen ({{ sourceMallasRep.length }}):</h4>
+      <p-table [value]="sourceMallasRep" [paginator]="false" [scrollable]="true" scrollHeight="200px">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>#</th>
+            <th>Malla</th>
+            <th>Tipo de Oferta</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-malla let-rowIndex="rowIndex">
+          <tr>
+            <td>{{ rowIndex + 1 }}</td>
+            <td>{{ malla.detalle }}</td>
+            <td>{{ malla.nombreTipoOferta || 'N/A' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" (onClick)="hideReplicateDialog()" [text]="true"
+      severity="secondary"></p-button>
+    <p-button label="Replicar" icon="pi pi-clone" (onClick)="replicarEntreCiclos()"
+      [disabled]="!sourceCicloReplicate || !targetCicloReplicate || sourceMallasRep.length === 0 || targetMallasRep.length === 0"
+      [loading]="replicating" severity="info"></p-button>
+  </ng-template>
+</p-dialog>
+
+<app-shared-toast></app-shared-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<!-- Confirmar eliminar detalle -->
+<app-confirmation-modal [visible]="showConfirmDeleteDetalle" title="Confirmar Eliminación"
+  message="¿Está seguro de que desea eliminar esta materia de la malla?" acceptLabel="Eliminar" rejectLabel="Cancelar"
+  (accept)="eliminarDetalle()" (reject)="cancelarEliminar()" (hide)="cancelarEliminar()">
+</app-confirmation-modal>
