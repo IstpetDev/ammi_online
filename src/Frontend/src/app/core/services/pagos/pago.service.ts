@@ -108,7 +108,7 @@ export class PagoService {
 
   /**
    * Obtener historial de pagos con filtros opcionales
-   * Endpoint: GET /api/Pagos/historial?Documento=&IdMatricula=&FechaDesde=&FechaHasta=&EsValidado=
+   * Endpoint: GET /api/Pagos/historial?Documento=&IdMatricula=&FechaDesde=&FechaHasta=&EsValidado=&EstadoPago=&Limite=
    */
   getHistorialPagosContabilidadFiltrado(filtros: {
     documento?: string;
@@ -116,6 +116,8 @@ export class PagoService {
     fechaDesde?: string | null;
     fechaHasta?: string | null;
     esValidado?: boolean | null;
+    estadoPago?: string | null;
+    limite?: number | null;
   }): Observable<IResponse<any[]>> {
     let params = new HttpParams();
 
@@ -127,16 +129,27 @@ export class PagoService {
       params = params.set('IdMatricula', String(filtros.idMatricula));
     }
 
-    if (filtros.fechaDesde) {
-      params = params.set('FechaDesde', filtros.fechaDesde);
-    }
+    // Filtros excluyentes ganando documento: solo si NO hay documento se envían fechas
+    if (!filtros.documento?.trim()) {
+      if (filtros.fechaDesde) {
+        params = params.set('FechaDesde', filtros.fechaDesde);
+      }
 
-    if (filtros.fechaHasta) {
-      params = params.set('FechaHasta', filtros.fechaHasta);
+      if (filtros.fechaHasta) {
+        params = params.set('FechaHasta', filtros.fechaHasta);
+      }
     }
 
     if (filtros.esValidado !== null && filtros.esValidado !== undefined) {
       params = params.set('EsValidado', String(filtros.esValidado));
+    }
+
+    if (filtros.estadoPago?.trim() && filtros.estadoPago.trim().toUpperCase() !== 'TODOS') {
+      params = params.set('EstadoPago', filtros.estadoPago.trim().toUpperCase());
+    }
+
+    if (filtros.limite !== null && filtros.limite !== undefined && filtros.limite > 0) {
+      params = params.set('Limite', String(filtros.limite));
     }
 
     return this.http.get<IResponse<any[]>>(

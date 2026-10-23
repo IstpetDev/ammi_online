@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Payments;
 using MediatR;
 
@@ -11,4 +11,6 @@ public record GetHistorialPagosQuery : IRequest<Response<IEnumerable<PagoHistori
     public DateOnly? FechaDesde { get; init; }
     public DateOnly? FechaHasta { get; init; }
     public bool? EsValidado { get; init; }
+    public string? EstadoPago { get; init; }
+    public int? Limite { get; init; }
 }
