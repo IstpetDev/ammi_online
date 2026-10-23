@@ -20,10 +20,13 @@ public class HistorialPagoRepository : IHistorialPagoRepository
         DateOnly? fechaDesde,
         DateOnly? fechaHasta,
         bool? esValidado,
-        CancellationToken cancellationToken)
+        string? estadoPago = null,
+        int? limite = null,
+        CancellationToken cancellationToken = default)
     {
         // Consulta base con todas las relaciones necesarias
         var query = _context.Pago
+            .AsNoTracking()
             .Include(dp => dp.IdEstadoPagoNavigation)
             .Include(ad => ad.UrlComprobanteNavigation)
             .Include(p => p.PagoCuota)
@@ -41,14 +44,40 @@ public class HistorialPagoRepository : IHistorialPagoRepository
             .Include(p => p.IdCuentaBancariaNavigation)
             .Include(p => p.UsuarioApruebaNavigation)
                 .ThenInclude(u => u.IdPersonaNavigation)
+            .Include(p => p.IdClienteNavigation)
             .AsQueryable();
 
-        // Filtros
-        if (!string.IsNullOrEmpty(documento))
+        // Filtro por EstadoPago si se proporciona (ex: "PENDIENTE", "APROBADO", etc.)
+        if (!string.IsNullOrWhiteSpace(estadoPago) && !estadoPago.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(p => p.PagoCuota.Any(pc =>
-                pc.IdDetalleCreditoNavigation.IdCreditoNavigation.IdMatriculaNavigation
-                    .IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento == documento));
+            var est = estadoPago.Trim().ToUpper();
+            query = query.Where(p => p.IdEstadoPagoNavigation != null && p.IdEstadoPagoNavigation.Detalle.ToUpper() == est);
+        }
+
+        // Si se busca por Documento, prevalece sobre rangos de fecha (filtros excluyentes ganando documento)
+        if (!string.IsNullOrWhiteSpace(documento))
+        {
+            var doc = documento.Trim();
+            query = query.Where(p =>
+                (p.PagoCuota.Any(pc =>
+                    pc.IdDetalleCreditoNavigation.IdCreditoNavigation.IdMatriculaNavigation
+                        .IdUsuarioAlumnoNavigation.IdPersonaNavigation.Documento == doc))
+                || (p.IdClienteNavigation != null && p.IdClienteNavigation.Documento == doc));
+        }
+        else
+        {
+            // Solo si NO se busca por documento, se aplican los filtros de fecha
+            if (fechaDesde.HasValue)
+            {
+                var desde = fechaDesde.Value.ToDateTime(TimeOnly.MinValue);
+                query = query.Where(p => p.FechaPago >= desde);
+            }
+
+            if (fechaHasta.HasValue)
+            {
+                var hasta = fechaHasta.Value.ToDateTime(TimeOnly.MaxValue);
+                query = query.Where(p => p.FechaPago <= hasta);
+            }
         }
 
         if (idMatricula.HasValue)
@@ -57,20 +86,13 @@ public class HistorialPagoRepository : IHistorialPagoRepository
                 pc.IdDetalleCreditoNavigation.IdCreditoNavigation.IdMatricula == idMatricula));
         }
 
-        if (fechaDesde.HasValue)
+        query = query.OrderByDescending(p => p.FechaPago).ThenByDescending(p => p.IdPago);
+
+        if (limite.HasValue && limite.Value > 0)
         {
-            var desde = fechaDesde.Value.ToDateTime(TimeOnly.MinValue);
-            query = query.Where(p => p.FechaPago >= desde);
+            query = query.Take(limite.Value);
         }
 
-        if (fechaHasta.HasValue)
-        {
-            var hasta = fechaHasta.Value.ToDateTime(TimeOnly.MaxValue);
-            query = query.Where(p => p.FechaPago <= hasta);
-        }
-
-        return await query
-            .OrderByDescending(p => p.FechaPago)
-            .ToListAsync(cancellationToken);
+        return await query.ToListAsync(cancellationToken);
     }
 }

@@ -14,6 +14,10 @@ public class PagoHistorialDTO
     public int NumeroCuotasPagadas { get; set; }
     // Datos del Cliente si es que posee
     public int IdCliente { get; set; }
+    public string? ClienteNombre { get; set; }
+    public string? ClienteDocumento { get; set; }
+    public string? ClienteCorreo { get; set; }
+    public string? ClienteCelular { get; set; }
     // Datos del alumno
     public string Documento { get; set; } = string.Empty;
     public string NumeroDeposito { get; set; }

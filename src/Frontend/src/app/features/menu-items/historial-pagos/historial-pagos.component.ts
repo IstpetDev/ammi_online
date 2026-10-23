@@ -143,6 +143,7 @@ export class HistorialPagosComponent implements OnInit {
   loading = false;
   hasBuscado = false;
   searchValue = '';
+  esCargaInicial = true;
 
   // Drawer saldo alumno
   showSaldoDrawer = false;
@@ -199,9 +200,6 @@ export class HistorialPagosComponent implements OnInit {
 
   get pagosFiltrados(): HistorialPagoItem[] {
     let list = this.pagos;
-    if (this.filtros.estadoPago) {
-      list = list.filter(p => p.estadoPago === this.filtros.estadoPago);
-    }
     if (this.searchValue.trim()) {
       const term = this.searchValue.toLowerCase().trim();
       list = list.filter(p =>
@@ -248,13 +246,96 @@ export class HistorialPagosComponent implements OnInit {
     this.esMasterContabilidad = currentUser?.roles.some(r => r.nombre === 'MASTER-CONTABILIDAD') ?? false;
 
     this.pagos = [];
-    const today = new Date();
-    const from = new Date(today);
-    from.setMonth(from.getMonth() - 1);
-    this.filtros.fechaDesde = from;
-    this.filtros.fechaHasta = today;
+    this.filtros = {
+      documento: '',
+      fechaDesde: null,
+      fechaHasta: null,
+      estadoPago: 'PENDIENTE'
+    };
     this.hasBuscado = true;
-    this.cargarHistorial();
+    this.esCargaInicial = true;
+    this.cargarPagosIniciales();
+  }
+
+  onDocumentoChange(): void {
+    if (this.filtros.documento && this.filtros.documento.trim()) {
+      // Documento es excluyente con fechas (gana documento)
+      this.filtros.fechaDesde = null;
+      this.filtros.fechaHasta = null;
+    }
+  }
+
+  onFechaChange(): void {
+    if (this.filtros.fechaDesde || this.filtros.fechaHasta) {
+      // Fechas son excluyentes con documento
+      this.filtros.documento = '';
+    }
+  }
+
+  buscarPorTexto(): void {
+    const term = this.searchValue.trim();
+    if (!term) return;
+
+    this.filtros.documento = term;
+    this.filtros.fechaDesde = null;
+    this.filtros.fechaHasta = null;
+    this.esCargaInicial = false;
+    this.aplicarFiltros();
+  }
+
+  cargarPagosIniciales(): void {
+    this.loading = true;
+    this.currentPage = 1;
+    this.pagoService.getHistorialPagosContabilidadFiltrado({
+      estadoPago: 'PENDIENTE',
+      limite: 10
+    }).subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.pagos = response.data;
+          this.enriquecerClientesSiFaltan();
+        } else {
+          this.pagos = [];
+        }
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error cargando pagos pendientes iniciales:', err);
+        this.toastService.showError('No se pudieron cargar los pagos pendientes', 'Error');
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  recargarHistorial(): void {
+    if (this.esCargaInicial) {
+      this.cargarPagosIniciales();
+    } else {
+      this.cargarHistorial();
+    }
+  }
+
+  private enriquecerClientesSiFaltan(): void {
+    this.pagos.forEach(pago => {
+      if (pago.clienteNombre) return;
+      const idC = pago.idCliente ?? (pago as any).IdCliente;
+      if (idC) {
+        this.clienteService.getClienteById(idC).subscribe({
+          next: (resCliente) => {
+            if (resCliente.isSuccess && resCliente.data && resCliente.data.length > 0) {
+              const c = resCliente.data[0];
+              pago.clienteNombre = [c.nombres || '', c.apellidos || ''].join(' ').trim();
+              pago.clienteDocumento = c.documento || '';
+              pago.clienteCorreo = c.correo || '';
+              pago.clienteCelular = c.celular || '';
+              this.cdr.detectChanges();
+            }
+          }
+        });
+      }
+    });
   }
 
   cargarHistorial(): void {
@@ -265,33 +346,19 @@ export class HistorialPagosComponent implements OnInit {
     }
 
     this.loading = true;
+    const esSoloDocumento = Boolean(this.filtros.documento?.trim());
+
     this.pagoService.getHistorialPagosContabilidadFiltrado({
-      documento: this.filtros.documento,
-      fechaDesde: this.toDateOnlyString(this.filtros.fechaDesde),
-      fechaHasta: this.toDateOnlyString(this.filtros.fechaHasta),
+      documento: esSoloDocumento ? this.filtros.documento.trim() : undefined,
+      fechaDesde: esSoloDocumento ? null : this.toDateOnlyString(this.filtros.fechaDesde),
+      fechaHasta: esSoloDocumento ? null : this.toDateOnlyString(this.filtros.fechaHasta),
+      estadoPago: this.filtros.estadoPago,
       esValidado: null
     }).subscribe({
       next: (response) => {
         if (response.isSuccess && response.data) {
           this.pagos = response.data;
-          // Enriquecer cada pago con los datos de facturación del cliente registrado
-          this.pagos.forEach(pago => {
-            const idC = pago.idCliente ?? (pago as any).IdCliente;
-            if (idC) {
-              this.clienteService.getClienteById(idC).subscribe({
-                next: (resCliente) => {
-                  if (resCliente.isSuccess && resCliente.data && resCliente.data.length > 0) {
-                    const c = resCliente.data[0];
-                    pago.clienteNombre = `${c.nombres || ''} ${c.apellidos || ''}`.trim();
-                    pago.clienteDocumento = c.documento || '';
-                    pago.clienteCorreo = c.correo || '';
-                    pago.clienteCelular = c.celular || '';
-                    this.cdr.detectChanges();
-                  }
-                }
-              });
-            }
-          });
+          this.enriquecerClientesSiFaltan();
         } else {
           this.pagos = [];
           this.toastService.showWarning(response.message || 'No se encontraron pagos', 'Sin datos');
@@ -309,7 +376,10 @@ export class HistorialPagosComponent implements OnInit {
   }
 
   aplicarFiltros(): void {
-    if (this.filtros.fechaDesde && this.filtros.fechaHasta && this.filtros.fechaDesde > this.filtros.fechaHasta) {
+    if (this.filtros.documento && this.filtros.documento.trim()) {
+      this.filtros.fechaDesde = null;
+      this.filtros.fechaHasta = null;
+    } else if (this.filtros.fechaDesde && this.filtros.fechaHasta && this.filtros.fechaDesde > this.filtros.fechaHasta) {
       this.toastService.showWarning('La fecha desde no puede ser mayor a la fecha hasta', 'Rango inválido');
       return;
     }
@@ -319,6 +389,7 @@ export class HistorialPagosComponent implements OnInit {
       return;
     }
 
+    this.esCargaInicial = false;
     this.currentPage = 1;
     this.hasBuscado = true;
     this.cargarHistorial();
@@ -329,12 +400,13 @@ export class HistorialPagosComponent implements OnInit {
       documento: '',
       fechaDesde: null,
       fechaHasta: null,
-      estadoPago: null
+      estadoPago: 'PENDIENTE'
     };
-    this.hasBuscado = false;
-    this.pagos = [];
     this.searchValue = '';
     this.currentPage = 1;
+    this.esCargaInicial = true;
+    this.hasBuscado = true;
+    this.cargarPagosIniciales();
   }
 
   onPageChange(event: PageEvent): void {
@@ -401,7 +473,7 @@ export class HistorialPagosComponent implements OnInit {
       next: (response) => {
         if (response.isSuccess) {
           this.toastService.showSuccess(`Pago #${pago.idPago} aprobado correctamente`, 'Éxito');
-          this.cargarHistorial();
+          this.recargarHistorial();
         } else {
           this.toastService.showError(response.message || 'No se pudo aprobar el pago', 'Error');
         }
@@ -438,7 +510,7 @@ export class HistorialPagosComponent implements OnInit {
       next: (response) => {
         if (response.isSuccess) {
           this.toastService.showSuccess(`Pago #${pago.idPago} rechazado correctamente`, 'Rechazado');
-          this.cargarHistorial();
+          this.recargarHistorial();
         } else {
           this.toastService.showError(response.message || 'No se pudo rechazar el pago', 'Error');
         }
@@ -489,7 +561,7 @@ export class HistorialPagosComponent implements OnInit {
       next: (response) => {
         if (response.isSuccess) {
           this.toastService.showSuccess(`Pago #${pago.idPago} cancelado correctamente`, 'Éxito');
-          this.cargarHistorial();
+          this.recargarHistorial();
         } else {
           this.toastService.showError(response.message || 'No se pudo cancelar el pago', 'Error');
         }
@@ -676,7 +748,8 @@ export class HistorialPagosComponent implements OnInit {
     return Boolean(
       this.filtros.documento?.trim() ||
       this.filtros.fechaDesde ||
-      this.filtros.fechaHasta
+      this.filtros.fechaHasta ||
+      this.filtros.estadoPago
     );
   }
 
