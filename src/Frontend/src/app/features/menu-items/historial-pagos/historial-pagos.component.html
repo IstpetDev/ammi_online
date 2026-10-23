@@ -214,7 +214,7 @@
     title="Historial de Pagos"
     subtitle="Gestión, validación y reporte de pagos registrados">
     <div header-actions class="header-actions">
-      <button type="button" class="btn btn-outline" (click)="aplicarFiltros()" [disabled]="loading">
+      <button type="button" class="btn btn-outline" (click)="recargarHistorial()" [disabled]="loading">
         <svg class="btn-icon" [class.spin]="loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Recargar
       </button>
@@ -228,18 +228,30 @@
         <label class="m-label">Documento</label>
         <div class="m-input-icon-wrap">
           <svg class="m-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/></svg>
-          <input type="text" [(ngModel)]="filtros.documento" placeholder="Ej: 1802989226" class="m-input m-input-with-icon" />
+          <input type="text" [(ngModel)]="filtros.documento" (input)="onDocumentoChange()" (keyup.enter)="aplicarFiltros()" placeholder="Ej: 1802989226 (Prioritario)" class="m-input m-input-with-icon" />
         </div>
       </div>
 
       <div class="m-field field-date">
-        <label class="m-label">Fecha desde</label>
-        <input type="date" [(ngModel)]="fechaDesdeStr" class="m-input" />
+        <label class="m-label" [class.text-muted]="!!filtros.documento.trim()">Fecha desde</label>
+        <input
+          type="date"
+          [(ngModel)]="fechaDesdeStr"
+          (change)="onFechaChange()"
+          [disabled]="!!filtros.documento.trim()"
+          class="m-input"
+          [title]="filtros.documento.trim() ? 'Excluido: La consulta por documento tiene prioridad' : ''" />
       </div>
 
       <div class="m-field field-date">
-        <label class="m-label">Fecha hasta</label>
-        <input type="date" [(ngModel)]="fechaHastaStr" class="m-input" />
+        <label class="m-label" [class.text-muted]="!!filtros.documento.trim()">Fecha hasta</label>
+        <input
+          type="date"
+          [(ngModel)]="fechaHastaStr"
+          (change)="onFechaChange()"
+          [disabled]="!!filtros.documento.trim()"
+          class="m-input"
+          [title]="filtros.documento.trim() ? 'Excluido: La consulta por documento tiene prioridad' : ''" />
       </div>
 
       <div class="m-field field-select">
@@ -283,7 +295,8 @@
           type="text"
           [(ngModel)]="searchValue"
           (ngModelChange)="currentPage = 1"
-          placeholder="Buscar alumno, documento o banco..."
+          placeholder="Filtrar en tabla o presione Enter para buscar documento en BD..."
+          (keyup.enter)="buscarPorTexto()"
           class="m-input search-input" />
       </div>
       <div class="records-badge">

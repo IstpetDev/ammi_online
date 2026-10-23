@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Entities;
 
 namespace AMMI_Online_API.Domain.Interfaces.Payments;
 
@@ -10,5 +10,7 @@ public interface IHistorialPagoRepository
         DateOnly? fechaDesde,
         DateOnly? fechaHasta,
         bool? esValidado,
-        CancellationToken cancellationToken);
+        string? estadoPago = null,
+        int? limite = null,
+        CancellationToken cancellationToken = default);
 }

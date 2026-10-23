@@ -16,16 +16,17 @@ public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, 
 
     public async Task<Response<IEnumerable<PagoHistorialDTO>>> Handle(GetHistorialPagosQuery request, CancellationToken cancellationToken)
     {
-
         var pagos = await _historialPagoRepository.GetHistorialPagosAsync(
             request.Documento,
             request.IdMatricula,
             request.FechaDesde,
             request.FechaHasta,
             request.EsValidado,
+            request.EstadoPago,
+            request.Limite,
             cancellationToken);
 
-        var resultado = pagos.Select(p => {
+        var items = pagos.Select(p => {
             var primeraCuota = p.PagoCuota.FirstOrDefault();
             var persona = primeraCuota?.IdDetalleCreditoNavigation?.IdCreditoNavigation?
                 .IdMatriculaNavigation?.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
@@ -57,6 +58,12 @@ public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, 
                 TotalPagadoCredito = p.PagoCuota.Sum(pc => pc.ValorAplicado),
                 NumeroCuotasPagadas = p.PagoCuota.Count(pc => pc.IdDetalleCreditoNavigation != null && pc.IdDetalleCreditoNavigation.Pagado),
                 IdCliente = p.IdCliente ?? 0,
+                ClienteNombre = p.IdClienteNavigation != null
+                    ? $"{p.IdClienteNavigation.Nombres ?? ""} {p.IdClienteNavigation.Apellidos ?? ""}".Trim()
+                    : null,
+                ClienteDocumento = p.IdClienteNavigation?.Documento,
+                ClienteCorreo = p.IdClienteNavigation?.Correo,
+                ClienteCelular = p.IdClienteNavigation?.Celular,
                 CuotasPagadas = p.PagoCuota.Select(pc => new PagoCuotaHistorialDTO
                 {
                     IdPagoCuota = pc.IdPagoCuota,
@@ -90,14 +97,28 @@ public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, 
                 PrimerNombre = primerNombre,
                 SegundoNombre = segundoNombre
             };
-        })
-        .OrderBy(x => x.PrimerApellido)
-        .ThenBy(x => x.SegundoApellido)
-        .ThenBy(x => x.PrimerNombre)
-        .ThenBy(x => x.SegundoNombre)
-        .ThenByDescending(x => x.Dto.FechaPago)
-        .Select(x => x.Dto)
-        .ToList();
+        });
+
+        List<PagoHistorialDTO> resultado;
+        if (request.Limite.HasValue && request.Limite.Value > 0)
+        {
+            resultado = items
+                .OrderByDescending(x => x.Dto.FechaPago)
+                .ThenByDescending(x => x.Dto.IdPago)
+                .Select(x => x.Dto)
+                .ToList();
+        }
+        else
+        {
+            resultado = items
+                .OrderBy(x => x.PrimerApellido)
+                .ThenBy(x => x.SegundoApellido)
+                .ThenBy(x => x.PrimerNombre)
+                .ThenBy(x => x.SegundoNombre)
+                .ThenByDescending(x => x.Dto.FechaPago)
+                .Select(x => x.Dto)
+                .ToList();
+        }
 
         return new Response<IEnumerable<PagoHistorialDTO>>(resultado);
     }
