@@ -143,7 +143,6 @@ export class HistorialPagosComponent implements OnInit {
   loading = false;
   hasBuscado = false;
   searchValue = '';
-  esCargaInicial = true;
 
   // Drawer saldo alumno
   showSaldoDrawer = false;
@@ -250,11 +249,10 @@ export class HistorialPagosComponent implements OnInit {
       documento: '',
       fechaDesde: null,
       fechaHasta: null,
-      estadoPago: 'PENDIENTE'
+      estadoPago: null
     };
     this.hasBuscado = true;
-    this.esCargaInicial = true;
-    this.cargarPagosIniciales();
+    this.cargarHistorial();
   }
 
   onDocumentoChange(): void {
@@ -279,42 +277,11 @@ export class HistorialPagosComponent implements OnInit {
     this.filtros.documento = term;
     this.filtros.fechaDesde = null;
     this.filtros.fechaHasta = null;
-    this.esCargaInicial = false;
     this.aplicarFiltros();
   }
 
-  cargarPagosIniciales(): void {
-    this.loading = true;
-    this.currentPage = 1;
-    this.pagoService.getHistorialPagosContabilidadFiltrado({
-      estadoPago: 'PENDIENTE',
-      limite: 10
-    }).subscribe({
-      next: (response) => {
-        if (response.isSuccess && response.data) {
-          this.pagos = response.data;
-          this.enriquecerClientesSiFaltan();
-        } else {
-          this.pagos = [];
-        }
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error cargando pagos pendientes iniciales:', err);
-        this.toastService.showError('No se pudieron cargar los pagos pendientes', 'Error');
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
-  }
-
   recargarHistorial(): void {
-    if (this.esCargaInicial) {
-      this.cargarPagosIniciales();
-    } else {
-      this.cargarHistorial();
-    }
+    this.cargarHistorial();
   }
 
   private enriquecerClientesSiFaltan(): void {
@@ -339,12 +306,6 @@ export class HistorialPagosComponent implements OnInit {
   }
 
   cargarHistorial(): void {
-    if (!this.hasFiltrosActivos()) {
-      this.loading = false;
-      this.pagos = [];
-      return;
-    }
-
     this.loading = true;
     const esSoloDocumento = Boolean(this.filtros.documento?.trim());
 
@@ -384,12 +345,6 @@ export class HistorialPagosComponent implements OnInit {
       return;
     }
 
-    if (!this.hasFiltrosActivos()) {
-      this.toastService.showWarning('Ingresa al menos un filtro para consultar el historial', 'Filtros requeridos');
-      return;
-    }
-
-    this.esCargaInicial = false;
     this.currentPage = 1;
     this.hasBuscado = true;
     this.cargarHistorial();
@@ -400,13 +355,12 @@ export class HistorialPagosComponent implements OnInit {
       documento: '',
       fechaDesde: null,
       fechaHasta: null,
-      estadoPago: 'PENDIENTE'
+      estadoPago: null
     };
     this.searchValue = '';
     this.currentPage = 1;
-    this.esCargaInicial = true;
     this.hasBuscado = true;
-    this.cargarPagosIniciales();
+    this.cargarHistorial();
   }
 
   onPageChange(event: PageEvent): void {
