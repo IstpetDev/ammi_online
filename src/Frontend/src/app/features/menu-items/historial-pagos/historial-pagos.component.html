@@ -294,14 +294,14 @@
         <input
           type="text"
           [(ngModel)]="searchValue"
-          (ngModelChange)="currentPage = 1"
+          (ngModelChange)="onSearchInputChange()"
           placeholder="Filtrar en tabla o presione Enter para buscar documento en BD..."
           (keyup.enter)="buscarPorTexto()"
           class="m-input search-input" />
       </div>
       <div class="records-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span>{{ pagosFiltrados.length }} registros</span>
+        <span>{{ totalRecords }} registros</span>
       </div>
     </div>
 
@@ -315,19 +315,19 @@
 
     <!-- 2. SIN RESULTADOS ENCONTRADOS DESPUÉS DE BUSCAR -->
     <app-shared-empty-state
-      *ngIf="hasBuscado && pagosFiltrados.length === 0 && !loading"
+      *ngIf="hasBuscado && totalRecords === 0 && !loading"
       materialIcon="inbox"
       title="No se encontraron pagos"
       description="No existen pagos registrados que coincidan con la búsqueda o criterios seleccionados.">
     </app-shared-empty-state>
 
     <!-- 3. TABLA DE RESULTADOS CUANDO HAY DATOS O ESTÁ CARGANDO -->
-    <ng-container *ngIf="hasBuscado && (pagosFiltrados.length > 0 || loading)">
+    <ng-container *ngIf="hasBuscado && (totalRecords > 0 || loading)">
       <app-shared-table
         [columns]="tableColumns"
         [data]="pagosPaginados"
         [loading]="loading"
-        [totalRecords]="pagosFiltrados.length"
+        [totalRecords]="totalRecords"
         [rowsPerPage]="rowsPerPage"
         [page]="currentPage"
         [paginator]="true"

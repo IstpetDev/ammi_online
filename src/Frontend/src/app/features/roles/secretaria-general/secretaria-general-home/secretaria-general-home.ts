@@ -121,10 +121,12 @@ export class SecretariaGeneralHomeComponent implements OnInit {
 
     this.pagoService.getHistorialPagosContabilidadFiltrado({
       fechaDesde: hoyStr,
-      fechaHasta: hoyStr
+      fechaHasta: hoyStr,
+      pageNumber: 1,
+      pageSize: 5000
     }).subscribe({
       next: (response) => {
-        const rawData = response?.isSuccess && response.data ? response.data : [];
+        const rawData = response?.isSuccess && response.data ? (Array.isArray(response.data) ? response.data : (response.data.items || [])) : [];
         this.pagos = rawData.map((item: any) => this.normalizarPagoItem(item));
         this.procesarMetricasDiarias();
         this.loading = false;

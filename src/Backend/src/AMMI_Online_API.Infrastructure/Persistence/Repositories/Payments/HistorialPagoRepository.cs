@@ -14,6 +14,41 @@ public class HistorialPagoRepository : IHistorialPagoRepository
         _context = context;
     }
 
+    public async Task<(IEnumerable<Pago> Items, int TotalCount)> GetHistorialPagosPagedAsync(
+        string? documento,
+        int? idMatricula,
+        DateOnly? fechaDesde,
+        DateOnly? fechaHasta,
+        bool? esValidado,
+        string? estadoPago = null,
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var baseQuery = BuildFilterQuery(documento, idMatricula, fechaDesde, fechaHasta, estadoPago);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var query = ApplyIncludes(baseQuery)
+            .OrderByDescending(p => p.FechaPago)
+            .ThenByDescending(p => p.IdPago);
+
+        if (pageNumber > 0 && pageSize > 0)
+        {
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (items, totalCount);
+        }
+        else
+        {
+            var items = await query.ToListAsync(cancellationToken);
+            return (items, totalCount);
+        }
+    }
+
     public async Task<IEnumerable<Pago>> GetHistorialPagosAsync(
         string? documento,
         int? idMatricula,
@@ -24,28 +59,28 @@ public class HistorialPagoRepository : IHistorialPagoRepository
         int? limite = null,
         CancellationToken cancellationToken = default)
     {
-        // Consulta base con todas las relaciones necesarias
-        var query = _context.Pago
-            .AsNoTracking()
-            .Include(dp => dp.IdEstadoPagoNavigation)
-            .Include(ad => ad.UrlComprobanteNavigation)
-            .Include(p => p.PagoCuota)
-                .ThenInclude(pc => pc.IdDetalleCreditoNavigation)
-                    .ThenInclude(dc => dc.IdCreditoNavigation)
-                        .ThenInclude(c => c.IdMatriculaNavigation)
-                            .ThenInclude(m => m.IdUsuarioAlumnoNavigation)
-                                .ThenInclude(u => u.IdPersonaNavigation)
-            .Include(p => p.PagoCuota)
-                .ThenInclude(pc => pc.IdDetalleCreditoNavigation)
-                    .ThenInclude(dc => dc.IdCreditoNavigation)
-                        .ThenInclude(c => c.IdEspecieCicloNavigation)
-                            .ThenInclude(ec => ec.IdEspecieNavigation)
-            .Include(p => p.IdTipoPagoNavigation)
-            .Include(p => p.IdCuentaBancariaNavigation)
-            .Include(p => p.UsuarioApruebaNavigation)
-                .ThenInclude(u => u.IdPersonaNavigation)
-            .Include(p => p.IdClienteNavigation)
-            .AsQueryable();
+        var baseQuery = BuildFilterQuery(documento, idMatricula, fechaDesde, fechaHasta, estadoPago);
+
+        var query = ApplyIncludes(baseQuery)
+            .OrderByDescending(p => p.FechaPago)
+            .ThenByDescending(p => p.IdPago);
+
+        if (limite.HasValue && limite.Value > 0)
+        {
+            query = (IOrderedQueryable<Pago>)query.Take(limite.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    private IQueryable<Pago> BuildFilterQuery(
+        string? documento,
+        int? idMatricula,
+        DateOnly? fechaDesde,
+        DateOnly? fechaHasta,
+        string? estadoPago)
+    {
+        var query = _context.Pago.AsNoTracking().AsQueryable();
 
         // Filtro por EstadoPago si se proporciona (ex: "PENDIENTE", "APROBADO", etc.)
         if (!string.IsNullOrWhiteSpace(estadoPago) && !estadoPago.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
@@ -86,13 +121,29 @@ public class HistorialPagoRepository : IHistorialPagoRepository
                 pc.IdDetalleCreditoNavigation.IdCreditoNavigation.IdMatricula == idMatricula));
         }
 
-        query = query.OrderByDescending(p => p.FechaPago).ThenByDescending(p => p.IdPago);
+        return query;
+    }
 
-        if (limite.HasValue && limite.Value > 0)
-        {
-            query = query.Take(limite.Value);
-        }
-
-        return await query.ToListAsync(cancellationToken);
+    private IQueryable<Pago> ApplyIncludes(IQueryable<Pago> query)
+    {
+        return query
+            .Include(dp => dp.IdEstadoPagoNavigation)
+            .Include(ad => ad.UrlComprobanteNavigation)
+            .Include(p => p.PagoCuota)
+                .ThenInclude(pc => pc.IdDetalleCreditoNavigation)
+                    .ThenInclude(dc => dc.IdCreditoNavigation)
+                        .ThenInclude(c => c.IdMatriculaNavigation)
+                            .ThenInclude(m => m.IdUsuarioAlumnoNavigation)
+                                .ThenInclude(u => u.IdPersonaNavigation)
+            .Include(p => p.PagoCuota)
+                .ThenInclude(pc => pc.IdDetalleCreditoNavigation)
+                    .ThenInclude(dc => dc.IdCreditoNavigation)
+                        .ThenInclude(c => c.IdEspecieCicloNavigation)
+                            .ThenInclude(ec => ec.IdEspecieNavigation)
+            .Include(p => p.IdTipoPagoNavigation)
+            .Include(p => p.IdCuentaBancariaNavigation)
+            .Include(p => p.UsuarioApruebaNavigation)
+                .ThenInclude(u => u.IdPersonaNavigation)
+            .Include(p => p.IdClienteNavigation);
     }
 }

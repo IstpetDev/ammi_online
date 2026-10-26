@@ -158,10 +158,12 @@ export class MasterContabilidadHomeComponent implements OnInit {
     this.loading = true;
     this.pagoService.getHistorialPagosContabilidadFiltrado({
       fechaDesde: this.toDateOnlyString(this.fechaDesde),
-      fechaHasta: this.toDateOnlyString(this.fechaHasta)
+      fechaHasta: this.toDateOnlyString(this.fechaHasta),
+      pageNumber: 1,
+      pageSize: 5000
     }).subscribe({
       next: (response) => {
-        const rawData = response?.isSuccess && response.data ? response.data : [];
+        const rawData = response?.isSuccess && response.data ? (Array.isArray(response.data) ? response.data : (response.data.items || [])) : [];
         this.pagos = rawData.map((item: any) => this.normalizarPagoItem(item));
         this.procesarKPIs();
         this.loading = false;
