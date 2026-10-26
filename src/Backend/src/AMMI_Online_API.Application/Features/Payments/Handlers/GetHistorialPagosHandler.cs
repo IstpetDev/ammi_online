@@ -5,7 +5,7 @@ using AMMI_Online_API.Domain.Interfaces.Payments;
 
 namespace AMMI_Online_API.Application.Features.Payments.Queries;
 
-public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, Response<IEnumerable<PagoHistorialDTO>>>
+public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, Response<PaginatedResult<PagoHistorialDTO>>>
 {
     private readonly IHistorialPagoRepository _historialPagoRepository;
 
@@ -14,29 +14,25 @@ public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, 
         _historialPagoRepository = historialPagoRepository;
     }
 
-    public async Task<Response<IEnumerable<PagoHistorialDTO>>> Handle(GetHistorialPagosQuery request, CancellationToken cancellationToken)
+    public async Task<Response<PaginatedResult<PagoHistorialDTO>>> Handle(GetHistorialPagosQuery request, CancellationToken cancellationToken)
     {
-        var pagos = await _historialPagoRepository.GetHistorialPagosAsync(
+        var (pagos, totalCount) = await _historialPagoRepository.GetHistorialPagosPagedAsync(
             request.Documento,
             request.IdMatricula,
             request.FechaDesde,
             request.FechaHasta,
             request.EsValidado,
             request.EstadoPago,
-            request.Limite,
+            request.PageNumber,
+            request.PageSize,
             cancellationToken);
 
-        var items = pagos.Select(p => {
+        var dtos = pagos.Select(p => {
             var primeraCuota = p.PagoCuota.FirstOrDefault();
             var persona = primeraCuota?.IdDetalleCreditoNavigation?.IdCreditoNavigation?
                 .IdMatriculaNavigation?.IdUsuarioAlumnoNavigation?.IdPersonaNavigation;
 
-            var primerApellido = persona?.PrimerApellido ?? string.Empty;
-            var segundoApellido = persona?.SegundoApellido ?? string.Empty;
-            var primerNombre = persona?.PrimerNombre ?? string.Empty;
-            var segundoNombre = persona?.SegundoNombre ?? string.Empty;
-
-            var dto = new PagoHistorialDTO
+            return new PagoHistorialDTO
             {
                 IdPago = p.IdPago,
                 FechaPago = p.FechaPago,
@@ -88,39 +84,10 @@ public class GetHistorialPagosHandler : IRequestHandler<GetHistorialPagosQuery, 
                     ? ConstruirNombreCompleto(p.UsuarioApruebaNavigation.IdPersonaNavigation)
                     : null
             };
+        }).ToList();
 
-            return new
-            {
-                Dto = dto,
-                PrimerApellido = primerApellido,
-                SegundoApellido = segundoApellido,
-                PrimerNombre = primerNombre,
-                SegundoNombre = segundoNombre
-            };
-        });
-
-        List<PagoHistorialDTO> resultado;
-        if (request.Limite.HasValue && request.Limite.Value > 0)
-        {
-            resultado = items
-                .OrderByDescending(x => x.Dto.FechaPago)
-                .ThenByDescending(x => x.Dto.IdPago)
-                .Select(x => x.Dto)
-                .ToList();
-        }
-        else
-        {
-            resultado = items
-                .OrderBy(x => x.PrimerApellido)
-                .ThenBy(x => x.SegundoApellido)
-                .ThenBy(x => x.PrimerNombre)
-                .ThenBy(x => x.SegundoNombre)
-                .ThenByDescending(x => x.Dto.FechaPago)
-                .Select(x => x.Dto)
-                .ToList();
-        }
-
-        return new Response<IEnumerable<PagoHistorialDTO>>(resultado);
+        var result = new PaginatedResult<PagoHistorialDTO>(dtos, totalCount, request.PageNumber, request.PageSize);
+        return new Response<PaginatedResult<PagoHistorialDTO>>(result);
     }
 
     private string ConstruirNombreCompleto(Domain.Entities.Persona? persona)

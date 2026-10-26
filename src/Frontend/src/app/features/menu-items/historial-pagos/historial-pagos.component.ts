@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Observable, map } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PagoService } from '../../../core/services/pagos/pago.service';
@@ -115,6 +116,7 @@ export class HistorialPagosComponent implements OnInit {
 
   currentPage = 1;
   rowsPerPage = 10;
+  totalRecords = 0;
 
   // Drawer Comprobante Preview
   showComprobanteDrawer = false;
@@ -214,9 +216,9 @@ export class HistorialPagosComponent implements OnInit {
   }
 
   get pagosPaginados(): HistorialPagoItem[] {
-    const list = this.pagosFiltrados;
-    const start = (this.currentPage - 1) * this.rowsPerPage;
-    return list.slice(start, start + this.rowsPerPage);
+
+
+    return this.pagosFiltrados;
   }
 
   // Approve dialog state
@@ -280,6 +282,14 @@ export class HistorialPagosComponent implements OnInit {
     this.aplicarFiltros();
   }
 
+  onSearchInputChange(): void {
+    if (!this.searchValue.trim() && this.filtros.documento) {
+      this.filtros.documento = '';
+      this.currentPage = 1;
+      this.cargarHistorial();
+    }
+  }
+
   recargarHistorial(): void {
     this.cargarHistorial();
   }
@@ -314,14 +324,24 @@ export class HistorialPagosComponent implements OnInit {
       fechaDesde: esSoloDocumento ? null : this.toDateOnlyString(this.filtros.fechaDesde),
       fechaHasta: esSoloDocumento ? null : this.toDateOnlyString(this.filtros.fechaHasta),
       estadoPago: this.filtros.estadoPago,
-      esValidado: null
+      esValidado: null,
+      pageNumber: this.currentPage,
+      pageSize: this.rowsPerPage
     }).subscribe({
       next: (response) => {
         if (response.isSuccess && response.data) {
-          this.pagos = response.data;
+          const data = response.data;
+          if (Array.isArray(data)) {
+            this.pagos = data;
+            this.totalRecords = data.length;
+          } else {
+            this.pagos = data.items || [];
+            this.totalRecords = data.totalCount ?? this.pagos.length;
+          }
           this.enriquecerClientesSiFaltan();
         } else {
           this.pagos = [];
+          this.totalRecords = 0;
           this.toastService.showWarning(response.message || 'No se encontraron pagos', 'Sin datos');
         }
         this.loading = false;
@@ -330,6 +350,8 @@ export class HistorialPagosComponent implements OnInit {
       error: (err) => {
         console.error('Error cargando historial de pagos:', err);
         this.toastService.showError('No se pudo cargar el historial de pagos', 'Error');
+        this.pagos = [];
+        this.totalRecords = 0;
         this.loading = false;
         this.cdr.markForCheck();
       }
@@ -366,6 +388,7 @@ export class HistorialPagosComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.currentPage = event.page;
     this.rowsPerPage = event.rows;
+    this.cargarHistorial();
   }
 
   onSortChange(event: SortEvent): void {

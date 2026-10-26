@@ -1106,6 +1106,19 @@
   line-height: 1.4;
 }
 
+.ciclo-warning-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .drawer-error-alert {
   display: flex;
   align-items: center;

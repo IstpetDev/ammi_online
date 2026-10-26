@@ -222,22 +222,6 @@ public class DetalleMallaHandler :
             throw new InvalidOperationException("Los días de gracia no pueden ser negativos.");
         }
 
-        // Validar contra límites del ciclo
-        if (ciclo != null)
-        {
-            if (ciclo.FechaInicioEstimada.HasValue && request.Dto.FechaInicio.HasValue 
-                && request.Dto.FechaInicio < ciclo.FechaInicioEstimada)
-            {
-                throw new InvalidOperationException($"La fecha de inicio ({request.Dto.FechaInicio.Value:dd/MM/yyyy}) no puede ser anterior al inicio del ciclo ({ciclo.FechaInicioEstimada.Value:dd/MM/yyyy}).");
-            }
-
-            if (ciclo.FechaFinEstimada.HasValue && request.Dto.FechaFin.HasValue 
-                && request.Dto.FechaFin > ciclo.FechaFinEstimada)
-            {
-                throw new InvalidOperationException($"La fecha de fin ({request.Dto.FechaFin.Value:dd/MM/yyyy}) no puede ser posterior al fin del ciclo ({ciclo.FechaFinEstimada.Value:dd/MM/yyyy}).");
-            }
-        }
-
         entity.FechaInicio = request.Dto.FechaInicio;
         entity.FechaFin = request.Dto.FechaFin;
         entity.DiasGracia = request.Dto.DiasGracia ?? entity.DiasGracia ?? 5;

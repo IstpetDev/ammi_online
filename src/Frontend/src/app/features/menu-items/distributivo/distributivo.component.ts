@@ -639,6 +639,13 @@ export class DistributivoComponent implements OnInit {
     return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
   }
 
+  get fechasFueraDeCiclo(): boolean {
+    if (!this.fechaInicioNotas || !this.fechaFinNotas) return false;
+    const fueraInicio = !!(this.minFechaCiclo && this.fechaInicioNotas < this.minFechaCiclo);
+    const fueraFin = !!(this.maxFechaCiclo && this.fechaFinNotas > this.maxFechaCiclo);
+    return fueraInicio || fueraFin;
+  }
+
   abrirModalFechasNotas(materia: DistributivoDTO): void {
     this.materiaFechasEditar = materia;
     this.errorFechasModal = '';
@@ -677,16 +684,6 @@ export class DistributivoComponent implements OnInit {
 
     if (this.fechaInicioNotas > this.fechaFinNotas) {
       this.errorFechasModal = 'La fecha de inicio no puede ser posterior a la fecha de fin';
-      return;
-    }
-
-    if (this.minFechaCiclo && this.fechaInicioNotas < this.minFechaCiclo) {
-      this.errorFechasModal = `La fecha de inicio (${this.fechaInicioNotas}) no puede ser anterior al inicio del ciclo (${this.minFechaCiclo})`;
-      return;
-    }
-
-    if (this.maxFechaCiclo && this.fechaFinNotas > this.maxFechaCiclo) {
-      this.errorFechasModal = `La fecha de fin (${this.fechaFinNotas}) no puede ser posterior al fin del ciclo (${this.maxFechaCiclo})`;
       return;
     }
 
