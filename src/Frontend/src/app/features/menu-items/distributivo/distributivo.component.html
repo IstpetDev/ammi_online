@@ -257,16 +257,24 @@
           <i class="pi pi-info-circle"></i>
         </div>
         <div class="banner-body">
-          <span class="banner-title">Límites permitidos del ciclo académico</span>
+          <span class="banner-title">Período referencial del ciclo académico</span>
           <span class="banner-desc">
             @if (minFechaCiclo && maxFechaCiclo) {
-              Rango disponible: <strong>{{ minFechaCiclo }}</strong> al <strong>{{ maxFechaCiclo }}</strong>.
+              Rango sugerido: <strong>{{ minFechaCiclo }}</strong> al <strong>{{ maxFechaCiclo }}</strong>.
             } @else {
-              No se han definido límites específicos para este ciclo.
+              No se han definido fechas referenciales para este ciclo.
             }
           </span>
         </div>
       </div>
+
+      <!-- Alerta de advertencia si las fechas están fuera del ciclo (no bloqueante) -->
+      @if (fechasFueraDeCiclo) {
+        <div class="ciclo-warning-alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>El rango configurado excede el calendario referencial del ciclo. Se guardará como excepción.</span>
+        </div>
+      }
 
       <!-- Alerta de Error si ocurre -->
       @if (errorFechasModal) {
@@ -289,7 +297,7 @@
             Fecha de Inicio de Calificación <span class="required">*</span>
           </label>
           <input id="drawerFechaInicio" type="date" [(ngModel)]="fechaInicioNotas"
-            [min]="minFechaCiclo" [max]="fechaFinNotas || maxFechaCiclo"
+            [max]="fechaFinNotas || undefined"
             class="form-input" />
           <span class="field-hint">
             A partir de este día, docentes y estudiantes tendrán habilitada la materia.
@@ -303,7 +311,7 @@
             Fecha de Cierre Ordinario <span class="required">*</span>
           </label>
           <input id="drawerFechaFin" type="date" [(ngModel)]="fechaFinNotas"
-            [min]="fechaInicioNotas || minFechaCiclo" [max]="maxFechaCiclo"
+            [min]="fechaInicioNotas || undefined"
             class="form-input" />
           <span class="field-hint">
             Fecha límite ordinaria para ingresar y asentar notas en el sistema.

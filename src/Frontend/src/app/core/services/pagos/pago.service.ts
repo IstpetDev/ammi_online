@@ -80,8 +80,29 @@ export class PagoService {
    * Endpoint: GET /api/Pagos/historial?IdMatricula={id}
    */
   getHistorialPagos(idMatricula: number): Observable<IResponse<HistorialPago[]>> {
-    return this.http.get<IResponse<HistorialPago[]>>(
-      `${API_BASE_URL}/api/Pagos/historial?IdMatricula=${idMatricula}`
+    const params = new HttpParams()
+      .set('IdMatricula', String(idMatricula))
+      .set('PageNumber', '1')
+      .set('PageSize', '1000');
+
+    return this.http.get<IResponse<any>>(
+      `${API_BASE_URL}/api/Pagos/historial`,
+      { params }
+    ).pipe(
+      map(response => {
+        let items: HistorialPago[] = [];
+        if (response && response.data) {
+          if (Array.isArray(response.data)) {
+            items = response.data;
+          } else if (response.data.items && Array.isArray(response.data.items)) {
+            items = response.data.items;
+          }
+        }
+        return {
+          ...response,
+          data: items
+        };
+      })
     );
   }
 
@@ -100,15 +121,15 @@ export class PagoService {
    * Obtener historial completo de pagos (sin filtros)
    * Endpoint: GET /api/Pagos/historial
    */
-  getHistorialPagosContabilidad(): Observable<IResponse<any[]>> {
-    return this.http.get<IResponse<any[]>>(
-      `${API_BASE_URL}/api/Pagos/historial`
+  getHistorialPagosContabilidad(): Observable<IResponse<any>> {
+    return this.http.get<IResponse<any>>(
+      `${API_BASE_URL}/api/Pagos/historial?PageSize=1000`
     );
   }
 
   /**
    * Obtener historial de pagos con filtros opcionales
-   * Endpoint: GET /api/Pagos/historial?Documento=&IdMatricula=&FechaDesde=&FechaHasta=&EsValidado=&EstadoPago=&Limite=
+   * Endpoint: GET /api/Pagos/historial?Documento=&IdMatricula=&FechaDesde=&FechaHasta=&EsValidado=&EstadoPago=&Limite=&PageNumber=&PageSize=
    */
   getHistorialPagosContabilidadFiltrado(filtros: {
     documento?: string;
@@ -118,7 +139,9 @@ export class PagoService {
     esValidado?: boolean | null;
     estadoPago?: string | null;
     limite?: number | null;
-  }): Observable<IResponse<any[]>> {
+    pageNumber?: number | null;
+    pageSize?: number | null;
+  }): Observable<IResponse<any>> {
     let params = new HttpParams();
 
     if (filtros.documento?.trim()) {
@@ -152,7 +175,15 @@ export class PagoService {
       params = params.set('Limite', String(filtros.limite));
     }
 
-    return this.http.get<IResponse<any[]>>(
+    if (filtros.pageNumber !== null && filtros.pageNumber !== undefined) {
+      params = params.set('PageNumber', String(filtros.pageNumber));
+    }
+
+    if (filtros.pageSize !== null && filtros.pageSize !== undefined) {
+      params = params.set('PageSize', String(filtros.pageSize));
+    }
+
+    return this.http.get<IResponse<any>>(
       `${API_BASE_URL}/api/Pagos/historial`,
       { params }
     );

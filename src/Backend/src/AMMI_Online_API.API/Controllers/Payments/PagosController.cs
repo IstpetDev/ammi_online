@@ -7,13 +7,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AMMI_Online_API.API.Controllers.Payments;
+
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
 public class PagosController : ApiController
 {
     [HttpGet("historial")]
-    public async Task<Response<IEnumerable<PagoHistorialDTO>>> GetHistorialPagos([FromQuery] GetHistorialPagosQuery query, CancellationToken cancellationToken)
+    public async Task<Response<PaginatedResult<PagoHistorialDTO>>> GetHistorialPagos([FromQuery] GetHistorialPagosQuery query, CancellationToken cancellationToken)
         => await Mediator.Send(query, cancellationToken);
 
     [HttpPost]
@@ -38,7 +39,6 @@ public class PagosController : ApiController
     [HttpPut("actualizar-observacion")]
     public async Task<Response<int>> ActualizarObservacion([FromBody] ActualizarObservacionPagoCommand request, CancellationToken cancellationToken)
         => await Mediator.Send(request, cancellationToken);
-
 
     [HttpGet("pendientes")]
     public async Task<Response<IEnumerable<PagoDTO>>> GetPagosPendientes([FromQuery] int? idMatricula, [FromQuery] string? documento, CancellationToken cancellationToken)
