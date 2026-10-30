@@ -169,8 +169,8 @@ public partial class Ammi_OnlineContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .UseCollation("utf8_general_ci")
-            .HasCharSet("utf8");
+            .UseCollation("utf8_general_ci");
+        modelBuilder.HasAnnotation("MySql:CharSet", "utf8");
 
         modelBuilder.Entity<Adjunto>(entity =>
         {

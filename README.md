@@ -7,7 +7,7 @@ Monorepositorio de AMMI Online. El backend y el frontend comparten control de ve
 ├── .github/                 # CI, política de ramas y Dependabot
 ├── docs/                    # decisiones y plan de migración
 ├── src/
-│   ├── Backend/             # solución .NET 8 y cuatro proyectos
+│   ├── Backend/             # solución .NET 10 y cuatro proyectos
 │   └── Frontend/            # aplicación Angular 20, npm
 ├── CONTRIBUTING.md
 └── README.md
@@ -15,7 +15,7 @@ Monorepositorio de AMMI Online. El backend y el frontend comparten control de ve
 
 ## Requisitos
 
-- .NET SDK 8 para el backend.
+- .NET SDK 10 para el backend.
 - Node.js 22 y npm para el frontend.
 - MySQL accesible para ejecutar la API. La compilación no necesita base de datos.
 
