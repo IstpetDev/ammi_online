@@ -7,8 +7,78 @@ El servidor IIS conserva sus propios `appsettings*.json`; el despliegue no los s
 | `EmailSettings:AdminEmail` | Destinatario opcional de copia de las notificaciones de registro de pagos a crédito. Si queda vacío, no se envía esa copia. |
 | `AllowedHosts` | Lista de nombres de host permitidos separados por punto y coma. En producción debe contener `ammionline.ammi.edu.ec;localhost` para restringir el acceso a los hosts reales y permitir las comprobaciones internas de salud (`deploy-ammionline.ps1`), eliminando el comodín `*`. En desarrollo se limita a `localhost;127.0.0.1`. |
 | `Cors:AllowedOrigins` | Lista (o cadena separada por comas o punto y coma) de orígenes web autorizados para interactuar con la API con credenciales. En producción se restringe únicamente al dominio institucional `https://ammionline.ammi.edu.ec` (sin orígenes `localhost`). En desarrollo incluye orígenes locales como `http://localhost:4200`. |
+| `ConnectionStrings:DefaultConnection` | Cadena de conexión a MySQL. Nunca debe incluirse en archivos versionados. En desarrollo usar `dotnet user-secrets` o variables de entorno. En producción se define en el servidor IIS. |
+| `JwtSettings:SecretKey` | Clave criptográfica para firma de tokens JWT (mínimo 256 bits). Nunca debe incluirse en archivos versionados. |
+| `EmailSettings:Password` | Contraseña del servicio SMTP de correo. Se administra exclusivamente en el servidor. |
 
 La nueva versión sigue usando las claves existentes `ConnectionStrings:DefaultConnection`, `JwtSettings:SecretKey`, `JwtSettings:Issuer`, `JwtSettings:Audience`, `EmailSettings:Host`, `EmailSettings:Port`, `EmailSettings:FromEmail`, `EmailSettings:Password`, `EmailSettings:SenderName` y `EmailSettings:EnableSsl`. Sus valores se administran únicamente en el servidor.
+
+## Gestión de Secretos y Configuración Local
+
+Para impedir la filtración accidental de credenciales en el repositorio:
+
+1. **Plantilla de configuración (`appsettings.example.json`):**
+   - Sirve como modelo versionado para documentar la estructura esperada de la configuración.
+   - Todos los campos sensibles (`ConnectionStrings`, `SecretKey`, `Password`) deben permanecer vacíos (`""`).
+
+2. **Archivos ignorados en Git (`.gitignore`):**
+   - Se ignoran `appsettings.local.json`, `appsettings.*.local.json` y `appsettings.Production.json`.
+   - Cualquier archivo de desarrollo que contenga valores reales de prueba debe nombrarse con sufijo `.local.json` para que Git lo ignore automáticamente.
+
+3. **Desarrollo con `dotnet user-secrets` y variables de entorno:**
+   - El proyecto API tiene configurado `UserSecretsId` (`ammi-online-api-secrets-2026`).
+   - Para configurar secretos en desarrollo local sin tocar archivos del repositorio:
+     ```bash
+     dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=3306;Database=ammi_db;User Id=ammi_user;Password=tu_password;" --project src/Backend/src/AMMI_Online_API.API
+     dotnet user-secrets set "JwtSettings:SecretKey" "tu_clave_secreta_jwt_de_desarrollo_al_menos_32_caracteres" --project src/Backend/src/AMMI_Online_API.API
+     dotnet user-secrets set "EmailSettings:Password" "tu_password_smtp" --project src/Backend/src/AMMI_Online_API.API
+     ```
+   - En entornos automatizados o contenedores se pueden usar variables de entorno estándar de ASP.NET Core: `ConnectionStrings__DefaultConnection`, `JwtSettings__SecretKey`, etc.
+
+4. **Validaciones automáticas en CI:**
+   - **Gitleaks:** `.gitleaks.toml` contiene reglas específicas para detectar cadenas de conexión que incluyan contraseñas (`password=`, `pwd=`) y claves JWT configuradas, respaldadas por pruebas en `.github/scripts/pruebas/validar-gitleaks.test.sh`.
+   - **Verificación de archivos versionados:** El script `.github/scripts/validar-secretos-appsettings.sh` se ejecuta en el pipeline e invalida cualquier PR si un archivo `appsettings*.json` versionado tiene valores no vacíos en `ConnectionStrings`, `JwtSettings:SecretKey` o `EmailSettings:Password`.
+
+## Procedimiento de Rotación de Credenciales
+
+En caso de requerir una rotación periódica o tras sospecha de filtración de credenciales:
+
+### 1. Rotación de Cadena de Conexión a Base de Datos (MySQL)
+
+1. **Crear o actualizar usuario en MySQL:**
+   - Para rotación sin interrupción (*zero-downtime*): crear un usuario alterno con permisos sobre la base de datos o definir una contraseña secundaria si la versión de MySQL lo soporta (`ALTER USER ... RETAIN CURRENT PASSWORD`).
+2. **Actualizar el servidor de producción:**
+   - Modificar la clave `ConnectionStrings:DefaultConnection` en el `appsettings.json` local del servidor IIS (`C:\inetpub\wwwroot\apiAmmiOnline\appsettings.json`) o mediante variable de entorno de máquina.
+3. **Reciclar el grupo de aplicaciones (Application Pool):**
+   ```powershell
+   Restart-WebAppPool -Name DefaultAppPool
+   ```
+4. **Verificar la conectividad:**
+   - Comprobar que los endpoints de consulta respondan correctamente (`Estado-Http` / logs de IIS).
+5. **Revocar credencial anterior:**
+   - Una vez confirmada la operación con la nueva credencial, eliminar el usuario antiguo o revocar la contraseña previa en MySQL.
+
+### 2. Rotación de Clave JWT (`JwtSettings:SecretKey`)
+
+1. **Generar una nueva clave:**
+   - Generar una cadena criptográficamente segura de al menos 256 bits (32 bytes en Base64 o alfanumérica de más de 32 caracteres).
+2. **Actualizar en el servidor:**
+   - Configurar la nueva clave en `appsettings.json` del servidor IIS (`JwtSettings:SecretKey`).
+3. **Reiniciar el Application Pool de IIS.**
+4. **Impacto en usuarios:**
+   - Los tokens emitidos con la clave anterior quedarán invalidados inmediatamente; los usuarios activos deberán iniciar sesión nuevamente para obtener un nuevo token firmado con la clave vigente.
+
+### 3. Rotación de Credenciales SMTP (`EmailSettings:Password`)
+
+1. **Actualizar la contraseña en el proveedor de correo institucional.**
+2. **Actualizar `EmailSettings:Password` en el `appsettings.json` del servidor IIS.**
+3. **Reiniciar el Application Pool y ejecutar una prueba de envío (e.g. solicitud de recuperación de contraseña).**
+
+### 4. Protocolo ante Exposición Accidental en Git
+
+1. **Avisar inmediatamente al responsable de seguridad e infraestructura.**
+2. **Rotar de inmediato la credencial en el servicio de destino (MySQL, correo, etc.).**
+3. **Recordatorio:** Borrar el secreto en un commit posterior no elimina la exposición en el historial de Git. Si el secreto entró a una rama remota, la credencial debe considerarse comprometida y ser revocada sin excepción.
 
 ## Política CORS y Filtrado de Hosts
 

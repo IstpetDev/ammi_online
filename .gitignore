@@ -13,8 +13,10 @@
 .env
 .env.*
 !.env.example
-**/appsettings.Development.local.json
+**/appsettings.local.json
+**/appsettings.*.local.json
 **/appsettings.Production.json
+!**/appsettings.example.json
 **/Uploads/
 *.user
 *.suo
