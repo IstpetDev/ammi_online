@@ -137,11 +137,13 @@ Para proteger datos personales sensibles (cédulas, credenciales, datos de conta
 
 El modelo del backend nuevo añade entidades para cliente, verificación de correo, estado de matrícula, estado de pago y malla paralelo; también retira entidades antiguas de contenido de malla, alergias y tipo de sangre. Hay que comparar el esquema real de la base de datos con esas entidades antes de desplegar. Esta actualización no incluye migraciones ni modifica datos.
 
-## Rutas web públicas
+## Rutas web públicas y reescritura en IIS (Issue #29)
 
-Además de `login`, `acelerado-virtual` y `formal-virtual`, el frontend tiene `verify-email-token`, `forgot-password` y `reset-password` sin guardia de autenticación. El PR #13 propone crear carpetas para las primeras tres rutas; mientras siga sin fusionarse, el workflow de `develop` no las crea. No se modifica ese workflow en estos PR.
+El frontend de Angular se publica en `/appAmmiOnline/` y gestiona tanto rutas públicas (`login`, `acelerado-virtual`, `formal-virtual`, `verify-email-token`, `forgot-password`, `reset-password`, `cambiar-contrasenia`) como rutas protegidas bajo el panel de control (`dashboard/*`).
 
-El script de seguimiento permanece fuera del paquete y no se enlaza desde `index.html`. Los archivos de diseño PSD y AI, `.htaccess` y `web.config` de `public/` también quedan excluidos.
+- **Regla de URL Rewrite (`spa-fallback`):** Definida en `src/Frontend/public/web.config`, se compila directamente en la raíz de la aplicación. Redirige toda petición que no corresponda a un archivo físico, directorio existente ni a la ruta `/apiAmmiOnline` hacia `/appAmmiOnline/index.html`.
+- **Despliegue automatizado:** El script `deploy-ammionline.ps1` despliega el `web.config` versionado de la aplicación frontend y lo respalda para soportar retroceso (`-Rollback`), mientras que el `web.config` de la API continúa estrictamente protegido y aislado de cambios.
+- **Flujo de trabajo limpio:** Se retira la recreación manual de subcarpetas en `deploy.yml`, permitiendo que el módulo de reescritura gestione de forma nativa e ilimitada cualquier ruta del SPA.
 
 
 ## Configuración de Proxy Inverso, Rate Limiting y Bloqueo Temporal (Issue #24)
