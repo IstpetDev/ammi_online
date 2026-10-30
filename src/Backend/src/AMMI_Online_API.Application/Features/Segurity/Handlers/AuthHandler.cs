@@ -6,6 +6,7 @@ using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Segurity;
 using MediatR;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace AMMI_Online_API.Application.Features.Segurity.Handlers;
 
@@ -16,54 +17,110 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Response<LoginR
     private readonly IModuloOperacionRepository _moduloOperacionRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly IAuthSecurityService _authSecurityService;
+    private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
         IAuthRepository authRepository,
         IRolOperacionRepository rolOperacionRepository,
         IModuloOperacionRepository moduloOperacionRepository,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IAuthSecurityService authSecurityService,
+        ILogger<LoginCommandHandler> logger)
     {
         _authRepository = authRepository;
         _rolOperacionRepository = rolOperacionRepository;
         _moduloOperacionRepository = moduloOperacionRepository;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _authSecurityService = authSecurityService;
+        _logger = logger;
     }
 
     public async Task<Response<LoginResponseDTO>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        // 1. Buscar usuario
+        var clientIp = _authSecurityService.GetCurrentClientIp();
+        var username = request.Request?.Username?.Trim() ?? string.Empty;
+
+        // 1. Verificar si la cuenta o la IP están bloqueadas temporalmente
+        if (_authSecurityService.IsLoginLockedOut(username, clientIp))
+        {
+            _logger.LogWarning(
+                "Intento de inicio de sesión rechazado por bloqueo temporal para el usuario '{Username}' desde la IP '{IpAddress}'.",
+                username,
+                clientIp);
+            return Response<LoginResponseDTO>.Failure(_authSecurityService.GetLockoutMessage());
+        }
+
+        // 2. Buscar usuario
         var usuario = await _authRepository.GetByUsernameAsync(
-            request.Request.Username,
+            username,
             cancellationToken);
 
         if (usuario == null)
-            return Response<LoginResponseDTO>.Failure("Usuario o contraseña incorrectos");
+        {
+            _authSecurityService.RecordFailedAttempt(username, clientIp);
+            _logger.LogWarning(
+                "Intento de inicio de sesión fallido para el usuario '{Username}' desde la IP '{IpAddress}'. Usuario no encontrado.",
+                username,
+                clientIp);
 
-        // 2. Verificar contraseña con BCrypt
-        if (!_passwordHasher.VerifyPassword(request.Request.Password, usuario.Contrasenia))
-            return Response<LoginResponseDTO>.Failure("Usuario o contraseña incorrectos");
+            return _authSecurityService.IsLoginLockedOut(username, clientIp)
+                ? Response<LoginResponseDTO>.Failure(_authSecurityService.GetLockoutMessage())
+                : Response<LoginResponseDTO>.Failure(_authSecurityService.GetInvalidCredentialsMessage());
+        }
 
-        // 3. Verificar si el usuario está inactivo o bloqueado
+        // 3. Verificar contraseña con BCrypt (sin registrar la contraseña recibida)
+        var password = request.Request?.Password ?? string.Empty;
+        if (!_passwordHasher.VerifyPassword(password, usuario.Contrasenia))
+        {
+            _authSecurityService.RecordFailedAttempt(username, clientIp);
+            _logger.LogWarning(
+                "Intento de inicio de sesión fallido para el usuario '{Username}' desde la IP '{IpAddress}'. Credencial incorrecta.",
+                username,
+                clientIp);
+
+            return _authSecurityService.IsLoginLockedOut(username, clientIp)
+                ? Response<LoginResponseDTO>.Failure(_authSecurityService.GetLockoutMessage())
+                : Response<LoginResponseDTO>.Failure(_authSecurityService.GetInvalidCredentialsMessage());
+        }
+
+        // 4. Verificar si el usuario está inactivo o bloqueado administrativamente
         if (usuario.IdPersonaNavigation != null && !usuario.IdPersonaNavigation.Activo)
+        {
+            _logger.LogWarning(
+                "Intento de inicio de sesión para usuario inactivo '{Username}' desde la IP '{IpAddress}'.",
+                username,
+                clientIp);
             return Response<LoginResponseDTO>.Failure("El usuario se encuentra inactivo o bloqueado");
+        }
 
-        // 3. Obtener roles del usuario directamente
+        // 5. Obtener roles del usuario directamente
         var rolesUsuario = await _authRepository.GetRolesUsuarioAsync(usuario.IdPersona, cancellationToken);
 
-        // 4. Verificar que tenga al menos un rol
+        // 6. Verificar que tenga al menos un rol
         if (rolesUsuario == null || !rolesUsuario.Any())
+        {
+            _logger.LogWarning("El usuario '{Username}' no tiene roles asignados.", username);
             return Response<LoginResponseDTO>.Failure("El usuario no tiene roles asignados. Contacte al administrador.");
+        }
 
-        // 5. Mapear roles a DTO
+        // 7. Restablecer contador de fallos tras login exitoso
+        _authSecurityService.ResetFailedAttempts(username, clientIp);
+        _logger.LogInformation(
+            "Inicio de sesión exitoso para el usuario '{Username}' desde la IP '{IpAddress}'.",
+            username,
+            clientIp);
+
+        // 8. Mapear roles a DTO
         var roles = rolesUsuario.Select(ru => new RolInfoDTO
         {
             IdRol = ru.IdRol,
             Nombre = ru.IdRolNavigation?.Detalle ?? "Sin nombre"
         }).ToList();
 
-        // 6. Obtener permisos del usuario (Optimizado - Un solo query)
+        // 9. Obtener permisos del usuario (Optimizado - Un solo query)
         var modulosOperaciones = await _authRepository.GetPermisosUsuarioAsync(usuario.IdPersona, cancellationToken);
 
         var permisos = modulosOperaciones
@@ -78,11 +135,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Response<LoginR
             .Select(g => g.First())
             .ToList();
 
-        // 7. Generar tokens
+        // 10. Generar tokens
         var token = _jwtService.GenerateToken(usuario.IdPersona, usuario.Username, roles, permisos, usuario.RequiereCambioContrasenia);
         var refreshToken = _jwtService.GenerateRefreshToken();
 
-        // 8. Construir respuesta
+        // 11. Construir respuesta
         var response = new LoginResponseDTO
         {
             IdPersona = usuario.IdPersona,
@@ -188,7 +245,6 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     }
 }
 
-
 public class CambiarContraseniaFirstLoginCommandHandler : IRequestHandler<CambiarContraseniaFirstLoginCommand, Response<bool>>
 {
     private readonly IAuthRepository _authRepository;
@@ -249,47 +305,79 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
     private readonly IEmailService _emailService;
     private readonly IJwtService _jwtService;
     private readonly IConfiguration _configuration;
+    private readonly IAuthSecurityService _authSecurityService;
+    private readonly ILogger<ForgotPasswordCommandHandler> _logger;
 
     public ForgotPasswordCommandHandler(
         IAuthRepository authRepository,
         IEmailService emailService,
         IJwtService jwtService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IAuthSecurityService authSecurityService,
+        ILogger<ForgotPasswordCommandHandler> logger)
     {
         _authRepository = authRepository;
         _emailService = emailService;
         _jwtService = jwtService;
         _configuration = configuration;
+        _authSecurityService = authSecurityService;
+        _logger = logger;
     }
 
     public async Task<Response<bool>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
-        // 1. Buscar usuario por Username incluyendo Persona -> DatosContacto
-        var usuario = await _authRepository.GetByUsernameWithContactoAsync(request.Request.Username, cancellationToken);
+        var clientIp = _authSecurityService.GetCurrentClientIp();
+        var username = request.Request?.Username?.Trim() ?? string.Empty;
 
-        // 2. Si no existe, retornar éxito genérico (seguridad)
+        // 1. Verificar límite de tasa / bloqueo de la acción
+        if (_authSecurityService.IsActionLockedOut("forgot-password", username, clientIp))
+        {
+            _logger.LogWarning(
+                "Solicitud de recuperación de contraseña rechazada por exceso de intentos para '{Username}' desde la IP '{IpAddress}'.",
+                username,
+                clientIp);
+            return Response<bool>.Failure("Demasiadas solicitudes de recuperación de contraseña. Por favor, intente más tarde.");
+        }
+
+        _authSecurityService.RecordActionAttempt("forgot-password", username, clientIp);
+
+        // 2. Buscar usuario por Username incluyendo Persona -> DatosContacto
+        var usuario = await _authRepository.GetByUsernameWithContactoAsync(username, cancellationToken);
+
+        // 3. Si no existe, retornar éxito genérico (seguridad contra enumeración de usuarios)
         if (usuario == null)
+        {
+            _logger.LogInformation(
+                "Solicitud de recuperación para usuario inexistente '{Username}' desde la IP '{IpAddress}'.",
+                username,
+                clientIp);
             return Response<bool>.Success(true, "Si el usuario existe, se ha enviado un correo de recuperación");
+        }
 
-        // 3. Obtener email (ID 1 es Email según plan y código existente)
+        // 4. Obtener email (ID 1 es Email según catálogo o formato con @)
         var email = usuario.IdPersonaNavigation?.DatosContacto
             .FirstOrDefault(dc => dc.IdTipoDatoContacto == 1 || dc.Detalle.Contains("@"))?.Detalle;
 
         if (string.IsNullOrEmpty(email))
+        {
+            _logger.LogInformation(
+                "Usuario '{Username}' no tiene correo asociado registrado.",
+                username);
             return Response<bool>.Success(true, "Si el usuario existe, se ha enviado un correo de recuperación");
+        }
 
-        // 4. Generar token opaco
+        // 5. Generar token opaco y caducidad de 1 hora
         var token = _jwtService.GenerateRefreshToken();
         var expiry = DateTime.UtcNow.AddHours(1);
 
-        // 5. Guardar en DB
+        // 6. Guardar en DB
         await _authRepository.SaveResetTokenAsync(usuario.IdPersona, token, expiry, cancellationToken);
 
-        // 6. Construir URL (token debe ir URL-encodeado porque Base64 contiene +, /, =)
+        // 7. Construir URL (sin registrar el token en los logs)
         var baseUrl = _configuration["FrontendSettings:BaseUrl"] ?? "http://localhost:4200";
         var resetUrl = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
 
-        // 7. Enviar email
+        // 8. Enviar email de recuperación
         var asunto = "Recuperación de Contraseña - AMMI Online";
         var cuerpo = $@"
             <div style='font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
@@ -306,6 +394,10 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
             </div>";
 
         await _emailService.SendEmailAsync(email, asunto, cuerpo, true, cancellationToken);
+        _logger.LogInformation(
+            "Correo de recuperación de contraseña despachado para usuario '{Username}' desde la IP '{IpAddress}'.",
+            username,
+            clientIp);
 
         return Response<bool>.Success(true, "Si el usuario existe, se ha enviado un correo de recuperación");
     }
@@ -315,37 +407,82 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 {
     private readonly IAuthRepository _authRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IAuthSecurityService _authSecurityService;
+    private readonly ILogger<ResetPasswordCommandHandler> _logger;
 
     public ResetPasswordCommandHandler(
         IAuthRepository authRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IAuthSecurityService authSecurityService,
+        ILogger<ResetPasswordCommandHandler> logger)
     {
         _authRepository = authRepository;
         _passwordHasher = passwordHasher;
+        _authSecurityService = authSecurityService;
+        _logger = logger;
     }
 
     public async Task<Response<bool>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validar que las contraseñas coincidan
-        if (request.Request.NewPassword != request.Request.ConfirmNewPassword)
+        var clientIp = _authSecurityService.GetCurrentClientIp();
+
+        // 1. Validar bloqueo temporal de la IP
+        if (_authSecurityService.IsIpLockedOut(clientIp))
+        {
+            _logger.LogWarning(
+                "Intento de restablecimiento de contraseña rechazado por bloqueo temporal desde la IP '{IpAddress}'.",
+                clientIp);
+            return Response<bool>.Failure("Demasiados intentos fallidos. Por favor, intente nuevamente más tarde.");
+        }
+
+        // 2. Validar token no vacío
+        var token = request.Request?.Token?.Trim();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _authSecurityService.RecordFailedAttempt("reset-token-vacio", clientIp);
+            return Response<bool>.Failure("El token de recuperación es requerido");
+        }
+
+        // 3. Validar que las contraseñas coincidan
+        if (request.Request?.NewPassword != request.Request?.ConfirmNewPassword)
             return Response<bool>.Failure("Las contraseñas no coinciden");
 
-        // 2. Buscar por token
-        var usuario = await _authRepository.GetByResetTokenAsync(request.Request.Token, cancellationToken);
+        // 4. Buscar usuario por token
+        var usuario = await _authRepository.GetByResetTokenAsync(token, cancellationToken);
 
-        // 3. Validar existencia y expiración
+        // 5. Validar existencia y vigencia del token
         if (usuario == null)
+        {
+            _authSecurityService.RecordFailedAttempt("reset-token-invalido", clientIp);
+            _logger.LogWarning(
+                "Intento fallido de restablecimiento de contraseña desde la IP '{IpAddress}'. Token no encontrado o ya consumido.",
+                clientIp);
             return Response<bool>.Failure("El token de recuperación es inválido");
+        }
 
-        if (usuario.ResetPasswordTokenExpiry < DateTime.UtcNow)
+        if (usuario.ResetPasswordTokenExpiry == null || usuario.ResetPasswordTokenExpiry < DateTime.UtcNow)
+        {
+            _authSecurityService.RecordFailedAttempt(usuario.Username, clientIp);
+            _logger.LogWarning(
+                "Intento fallido de restablecimiento de contraseña para '{Username}' desde la IP '{IpAddress}'. Token expirado.",
+                usuario.Username,
+                clientIp);
             return Response<bool>.Failure("El token de recuperación ha expirado");
+        }
 
-        // 4. Hashear y actualizar
-        var hashedPassword = _passwordHasher.HashPassword(request.Request.NewPassword);
+        // 6. Hashear y actualizar contraseña
+        var hashedPassword = _passwordHasher.HashPassword(request.Request!.NewPassword);
         await _authRepository.UpdatePasswordAsync(usuario.IdPersona, hashedPassword, cancellationToken);
 
-        // 5. Limpiar token
+        // 7. Invalidar el token inmediatamente tras su uso
         await _authRepository.ClearResetTokenAsync(usuario.IdPersona, cancellationToken);
+
+        // 8. Restablecer contadores de fallos
+        _authSecurityService.ResetFailedAttempts(usuario.Username, clientIp);
+        _logger.LogInformation(
+            "Contraseña restablecida exitosamente para usuario con IdPersona {IdPersona} desde la IP '{IpAddress}'.",
+            usuario.IdPersona,
+            clientIp);
 
         return Response<bool>.Success(true, "Contraseña restablecida correctamente");
     }
