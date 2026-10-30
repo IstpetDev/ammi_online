@@ -93,8 +93,11 @@ public class FileValidationService : IFileValidationService
 
     private static string SanitizeFileName(string fileName)
     {
-        // Quitar rutas de directorio (../../ o C:\)
-        var justName = Path.GetFileName(fileName);
+        // Normalizar separadores de directorios para soporte multiplataforma (Windows/Linux)
+        var normalized = fileName.Replace('\\', '/');
+
+        // Quitar rutas de directorio (../../ o C:/)
+        var justName = Path.GetFileName(normalized);
 
         // Quitar '..' residuales
         justName = justName.Replace("..", "");
