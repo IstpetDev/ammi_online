@@ -12,6 +12,13 @@ El servidor IIS conserva sus propios `appsettings*.json`; el despliegue no los s
 | `ConnectionStrings:DefaultConnection` | Cadena de conexión a MySQL. Nunca debe incluirse en archivos versionados. En desarrollo usar `dotnet user-secrets` o variables de entorno. En producción se define en el servidor IIS. |
 | `JwtSettings:SecretKey` | Clave criptográfica para firma de tokens JWT (mínimo 256 bits). Nunca debe incluirse en archivos versionados. |
 | `EmailSettings:Password` | Contraseña del servicio SMTP de correo. Se administra exclusivamente en el servidor. |
+| `ForwardedHeaders:KnownProxies` | Lista de IPs de proxies inversos de confianza (ej. balanceadores, Nginx, Cloudflare). Si se deja vacío, confía únicamente en loopback (`127.0.0.1`, `::1`). |
+| `ForwardedHeaders:KnownNetworks` | Lista de rangos CIDR de proxies de confianza (ej. `["10.0.0.0/8"]`). |
+| `ForwardedHeaders:ForwardLimit` | Número máximo de saltos permitidos en encabezados reenviados (por defecto: `1`). |
+| `RateLimiting:AuthPolicy:PermitLimit` | Número de peticiones permitidas por minuto por IP para endpoints de credenciales/login (por defecto: `10` en producción, `20` en desarrollo). |
+| `RateLimiting:OtpPolicy:PermitLimit` | Número de peticiones permitidas por minuto por IP para endpoints de verificación OTP (por defecto: `5` en producción, `10` en desarrollo). |
+| `AuthSecurity:MaxFailedAttempts` | Intentos fallidos consecutivos permitidos antes de activar el bloqueo temporal (por defecto: `5`). |
+| `AuthSecurity:LockoutDurationMinutes` | Duración del bloqueo temporal en minutos (por defecto: `15`). |
 
 La nueva versión sigue usando las claves existentes `ConnectionStrings:DefaultConnection`, `JwtSettings:SecretKey`, `JwtSettings:Issuer`, `JwtSettings:Audience`, `EmailSettings:Host`, `EmailSettings:Port`, `EmailSettings:FromEmail`, `EmailSettings:Password`, `EmailSettings:SenderName` y `EmailSettings:EnableSsl`. Sus valores se administran únicamente en el servidor.
 
@@ -132,3 +139,24 @@ El modelo del backend nuevo añade entidades para cliente, verificación de corr
 Además de `login`, `acelerado-virtual` y `formal-virtual`, el frontend tiene `verify-email-token`, `forgot-password` y `reset-password` sin guardia de autenticación. El PR #13 propone crear carpetas para las primeras tres rutas; mientras siga sin fusionarse, el workflow de `develop` no las crea. No se modifica ese workflow en estos PR.
 
 El script de seguimiento permanece fuera del paquete y no se enlaza desde `index.html`. Los archivos de diseño PSD y AI, `.htaccess` y `web.config` de `public/` también quedan excluidos.
+
+
+## Configuración de Proxy Inverso, Rate Limiting y Bloqueo Temporal (Issue #24)
+
+### 1. Detección de IP Real (`ForwardedHeaders`)
+Cuando la API opera detrás de un proxy inverso (IIS ARR, Nginx, Cloudflare, Traefik o Docker), los clientes se comunican con el proxy y este reenvía la petición al backend. 
+- Para evitar que la limitación de tasa bloquee la IP del proxy (afectando a todos los usuarios), el middleware `ForwardedHeaders` lee `X-Forwarded-For` y `X-Forwarded-Proto`.
+- **Protección contra IP Spoofing:** El middleware únicamente acepta encabezados `X-Forwarded-For` que provengan de direcciones IP registradas en `ForwardedHeaders:KnownProxies` o `ForwardedHeaders:KnownNetworks`. Las cabeceras enviadas directamente por clientes no autorizados son descartadas.
+
+### 2. Políticas de Límite de Tasa (`RateLimiting`)
+Se ejecutan mediante `Microsoft.AspNetCore.RateLimiting` aplicando ventanas deslizantes (*Sliding Window*) particionadas por cliente:
+- `auth-policy`: 10 req/min por IP sobre `/api/Auth/login`, `/api/Auth/register`, `/api/Auth/forgot-password` y `/api/Auth/reset-password`.
+- `otp-policy`: 5 req/min por IP sobre `/api/EmailVerification/*`.
+- `catalog-policy`: 120 req/min por IP sobre catálogos públicos.
+- Ante exceso, responde con estado HTTP 429 y cabecera `Retry-After`.
+
+### 3. Bloqueo Temporal por Fuerza Bruta (`AuthSecurity`)
+- Rastrea fallos tanto por identificador de cuenta (`username` o `email`) como por `IP`.
+- Si un atacante intenta adivinar credenciales 5 veces seguidas, tanto la IP como la cuenta quedan bloqueadas durante 15 minutos.
+- **Prevención de Enumeración:** Los mensajes de fallo antes y después del bloqueo no revelan si el usuario existe en el sistema.
+- **Invalidación Inmediata de Tokens:** Los tokens de reseteo de contraseña se limpian de la base de datos tras su consumo (`ClearResetTokenAsync`); los tokens y códigos OTP se marcan como verificados (`EsVerificado = 1ul`), impidiendo cualquier reutilización.

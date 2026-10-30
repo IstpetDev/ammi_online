@@ -49,6 +49,8 @@ A continuación se detalla cada endpoint que cuenta con autorización anónima e
 | 24 | `MallaController.GetAll` | GET | `/api/Malla` | Consulta de mallas académicas para carga de cursos en navegación libre. | Lista paginada de `MallaDTO` (`idMalla`, `detalle`, `nombreCurso`, `nombreTipoOferta`). | ❌ Estructura curricular sin datos personales ni distributivos. |
 | 25 | `MallaController.GetMallaByTipoOferta` | GET | `/api/Malla/GetMallaByTipoOferta/{idTipoOferta}` | Cargar cursos activos para la modalidad elegida por el aspirante en la landing page. | Colección de `MallaDTO`. | ❌ Solo datos de cursos y ciclo activo. |
 | 26 | `PersonaPostulacion.CrearPostulacion` | POST | `/api/PersonaPostulacion/create-postulacion` | Recepción del formulario de inscripción externa diligenciado por el aspirante. | Identificador numérico (`Response<int>`) de la postulación creada. | ❌ Solo retorna el id de confirmación del trámite; no expone postulaciones previas. |
+| 27 | `AuthController.ForgotPassword` | POST | `/api/Auth/forgot-password` | Solicitud de correo con enlace/token de restablecimiento de contraseña. | Respuesta neutra (`Response<bool>`). | ❌ No revela si el usuario existe en el sistema ni datos personales. Protegido por tasa y ventana de solicitudes. |
+| 28 | `AuthController.ResetPassword` | POST | `/api/Auth/reset-password` | Cambio de contraseña usando token de recuperación de un solo uso. | Respuesta booleana de confirmación. | ❌ Sin datos personales. El token expira en 1 hora y se destruye tras aplicarse. |
 
 ---
 
@@ -110,11 +112,15 @@ Los catálogos geográficos (`Pais`, `Provincia`, `Canton`, `Parroquia`) y biogr
 - **Recomendación técnica:** Configurar en middleware o controladores `ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)` o el servicio `IMemoryCache` de ASP.NET Core para que consultas repetitivas de aspirantes o navegadores no ejecuten queries SQL repetitivas.
 - Para la consulta de ofertas (`ChatBot/informacion-activa` y `Malla/GetMallaByTipoOferta`), una vigencia de caché corta (ej. 300 a 900 segundos) previene picos de tráfico masivo en temporadas altas de inscripción (campañas publicitarias en redes sociales).
 
-### 4.3. Vinculación con Issue #24 (Límite de Tasa)
+### 4.3. Implementación de Rate Limiting y Bloqueo Temporal (Issue #24)
 
-El middleware oficial `Microsoft.AspNetCore.RateLimiting` (.NET 8) debe ser activado para aplicar políticas específicas:
-- `fixed-login`: Límite estricto sobre `AuthController.Login` y endpoints OTP.
-- `sliding-public-catalog`: Límite amplio (ej. 120 peticiones/minuto por cliente IP) sobre los catálogos públicos para permitir la navegación fluida de aspirantes y bloquear scrapers agresivos.
+Se activó el middleware nativo `Microsoft.AspNetCore.RateLimiting` (.NET 8) junto con el servicio de seguridad `AuthSecurityService` y `ForwardedHeaders`:
+- **`auth-policy` (`SlidingWindowLimiter`):** Límite estricto de 10 peticiones por minuto por IP sobre `AuthController` (`Login`, `Register`, `ForgotPassword`, `ResetPassword`).
+- **`otp-policy` (`SlidingWindowLimiter`):** Límite de 5 peticiones por minuto por IP sobre `EmailVerificationController` (`send-otp`, `resend-otp`, `verify-otp`, `verify-email-token`, `check-email-verified`).
+- **`catalog-policy` (`SlidingWindowLimiter`):** Límite amplio de 120 peticiones por minuto por IP para catálogos públicos.
+- **Bloqueo temporal por fuerza bruta:** 5 intentos fallidos consecutivos en una ventana de 15 minutos bloquean temporalmente el acceso por IP y por cuenta.
+- **Protección contra enumeración:** Las respuestas ante credenciales incorrectas y cuentas inexistentes son idénticas (`"Usuario o contraseña incorrectos"`), y ante bloqueo temporal devuelven `"Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por motivos de seguridad. Por favor, intente más tarde."`.
+- **Invalidación de tokens:** Los tokens de reseteo se eliminan de la base de datos tras el primer uso exitoso; los OTP se marcan como verificados (`EsVerificado = 1ul`) impidiendo reutilización.
 
 ---
 
