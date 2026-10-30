@@ -31,7 +31,7 @@ npm test --prefix src/Frontend -- --watch=false --browsers=ChromeHeadless
 bash .github/scripts/pruebas/validar-rama.test.sh
 ```
 
-La solución backend importada todavía no contiene proyectos de pruebas; `dotnet test` no sustituye agregar pruebas para cambios nuevos. La aplicación Angular tiene una prueba inicial que debe mantenerse alineada con la interfaz real.
+El backend cuenta con una suite de pruebas automatizadas (xUnit) en `src/Backend/tests/AMMI_Online_API.Tests` que cubre autenticación, autorización de adjuntos, endpoints anónimos permitidos y validación de archivos; `dotnet test` genera informe de cobertura y es exigido por `ci-ok`. La aplicación Angular tiene una prueba inicial que debe mantenerse alineada con la interfaz real.
 
 ## Seguridad y configuración
 
