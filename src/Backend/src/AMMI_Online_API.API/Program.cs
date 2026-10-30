@@ -15,7 +15,7 @@ builder.Services
     .AddProjectServices(builder.Configuration)
     .AddJwtAuthentication(builder.Configuration)
     .AddSwaggerDocumentation()
-    .AddCorsPolicies();
+    .AddCorsPolicies(builder.Configuration);
 
 var app = builder.Build();
 //app.UseStaticFiles(); // Para servir archivos est ticos por defecto
@@ -40,7 +40,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AngularDev");
+app.UseCors(CorsExtensions.PolicyName);
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
