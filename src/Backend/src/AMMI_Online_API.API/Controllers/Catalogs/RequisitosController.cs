@@ -9,6 +9,7 @@ namespace AMMI_Online_API.API.Controllers.Catalogs;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RequisitosController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -27,7 +28,7 @@ public class RequisitosController : ControllerBase
     }
 
     [HttpGet("GetRequisitosByMalla/{idMalla}")]
-    
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<RequisitosDTO>>> GetByMalla(int idMalla, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetRequisitosByMallaQuery(idMalla), cancellationToken);

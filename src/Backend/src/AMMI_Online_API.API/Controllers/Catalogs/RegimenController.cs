@@ -11,7 +11,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class RegimenController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<RegimenDTO>>> GetRegimenes([FromQuery] GetRegimenQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 

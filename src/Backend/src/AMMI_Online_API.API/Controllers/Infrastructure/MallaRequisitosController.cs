@@ -20,7 +20,6 @@ public class MallaRequisitosController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<MallaRequisitosDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllMallaRequisitosQuery(), cancellationToken);
