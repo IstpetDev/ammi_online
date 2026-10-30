@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+
 namespace AMMI_Online_API.Application.Services.Implementations;
 
 public class FileValidationService : IFileValidationService
@@ -6,6 +9,9 @@ public class FileValidationService : IFileValidationService
     {
         ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".xls", ".xlsx"
     };
+
+    private const long DefaultGlobalMaxFileSize = 10 * 1024 * 1024; // 10MB
+    private const long DefaultImageMaxFileSize = 5 * 1024 * 1024;   // 5MB
 
     // Firmas conocidas de encabezado (magic numbers)
     private static readonly byte[] PdfHeader = [0x25, 0x50, 0x44, 0x46]; // %PDF
@@ -19,11 +25,92 @@ public class FileValidationService : IFileValidationService
     private static readonly byte[] ElfHeader = [0x7F, 0x45, 0x4C, 0x46]; // ELF (Linux)
     private static readonly byte[] ShellScriptHeader = [0x23, 0x21]; // #!
 
+    private readonly long _defaultMaxFileSize;
+    private readonly Dictionary<string, long> _maxFileSizeByExtension = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _configuredAllowedExtensions = new(StringComparer.OrdinalIgnoreCase);
+
+    public FileValidationService(IConfiguration? configuration = null)
+    {
+        if (configuration != null)
+        {
+            _defaultMaxFileSize = configuration.GetValue<long>("FileSettings:MaxFileSize", DefaultGlobalMaxFileSize);
+
+            var extensions = configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>();
+            if (extensions != null && extensions.Length > 0)
+            {
+                foreach (var ext in extensions)
+                {
+                    _configuredAllowedExtensions.Add(NormalizeExtension(ext));
+                }
+            }
+
+            var limitsSection = configuration.GetSection("FileSettings:MaxFileSizeByExtension").GetChildren();
+            foreach (var child in limitsSection)
+            {
+                if (long.TryParse(child.Value, out var limitBytes))
+                {
+                    _maxFileSizeByExtension[NormalizeExtension(child.Key)] = limitBytes;
+                }
+            }
+        }
+        else
+        {
+            _defaultMaxFileSize = DefaultGlobalMaxFileSize;
+            foreach (var ext in DefaultAllowedExtensions)
+            {
+                _configuredAllowedExtensions.Add(NormalizeExtension(ext));
+            }
+        }
+
+        // Si no se configuraron límites específicos por extensión, establecer los valores seguros por defecto
+        if (!_maxFileSizeByExtension.ContainsKey(".jpg")) _maxFileSizeByExtension[".jpg"] = DefaultImageMaxFileSize;
+        if (!_maxFileSizeByExtension.ContainsKey(".jpeg")) _maxFileSizeByExtension[".jpeg"] = DefaultImageMaxFileSize;
+        if (!_maxFileSizeByExtension.ContainsKey(".png")) _maxFileSizeByExtension[".png"] = DefaultImageMaxFileSize;
+        if (!_maxFileSizeByExtension.ContainsKey(".pdf")) _maxFileSizeByExtension[".pdf"] = _defaultMaxFileSize;
+        if (!_maxFileSizeByExtension.ContainsKey(".doc")) _maxFileSizeByExtension[".doc"] = _defaultMaxFileSize;
+        if (!_maxFileSizeByExtension.ContainsKey(".docx")) _maxFileSizeByExtension[".docx"] = _defaultMaxFileSize;
+    }
+
+    public long GetMaxFileSizeForExtension(string extension, long? overrideLimit = null)
+    {
+        var normalized = NormalizeExtension(extension);
+
+        if (overrideLimit.HasValue && overrideLimit.Value > 0)
+        {
+            if (_maxFileSizeByExtension.TryGetValue(normalized, out var extLimit))
+            {
+                return Math.Min(extLimit, overrideLimit.Value);
+            }
+            return overrideLimit.Value;
+        }
+
+        if (_maxFileSizeByExtension.TryGetValue(normalized, out var configuredLimit))
+        {
+            return configuredLimit;
+        }
+
+        return _defaultMaxFileSize;
+    }
+
+    public FileValidationResult ValidateFormFile(
+        IFormFile? file,
+        long? maxFileSizeBytes = null,
+        IEnumerable<string>? allowedExtensions = null)
+    {
+        if (file == null || file.Length <= 0)
+        {
+            return new FileValidationResult(false, "El archivo está vacío o no fue proporcionado.");
+        }
+
+        using var stream = file.OpenReadStream();
+        return ValidateFile(stream, file.FileName, file.Length, maxFileSizeBytes, allowedExtensions);
+    }
+
     public FileValidationResult ValidateFile(
         Stream contentStream,
         string fileName,
         long length,
-        long maxFileSizeBytes,
+        long? maxFileSizeBytes = null,
         IEnumerable<string>? allowedExtensions = null)
     {
         if (contentStream == null || length <= 0)
@@ -36,12 +123,6 @@ public class FileValidationService : IFileValidationService
             return new FileValidationResult(false, "El nombre de archivo no es válido.");
         }
 
-        if (length > maxFileSizeBytes)
-        {
-            var maxMb = maxFileSizeBytes / (1024 * 1024);
-            return new FileValidationResult(false, $"El archivo excede el tamaño máximo permitido de {maxMb}MB.");
-        }
-
         // Sanitización del nombre de archivo y protección contra Path Traversal
         var sanitized = SanitizeFileName(fileName);
         if (string.IsNullOrWhiteSpace(sanitized))
@@ -50,13 +131,27 @@ public class FileValidationService : IFileValidationService
         }
 
         var extension = Path.GetExtension(sanitized).ToLowerInvariant();
-        var allowed = (allowedExtensions ?? DefaultAllowedExtensions)
-            .Select(e => e.StartsWith('.') ? e.ToLowerInvariant() : $".{e.ToLowerInvariant()}")
-            .ToHashSet();
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return new FileValidationResult(false, "El archivo no tiene una extensión válida.");
+        }
+
+        // Resolución de extensiones permitidas
+        var allowed = (allowedExtensions ?? (_configuredAllowedExtensions.Count > 0 ? _configuredAllowedExtensions : DefaultAllowedExtensions))
+            .Select(NormalizeExtension)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         if (!allowed.Contains(extension))
         {
             return new FileValidationResult(false, $"Extensión no permitida: '{extension}'. Extensiones permitidas: {string.Join(", ", allowed)}.");
+        }
+
+        // Validación de tamaño máximo (respetando límite por tipo/extensión)
+        var effectiveMaxSizeBytes = GetMaxFileSizeForExtension(extension, maxFileSizeBytes);
+        if (length > effectiveMaxSizeBytes)
+        {
+            var maxMb = effectiveMaxSizeBytes / (1024 * 1024);
+            return new FileValidationResult(false, $"El archivo excede el tamaño máximo permitido de {maxMb}MB.");
         }
 
         // Validación de magic numbers
@@ -66,7 +161,7 @@ public class FileValidationService : IFileValidationService
             return new FileValidationResult(false, "No se pudo leer la firma del archivo.");
         }
 
-        // Rechazo inmediato de ejecutables camuflados
+        // Rechazo inmediato de ejecutables y scripts camuflados
         if (MatchesSignature(header, ExeHeader) || MatchesSignature(header, ElfHeader) || MatchesSignature(header, ShellScriptHeader))
         {
             return new FileValidationResult(false, "El archivo contiene una firma ejecutable o script no permitida.");
@@ -79,7 +174,7 @@ public class FileValidationService : IFileValidationService
             ".png" => MatchesSignature(header, PngHeader),
             ".jpg" or ".jpeg" => MatchesSignature(header, JpgHeader),
             ".docx" or ".xlsx" => MatchesSignature(header, ZipOrOfficeHeader),
-            ".doc" or ".xls" => MatchesSignature(header, LegacyOfficeHeader) || MatchesSignature(header, ZipOrOfficeHeader),
+            ".doc" or ".xls" => MatchesSignature(header, LegacyOfficeHeader),
             _ => true
         };
 
@@ -91,6 +186,13 @@ public class FileValidationService : IFileValidationService
         return new FileValidationResult(true, SanitizedFileName: sanitized);
     }
 
+    private static string NormalizeExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension)) return string.Empty;
+        var ext = extension.Trim().ToLowerInvariant();
+        return ext.StartsWith('.') ? ext : $".{ext}";
+    }
+
     private static string SanitizeFileName(string fileName)
     {
         // Normalizar separadores de directorios para soporte multiplataforma (Windows/Linux)
@@ -99,14 +201,18 @@ public class FileValidationService : IFileValidationService
         // Quitar rutas de directorio (../../ o C:/)
         var justName = Path.GetFileName(normalized);
 
-        // Quitar '..' residuales
-        justName = justName.Replace("..", "");
+        // Quitar '..' residuales para evitar cualquier intento de evasión de path traversal
+        while (justName.Contains(".."))
+        {
+            justName = justName.Replace("..", "");
+        }
 
-        // Quitar caracteres no permitidos
+        // Quitar caracteres de control y caracteres inválidos del sistema de archivos
         var invalidChars = Path.GetInvalidFileNameChars();
-        var cleanChars = justName.Where(c => !invalidChars.Contains(c)).ToArray();
+        var cleanChars = justName.Where(c => !invalidChars.Contains(c) && !char.IsControl(c)).ToArray();
 
-        return new string(cleanChars).Trim();
+        var result = new string(cleanChars).Trim();
+        return result.TrimStart('.');
     }
 
     private static byte[] ReadHeaderBytes(Stream stream, int maxBytes)

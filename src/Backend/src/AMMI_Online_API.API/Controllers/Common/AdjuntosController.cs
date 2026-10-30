@@ -39,6 +39,8 @@ public class AdjuntosController : ControllerBase
             return NotFound(response.Message);
 
         var dto = response.Data;
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{dto.FileName}\"";
         return File(dto.Content, dto.ContentType, dto.FileName);
     }
 
