@@ -82,7 +82,7 @@ public class AdjuntosController : ControllerBase
         return File(dto.Content, dto.ContentType, dto.FileName);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
     {
         var idPersonaClaim = User.FindFirst("idPersona")?.Value;
@@ -96,7 +96,7 @@ public class AdjuntosController : ControllerBase
         var response = await _mediator.Send(new DeleteAdjuntoCommand(id), cancellationToken);
 
         if (!response.IsSuccess)
-            return BadRequest(response.Message);
+            return NotFound(response.Message);
 
         return Ok(response);
     }

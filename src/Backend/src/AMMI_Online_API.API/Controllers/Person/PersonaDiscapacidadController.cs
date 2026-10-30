@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.API.Controllers.Base;
+using AMMI_Online_API.API.Controllers.Base;
 using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Person;
 using AMMI_Online_API.Application.Features.Person.Commands;
@@ -18,11 +18,33 @@ namespace AMMI_Online_API.API.Controllers.Person
             => await Mediator.Send(command, cancellationToken);
 
         [HttpPut]
-        public async Task<Response<bool>> UpdatePersonaDiscapacidad([FromForm] UpdatePersonaDiscapacidadCommand command, CancellationToken cancellationToken)
-            => await Mediator.Send(command, cancellationToken);
+        public async Task<IActionResult> UpdatePersonaDiscapacidad([FromForm] UpdatePersonaDiscapacidadCommand command, CancellationToken cancellationToken)
+        {
+            var autorizado = await AdjuntosAuthService.PuedeModificarDiscapacidadAsync(
+                command.IdPersonaDiscapacidad, CurrentPersonaId, CurrentRoles, cancellationToken);
+            if (!autorizado)
+                return Forbid();
+
+            var response = await Mediator.Send(command, cancellationToken);
+            if (!response.IsSuccess)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
 
         [HttpDelete]
-        public async Task<Response<bool>> DeletePersonaDiscapacidad([FromQuery] DeletePersonaDiscapacidadCommand command, CancellationToken cancellationToken)
-            => await Mediator.Send(command, cancellationToken);
+        public async Task<IActionResult> DeletePersonaDiscapacidad([FromQuery] DeletePersonaDiscapacidadCommand command, CancellationToken cancellationToken)
+        {
+            var autorizado = await AdjuntosAuthService.PuedeEliminarDiscapacidadAsync(
+                command.IdPersonaDiscapacidad, CurrentPersonaId, CurrentRoles, cancellationToken);
+            if (!autorizado)
+                return Forbid();
+
+            var response = await Mediator.Send(command, cancellationToken);
+            if (!response.IsSuccess)
+                return NotFound(response);
+
+            return Ok(response);
+        }
     }
 }

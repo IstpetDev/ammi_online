@@ -215,3 +215,20 @@ Todos los endpoints que reciben archivos (adjuntos generales, documentos persona
 ### 5. Compatibilidad Histórica de Rutas
 - El servicio `IFileStoragePathService` resuelve dinámicamente las rutas registradas en base de datos: si un archivo histórico se encuentra en el directorio legacy (`ContentRootPath/Uploads`), lo sirve sin pérdida de información; si fue migrado o es una nueva subida, lo sirve desde la carpeta de almacenamiento configurada.
 - No se requieren cambios en el esquema ni migraciones manuales de base de datos.
+
+
+## Control de Acceso por Propiedad y Roles en Descarga y Borrado (Issue #22)
+
+Para mitigar riesgos de manipulación de identificadores (IDOR / BOLA) y fugas de información por enumeración:
+
+### 1. Comprobación Diferenciada de Roles y Propiedad
+- **Descargas (`GET /api/Adjuntos/{id}`, `GET /api/Adjuntos/by-path`):** Permiten el acceso a roles privilegiados (`Administrador`, `SuperAdmin`, `Personal`, `Docente`) o al propietario legítimo del archivo (`DocumentosPersonales`, `PersonaDiscapacidad` o `Pago`). Solicitudes no autorizadas responden con HTTP 403 Forbidden.
+- **Eliminación (`DELETE /api/Adjuntos/{id}`):** Restringido a roles con facultad administrativa de eliminación (`Administrador`, `SuperAdmin`, `Personal`). El rol `Docente` no posee permisos de borrado administrativo sobre adjuntos de estudiantes.
+- **Restricción por Estado del Registro Asociado:** Si un estudiante es propietario de un documento pero este ya se encuentra aprobado institucionalmente (`Estado == true`), no puede eliminar el adjunto (responde HTTP 403 Forbidden). Los comprobantes de pago registrados no pueden ser borrados directamente por estudiantes.
+- **Prevención de Enumeración:** Ante identificadores inexistentes o ajenos solicitados por usuarios no privilegiados, la API responde uniformemente con HTTP 403 Forbidden, impidiendo determinar si un identificador existe. Las respuestas de no existencia para roles autorizados utilizan mensajes genéricos sin exponer detalles del sistema.
+
+### 2. Endurecimiento de Controladores de Recursos Personales
+- **`FotoPerfilController`:** Endpoints administrativos (`DeleteFotoAdminByDocumento`, `DeleteFotoAdminByPersonaId`) protegidos con `[Authorize(Roles = "Administrador,SuperAdmin,Personal")]`. Endpoints de actualización y borrado (`UpdateFoto`, `DeleteFoto`) validan que el recurso pertenezca al usuario y no esté aprobado.
+- **`DocumentosPersonalesController`:** `UpdateDocumentosPersonales` y `DeleteDocumentosPersonales` validan propiedad y estado no aprobado.
+- **`PersonaDiscapacidadController`:** `UpdatePersonaDiscapacidad` y `DeletePersonaDiscapacidad` validan propiedad sobre el registro de discapacidad.
+- **`PagosController`:** `GetPagosByDocumento` y `GetPagosByMatricula` restringen las consultas de estudiantes exclusivamente a sus propios registros de cédula o matrícula.
