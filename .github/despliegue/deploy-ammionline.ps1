@@ -99,6 +99,48 @@ function Esperar-Api-Liberada {
     Write-Output 'Aviso: la DLL de la API sigue bloqueada tras 60 s; se intenta copiar igualmente.'
 }
 
+function Comprobar-HostingBundle {
+    # Verifica que el Hosting Bundle / runtime de ASP.NET Core requerido este instalado en el servidor IIS.
+    $versionRequerida = '10.'
+    $candidatos = @()
+    if ($env:DOTNET_ROOT) { $candidatos += (Join-Path $env:DOTNET_ROOT 'dotnet.exe') }
+    $candidatos += 'dotnet'
+    if ($env:ProgramFiles) { $candidatos += (Join-Path $env:ProgramFiles 'dotnet\dotnet.exe') }
+    if ($env:LocalAppData) { $candidatos += (Join-Path $env:LocalAppData 'dotnet\dotnet.exe') }
+
+    $runtimes = @()
+    foreach ($c in $candidatos) {
+        try {
+            $salida = & $c --list-runtimes 2>$null
+            if ($salida) {
+                $runtimes = $salida
+                break
+            }
+        } catch { }
+    }
+
+    $instalado = $runtimes | Where-Object { $_ -match "Microsoft\.AspNetCore\.App\s+$versionRequerida" }
+    if (-not $instalado) {
+        $carpetas = @()
+        if ($env:ProgramFiles) { $carpetas += Join-Path $env:ProgramFiles 'dotnet\shared\Microsoft.AspNetCore.App' }
+        if ($env:LocalAppData) { $carpetas += Join-Path $env:LocalAppData 'dotnet\shared\Microsoft.AspNetCore.App' }
+        foreach ($dir in $carpetas) {
+            if (Test-Path $dir) {
+                $encontrado = Get-ChildItem -Path $dir -Directory -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -like "$versionRequerida*" }
+                if ($encontrado) {
+                    $instalado = $encontrado
+                    break
+                }
+            }
+        }
+    }
+
+    if (-not $instalado) {
+        throw "El servidor no cuenta con el Hosting Bundle de ASP.NET Core $versionRequerida instalado. Instale el .NET Hosting Bundle antes de desplegar."
+    }
+}
+
 function Restaurar {
     param([string]$Carpeta)
     Copiar (Join-Path $Carpeta 'api') $Api $false
@@ -128,6 +170,8 @@ if ($Rollback) {
 }
 
 if (-not $Zip -or -not (Test-Path $Zip)) { throw 'Falta -Zip o el archivo no existe' }
+
+Comprobar-HostingBundle
 
 $id = (Get-Date).ToString('yyyyMMdd-HHmmss')
 $prep = Join-Path $Trabajo "preparado-$id"
