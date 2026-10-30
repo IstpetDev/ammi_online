@@ -1,15 +1,18 @@
+using AMMI_Online_API.API.Extensions;
 using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Segurity;
 using AMMI_Online_API.Application.Features.Segurity.Commands;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace AMMI_Online_API.API.Controllers.Segurity;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting(RateLimiterExtensions.AuthPolicy)]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -105,7 +108,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
-    
+    [AllowAnonymous]
     public async Task<ActionResult<Response<bool>>> ForgotPassword(
         [FromBody] ForgotPasswordRequestDTO request,
         CancellationToken cancellationToken)
@@ -116,7 +119,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("reset-password")]
-    
+    [AllowAnonymous]
     public async Task<ActionResult<Response<bool>>> ResetPassword(
         [FromBody] ResetPasswordRequestDTO request,
         CancellationToken cancellationToken)
