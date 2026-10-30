@@ -19,6 +19,9 @@ El servidor IIS conserva sus propios `appsettings*.json`; el despliegue no los s
 | `RateLimiting:OtpPolicy:PermitLimit` | Número de peticiones permitidas por minuto por IP para endpoints de verificación OTP (por defecto: `5` en producción, `10` en desarrollo). |
 | `AuthSecurity:MaxFailedAttempts` | Intentos fallidos consecutivos permitidos antes de activar el bloqueo temporal (por defecto: `5`). |
 | `AuthSecurity:LockoutDurationMinutes` | Duración del bloqueo temporal en minutos (por defecto: `15`). |
+| `FileSettings:MaxFileSize` | Límite de tamaño global por defecto en bytes para subida de archivos (por defecto: `10485760` / 10MB). |
+| `FileSettings:MaxFileSizeByExtension` | Cuotas máximas de tamaño por extensión (ej. 5MB para imágenes `.jpg`/`.png` y 10MB para documentos `.pdf`/`.docx`). |
+| `FileSettings:AllowedExtensions` | Lista blanca de extensiones permitidas para almacenamiento general. |
 
 La nueva versión sigue usando las claves existentes `ConnectionStrings:DefaultConnection`, `JwtSettings:SecretKey`, `JwtSettings:Issuer`, `JwtSettings:Audience`, `EmailSettings:Host`, `EmailSettings:Port`, `EmailSettings:FromEmail`, `EmailSettings:Password`, `EmailSettings:SenderName` y `EmailSettings:EnableSsl`. Sus valores se administran únicamente en el servidor.
 
@@ -160,3 +163,26 @@ Se ejecutan mediante `Microsoft.AspNetCore.RateLimiting` aplicando ventanas desl
 - Si un atacante intenta adivinar credenciales 5 veces seguidas, tanto la IP como la cuenta quedan bloqueadas durante 15 minutos.
 - **Prevención de Enumeración:** Los mensajes de fallo antes y después del bloqueo no revelan si el usuario existe en el sistema.
 - **Invalidación Inmediata de Tokens:** Los tokens de reseteo de contraseña se limpian de la base de datos tras su consumo (`ClearResetTokenAsync`); los tokens y códigos OTP se marcan como verificados (`EsVerificado = 1ul`), impidiendo cualquier reutilización.
+
+## Validación de Contenido de Archivos y Seguridad de Subidas (Issue #23)
+
+### 1. Validación Centralizada (`IFileValidationService`)
+Todos los endpoints que reciben archivos (adjuntos generales, documentos personales, fotos de perfil, discapacidad, comprobantes de pago y postulaciones) procesan los flujos a través del servicio único `IFileValidationService`:
+- **Comprobación de firmas (*magic numbers*):** Compara los primeros bytes de encabezado binario del archivo contra la firma correspondiente al tipo declarado (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.doc`, `.docx`, etc.).
+- **Bloqueo incondicional de ejecutables:** Rechaza de inmediato archivos con cabeceras ejecutables de Windows (PE / MZ), Linux (ELF) o scripts con intérprete Unix (`#!`), así como scripts en general.
+- **Detección de mismatch:** Rechaza archivos cuyo contenido real no corresponda con la extensión declarada (ej. un PDF renombrado como `.png`).
+
+### 2. Cuotas por Tipo y Sanitización de Nombres
+- **Límites por tipo de archivo (`MaxFileSizeByExtension`):** Permite configurar cuotas independientes por extensión (ej. 5 MB para imágenes y 10 MB para documentos).
+- **Sanitización contra Path Traversal:** Elimina prefijos de rutas (`/`, `\`), suprime cualquier secuencia `..` y purga caracteres inválidos o de control del sistema de archivos.
+- **Nombres seguros en disco:** El nombre en almacenamiento físico se genera exclusivamente en el servidor mediante un GUID único (`{guid}{ext}`), asegurando que el nombre del cliente nunca determine la ruta ni el nombre en disco.
+
+### 3. Descarga Segura
+- Los endpoints de descarga (`/api/Adjuntos/{id}`) y el servidor de archivos estáticos (`/Uploads`) retornan obligatoriamente los encabezados:
+  * `X-Content-Type-Options: nosniff`: Previene que el navegador interprete o ejecute contenido como un tipo MIME distinto al configurado.
+  * `Content-Disposition: attachment; filename="..."`: Fuerza la descarga como archivo adjunto en lugar de su renderizado inline.
+
+### 4. Decisión sobre Análisis Antivirus (`EnableVirusScan`)
+- Se retiró la opción inoperante `"EnableVirusScan": false` de los archivos `appsettings*.json`.
+- Al no contar la infraestructura con un daemon o socket de escaneo antivirus local (ej. ClamAV), mantener una bandera booleana desactivada inducía a falsas expectativas de configuración.
+- La protección activa reside en la validación binaria criptográfica de firmas, la lista blanca de extensiones, el renombrado con GUID y el aislamiento de rutas. El análisis antivirus avanzado se recomienda a nivel perimetral de infraestructura (Defender en Windows Server / IIS, o Cloud Storage Defender en S3/Azure Blob).

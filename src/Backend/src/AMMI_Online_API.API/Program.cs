@@ -46,7 +46,12 @@ if (!Directory.Exists(uploadsPath))
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/Uploads"
+    RequestPath = "/Uploads",
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        ctx.Context.Response.Headers.Append("Content-Disposition", "attachment");
+    }
 });
 
 app.UseProjectMiddleware();

@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Adjuntos;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Hosting;
@@ -33,18 +33,12 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
 
             try
             {
-                var maxFileSize = _configuration.GetValue<long>("FileSettings:MaxFileSize", 10 * 1024 * 1024);
-                var allowedExtensions = _configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>()
-                    ?? new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+                var validation = _fileValidationService.ValidateFormFile(archivo);
+                if (!validation.IsValid)
+                    throw new Exception(validation.ErrorMessage ?? "Archivo no válido");
 
-                using (var stream = archivo.OpenReadStream())
-                {
-                    var validation = _fileValidationService.ValidateFile(stream, archivo.FileName, archivo.Length, maxFileSize, allowedExtensions);
-                    if (!validation.IsValid)
-                        throw new Exception(validation.ErrorMessage ?? "Archivo no válido");
-                }
-
-                var fileExtension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+                var sanitizedName = validation.SanitizedFileName ?? archivo.FileName;
+                var fileExtension = Path.GetExtension(sanitizedName).ToLowerInvariant();
 
                 // Crear carpeta si no existe
                 var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);
