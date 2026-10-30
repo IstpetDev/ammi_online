@@ -50,12 +50,6 @@ jobs:
         run: |
           mkdir -p paquete/app
           cp -r src/Frontend/dist/Ammi_Online/browser/. paquete/app/
-          # La compilacion estatica ya no prerenderiza rutas. IIS sirve una carpeta con su index.html sin
-          # reglas de reescritura, asi que se recrean las rutas publicas que antes generaba el prerender.
-          for ruta in login acelerado-virtual formal-virtual; do
-            mkdir -p "paquete/app/$ruta"
-            cp paquete/app/index.html "paquete/app/$ruta/index.html"
-          done
           (cd paquete && zip -qr ../release.zip api app)
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
