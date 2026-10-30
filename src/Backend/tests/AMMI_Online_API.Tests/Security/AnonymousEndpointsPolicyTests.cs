@@ -12,7 +12,8 @@ public class AnonymousEndpointsPolicyTests
     /// <summary>
     /// Lista blanca oficial de endpoints anónimos permitidos en la API pública.
     /// Cualquier endpoint nuevo que requiera [AllowAnonymous] debe ser justificado,
-    /// documentado y añadido explícitamente a esta lista para evitar fugas de seguridad.
+    /// documentado en docs/endpoints-publicos.md y añadido explícitamente a esta lista
+    /// para evitar fugas de seguridad o exposición inadvertida de datos.
     /// </summary>
     public static readonly HashSet<string> WhitelistedAnonymousEndpoints = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -20,7 +21,7 @@ public class AnonymousEndpointsPolicyTests
         "AuthController.Login",
         "AuthController.Register",
 
-        // Verificación de correo pública para registro
+        // Verificación de correo pública para registro y postulación
         "EmailVerificationController.SendOtp",
         "EmailVerificationController.VerifyEmailToken",
         "EmailVerificationController.VerifyOtp",
@@ -34,48 +35,31 @@ public class AnonymousEndpointsPolicyTests
         "CantonController.GetAllCanton",
         "CicloController.GetCiclo",
         "CursosController.GetCursos",
-        "EspecialidadController.GetEspecialidad",
         "EstadoCivilController.GetAllEstadoCivil",
         "EtniaController.GetAllEtnias",
         "GeneroController.GetAllGenero",
-        "MateriaController.GetMaterias",
         "NacionalidadEtnicaController.GetAllNacionalidadEtnica",
         "PaisController.GetAllPais",
         "ParroquiaController.GetAllParroquia",
-        "PeriodoLectivoController.GetPeriodosLectivos",
         "ProvinciaController.GetAllProvincia",
         "ProvinciaController.GetProvinciasByPais",
-        "RegimenController.GetRegimenes",
+        "RequisitosController.GetByMalla",
         "TipoDatoContactoController.GetAllTipoDatoContacto",
-        "TipoDiscapacidadController.GetAllTipoDiscapacidad",
         "TipoDocumentoController.GetAllTipoDocumento",
         "TipoOfertaController.GetAllTipoOferta",
 
-        // Oferta académica pública y consulta de mallas curriculares
-        "DistributivoController.GetByCicloAgrupado",
-        "MallaCompletaController.Crear",
-        "MallaCompletaController.Duplicar",
-        "MallaCompletaController.ClonarParaCiclo",
-        "MallaCompletaController.GetConfiguracionCursos",
+        // Oferta académica pública y consulta de mallas curriculares activas para postulantes
         "MallaController.GetAll",
-        "MallaController.GetById",
-        "MallaController.GetByCiclo",
         "MallaController.GetMallaByTipoOferta",
-        "MallaRequisitosController.GetAll",
 
-        // Inscripciones / Postulaciones públicas
-        "MatriculaController.CambiarParalelo",
-        "PersonaPostulacion.CrearPostulacion",
-        "PersonaPostulacion.CrearPostulacionManual",
-        "PersonaPostulacion.ActualizarPostulacionContacto"
+        // Formulario de inscripción y postulación pública externa
+        "PersonaPostulacion.CrearPostulacion"
     };
 
     private static readonly Assembly ApiAssembly = typeof(AuthController).Assembly;
 
-    [Fact]
-    public void EndpointPolicy_SolamenteEndpointsEnListaBlancaTienenAccesoAnonimo()
+    private static List<string> ObtenerEndpointsAnonimosDelEnsamblado()
     {
-        // Arrange: Inspeccionar todos los controladores en el ensamblado de la API
         var controllers = ApiAssembly.GetTypes()
             .Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract)
             .ToList();
@@ -101,6 +85,15 @@ public class AnonymousEndpointsPolicyTests
             }
         }
 
+        return anonymousEndpointsEncontrados;
+    }
+
+    [Fact]
+    public void EndpointPolicy_SolamenteEndpointsEnListaBlancaTienenAccesoAnonimo()
+    {
+        // Arrange
+        var anonymousEndpointsEncontrados = ObtenerEndpointsAnonimosDelEnsamblado();
+
         // Act: Encontrar endpoints que tienen [AllowAnonymous] pero no están en la lista blanca
         var noAutorizados = anonymousEndpointsEncontrados
             .Where(e => !WhitelistedAnonymousEndpoints.Contains(e))
@@ -112,6 +105,25 @@ public class AnonymousEndpointsPolicyTests
             $"Se encontraron endpoints anónimos NO permitidos ni documentados en la lista blanca:\n" +
             $"{string.Join("\n", noAutorizados)}\n" +
             "Todo endpoint público debe ser revisado y explícitamente añadido a WhitelistedAnonymousEndpoints.");
+    }
+
+    [Fact]
+    public void EndpointPolicy_ListaBlanca_NoDebeContenerEndpointsInexistentesOProtegidos()
+    {
+        // Arrange
+        var anonymousEndpointsEncontrados = new HashSet<string>(ObtenerEndpointsAnonimosDelEnsamblado(), StringComparer.OrdinalIgnoreCase);
+
+        // Act: Encontrar elementos en la lista blanca que ya no son anónimos en el código
+        var elementosObsoletos = WhitelistedAnonymousEndpoints
+            .Where(w => !anonymousEndpointsEncontrados.Contains(w))
+            .ToList();
+
+        // Assert: La lista blanca no debe tener endpoints obsoletos o ya protegidos
+        Assert.True(
+            elementosObsoletos.Count == 0,
+            $"La lista blanca contiene endpoints que ya están protegidos o no son anónimos:\n" +
+            $"{string.Join("\n", elementosObsoletos)}\n" +
+            "Elimine estos endpoints de WhitelistedAnonymousEndpoints para mantener la lista exacta y limpia.");
     }
 
     [Theory]
@@ -126,6 +138,21 @@ public class AnonymousEndpointsPolicyTests
     [InlineData("CreditoController")]
     [InlineData("ClienteController")]
     [InlineData("DevUtilsController")]
+    [InlineData("DistributivoController")]
+    [InlineData("MallaCompletaController")]
+    [InlineData("MallaRequisitosController")]
+    [InlineData("MatriculaController")]
+    [InlineData("PeriodoLectivoController")]
+    [InlineData("RegimenController")]
+    [InlineData("MateriaController")]
+    [InlineData("EspecialidadController")]
+    [InlineData("TipoDiscapacidadController")]
+    [InlineData("EstadoMatriculaController")]
+    [InlineData("PlantillaEstructuraController")]
+    [InlineData("PlantillaEvaluacionController")]
+    [InlineData("ReglasCalculoController")]
+    [InlineData("TipoPlantillaEstructuraController")]
+    [InlineData("TipoReglaCalculoController")]
     public void EndpointPolicy_ControladoresSensibles_NoDebenTenerEndpointsAnonimos(string controllerName)
     {
         // Arrange
