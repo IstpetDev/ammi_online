@@ -219,18 +219,34 @@ Todos los endpoints que reciben archivos (adjuntos generales, documentos persona
 - No se requieren cambios en el esquema ni migraciones manuales de base de datos.
 
 
-## Control de Acceso por Propiedad y Roles en Descarga y Borrado (Issue #22)
+## Prueba de Humo en Dominio Público y Retroceso Automático (Issue #30)
 
-Para mitigar riesgos de manipulación de identificadores (IDOR / BOLA) y fugas de información por enumeración:
+Tras cada despliegue a producción en el workflow `.github/workflows/deploy.yml`, se ejecuta una prueba de humo automatizada (`.github/scripts/prueba-humo.sh`) sobre el dominio público configurado (`vars.PUBLIC_URL` o por defecto `https://ammionline.ammi.edu.ec`):
 
-### 1. Comprobación Diferenciada de Roles y Propiedad
-- **Descargas (`GET /api/Adjuntos/{id}`, `GET /api/Adjuntos/by-path`):** Permiten el acceso a roles privilegiados (`Administrador`, `SuperAdmin`, `Personal`, `Docente`) o al propietario legítimo del archivo (`DocumentosPersonales`, `PersonaDiscapacidad` o `Pago`). Solicitudes no autorizadas responden con HTTP 403 Forbidden.
-- **Eliminación (`DELETE /api/Adjuntos/{id}`):** Restringido a roles con facultad administrativa de eliminación (`Administrador`, `SuperAdmin`, `Personal`). El rol `Docente` no posee permisos de borrado administrativo sobre adjuntos de estudiantes.
-- **Restricción por Estado del Registro Asociado:** Si un estudiante es propietario de un documento pero este ya se encuentra aprobado institucionalmente (`Estado == true`), no puede eliminar el adjunto (responde HTTP 403 Forbidden). Los comprobantes de pago registrados no pueden ser borrados directamente por estudiantes.
-- **Prevención de Enumeración:** Ante identificadores inexistentes o ajenos solicitados por usuarios no privilegiados, la API responde uniformemente con HTTP 403 Forbidden, impidiendo determinar si un identificador existe. Las respuestas de no existencia para roles autorizados utilizan mensajes genéricos sin exponer detalles del sistema.
+### 1. Rutas y Recursos Verificados
 
-### 2. Endurecimiento de Controladores de Recursos Personales
-- **`FotoPerfilController`:** Endpoints administrativos (`DeleteFotoAdminByDocumento`, `DeleteFotoAdminByPersonaId`) protegidos con `[Authorize(Roles = "Administrador,SuperAdmin,Personal")]`. Endpoints de actualización y borrado (`UpdateFoto`, `DeleteFoto`) validan que el recurso pertenezca al usuario y no esté aprobado.
-- **`DocumentosPersonalesController`:** `UpdateDocumentosPersonales` y `DeleteDocumentosPersonales` validan propiedad y estado no aprobado.
-- **`PersonaDiscapacidadController`:** `UpdatePersonaDiscapacidad` y `DeletePersonaDiscapacidad` validan propiedad sobre el registro de discapacidad.
-- **`PagosController`:** `GetPagosByDocumento` y `GetPagosByMatricula` restringen las consultas de estudiantes exclusivamente a sus propios registros de cédula o matrícula.
+| Componente | Ruta / Recurso | Método HTTP | Código Esperado | Propósito |
+| :--- | :--- | :---: | :---: | :--- |
+| **Página principal** | `/` | `GET` | `200 OK` | Valida conectividad perimetral, SSL/TLS y entrega del archivo raíz de la aplicación. |
+| **Rutas públicas SPA** | `/login`<br>`/acelerado-virtual`<br>`/formal-virtual`<br>`/forgot-password`<br>`/reset-password`<br>`/verify-email-token` | `GET` | `200 OK` | Garantiza que las rutas públicas del enrutador Angular resuelvan correctamente sin errores 404 ni bucles. |
+| **API Backend** | `/apiAmmiOnline/api/Auth/login` | `GET` | `405 Method Not Allowed` | Confirma que la API ASP.NET Core está activa, responde en su ruta pública y rechaza métodos no permitidos. |
+| **Recurso estático** | `main-*.js` | `GET` | `200 OK` | Extrae dinámicamente el nombre del script principal compilado y verifica que el servidor entregue los bundles estáticos. |
+
+### 2. Privacidad y Seguridad en Logs Públicos
+
+Para cumplir con la política de seguridad del repositorio (cuyos logs de GitHub Actions son públicos):
+- Todas las peticiones HTTP se ejecutan con `curl -s -L -o /dev/null -w '%{http_code}'`.
+- **Bajo ninguna circunstancia se imprimen cuerpos de respuesta HTML**, respuestas JSON, encabezados confidenciales del servidor ni trazas de error.
+- La salida de consola y el resumen de GitHub Actions (`$GITHUB_STEP_SUMMARY`) registran únicamente el método, ruta, código esperado, código obtenido y estado final (`OK` / `FALLO`).
+
+### 3. Reintentos y Tolerancia a Fallos Transitorios
+
+- La prueba incluye reintentos automáticos (hasta 3 intentos con 5 segundos de espera entre cada uno) para tolerar el tiempo de reciclaje del grupo de aplicaciones de IIS (*Application Pool*) o retrasos de propagación del proxy inverso.
+
+### 4. Retroceso Automático (*Rollback*) y Alertas
+
+- Si alguna de las comprobaciones falla tras los reintentos:
+  1. El job de despliegue activa automáticamente el paso condicional `Retroceso automático y alerta` (`if: failure() && steps.smoke_test.outcome == 'failure'`).
+  2. Mediante la conexión SSH previa, se invoca `deploy-ammionline.ps1 -Rollback <id>` sobre el respaldo generado inmediatamente antes del despliegue.
+  3. Si está configurado el secreto `ALERTA_DESPLIEGUE_WEBHOOK`, se envía una notificación inmediata al canal del equipo (Slack, Discord, Microsoft Teams o Google Chat).
+  4. El job finaliza en estado rojo (`failure`) y el resumen en `$GITHUB_STEP_SUMMARY` detalla con precisión las rutas que provocaron el fallo.
