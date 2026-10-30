@@ -12,12 +12,18 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
         private readonly Ammi_OnlineContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly IConfiguration _configuration;
+        private readonly AMMI_Online_API.Application.Services.IFileValidationService _fileValidationService;
 
-        public IAdjuntosRepository(Ammi_OnlineContext context, IWebHostEnvironment environment, IConfiguration configuration)
+        public IAdjuntosRepository(
+            Ammi_OnlineContext context,
+            IWebHostEnvironment environment,
+            IConfiguration configuration,
+            AMMI_Online_API.Application.Services.IFileValidationService fileValidationService)
         {
             _context = context;
             _environment = environment;
             _configuration = configuration;
+            _fileValidationService = fileValidationService;
         }
 
         public async Task<Adjunto?> GuardarArchivoAsync(IFormFile archivo, string subcarpeta, CancellationToken cancellationToken)
@@ -27,18 +33,18 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
 
             try
             {
-                // Validar tamaño máximo (ej: 10MB)
                 var maxFileSize = _configuration.GetValue<long>("FileSettings:MaxFileSize", 10 * 1024 * 1024);
-                if (archivo.Length > maxFileSize)
-                    throw new Exception($"El archivo excede el tamaño máximo permitido de {maxFileSize / (1024 * 1024)}MB");
-
-                // Validar extensiones permitidas
                 var allowedExtensions = _configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>()
                     ?? new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
 
+                using (var stream = archivo.OpenReadStream())
+                {
+                    var validation = _fileValidationService.ValidateFile(stream, archivo.FileName, archivo.Length, maxFileSize, allowedExtensions);
+                    if (!validation.IsValid)
+                        throw new Exception(validation.ErrorMessage ?? "Archivo no válido");
+                }
+
                 var fileExtension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-                if (!allowedExtensions.Contains(fileExtension))
-                    throw new Exception($"Extensión no permitida. Extensiones permitidas: {string.Join(", ", allowedExtensions)}");
 
                 // Crear carpeta si no existe
                 var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);

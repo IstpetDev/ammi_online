@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IInfraestructuraValidationService, InfraestructuraValidationService>();
         services.AddScoped<INotasCalculoService, NotasCalculoService>();
         services.AddScoped<IGradeDeadlineService, GradeDeadlineService>();
+        services.AddScoped<IFileValidationService, FileValidationService>();
         return services;
     }
 }
