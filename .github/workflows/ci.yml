@@ -95,6 +95,7 @@ jobs:
       - run: bash .github/scripts/pruebas/validar-rama.test.sh
       - run: bash .github/scripts/pruebas/validar-ci.test.sh
       - run: bash .github/scripts/pruebas/validar-secretos-appsettings.test.sh
+      - run: bash .github/scripts/pruebas/prueba-humo.test.sh
 
   ci-ok:
     name: ci-ok

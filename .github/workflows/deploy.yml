@@ -75,10 +75,12 @@ jobs:
     env:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
     steps:
-      # Se toma el script de la rama desplegada.
+      # Se toma el script de la rama desplegada y los scripts auxiliares.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/despliegue
+          sparse-checkout: |
+            .github/despliegue
+            .github/scripts
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -103,10 +105,42 @@ jobs:
           scp $opts release.zip "svc-deploy@${DEPLOY_HOST}:C:/despliegue/release.zip"
           scp $opts .github/despliegue/deploy-ammionline.ps1 "svc-deploy@${DEPLOY_HOST}:C:/despliegue/deploy-ammionline.ps1"
       - name: Desplegar
+        id: deploy
         run: |
           ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "svc-deploy@${DEPLOY_HOST}" \
             'powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Zip C:\despliegue\release.zip'
+      - name: Prueba de humo en dominio público
+        id: smoke_test
+        env:
+          DOMINIO: ${{ vars.PUBLIC_URL || 'https://ammionline.ammi.edu.ec' }}
+        run: bash .github/scripts/prueba-humo.sh "$DOMINIO"
+      - name: Retroceso automático y alerta
+        if: failure() && steps.smoke_test.outcome == 'failure'
+        env:
+          ALERTA_WEBHOOK: ${{ secrets.ALERTA_DESPLIEGUE_WEBHOOK }}
+        run: |
+          echo "La prueba de humo en el dominio público falló. Ejecutando retroceso automático al último respaldo..."
+          ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "svc-deploy@${DEPLOY_HOST}" \
+            'powershell -NoProfile -ExecutionPolicy Bypass -Command "
+              \$ultimo = Get-ChildItem C:\respaldos-despliegue -Directory | Sort-Object Name -Descending | Select-Object -First 1
+              if (\$ultimo) {
+                Write-Output \"Restaurando respaldo previo: \$(\$ultimo.Name)\"
+                powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Rollback \$ultimo.Name
+              } else {
+                Write-Error \"No se encontró respaldo previo en C:\respaldos-despliegue\"
+                exit 1
+              }
+            "'
+          echo "### ⚠️ Retroceso Automático Ejecutado" >> "$GITHUB_STEP_SUMMARY"
+          echo "La prueba de humo en el dominio público falló. Se ejecutó la restauración automática al último respaldo." >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$ALERTA_WEBHOOK" ]; then
+            echo "Enviando alerta al canal del equipo..."
+            curl -s -X POST -H 'Content-Type: application/json' \
+              -d '{"text":"🚨 Falló la prueba de humo tras el despliegue en AMMI Online. Se ha ejecutado el retroceso automático al último respaldo."}' \
+              "$ALERTA_WEBHOOK" >/dev/null 2>&1 || true
+          fi
       - name: Borrar clave
         if: always()
         run: rm -f ~/.ssh/deploy

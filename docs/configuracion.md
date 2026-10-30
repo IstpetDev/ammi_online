@@ -215,3 +215,36 @@ Todos los endpoints que reciben archivos (adjuntos generales, documentos persona
 ### 5. Compatibilidad Histórica de Rutas
 - El servicio `IFileStoragePathService` resuelve dinámicamente las rutas registradas en base de datos: si un archivo histórico se encuentra en el directorio legacy (`ContentRootPath/Uploads`), lo sirve sin pérdida de información; si fue migrado o es una nueva subida, lo sirve desde la carpeta de almacenamiento configurada.
 - No se requieren cambios en el esquema ni migraciones manuales de base de datos.
+
+
+## Prueba de Humo en Dominio Público y Retroceso Automático (Issue #30)
+
+Tras cada despliegue a producción en el workflow `.github/workflows/deploy.yml`, se ejecuta una prueba de humo automatizada (`.github/scripts/prueba-humo.sh`) sobre el dominio público configurado (`vars.PUBLIC_URL` o por defecto `https://ammionline.ammi.edu.ec`):
+
+### 1. Rutas y Recursos Verificados
+
+| Componente | Ruta / Recurso | Método HTTP | Código Esperado | Propósito |
+| :--- | :--- | :---: | :---: | :--- |
+| **Página principal** | `/` | `GET` | `200 OK` | Valida conectividad perimetral, SSL/TLS y entrega del archivo raíz de la aplicación. |
+| **Rutas públicas SPA** | `/login`<br>`/acelerado-virtual`<br>`/formal-virtual`<br>`/forgot-password`<br>`/reset-password`<br>`/verify-email-token` | `GET` | `200 OK` | Garantiza que las rutas públicas del enrutador Angular resuelvan correctamente sin errores 404 ni bucles. |
+| **API Backend** | `/apiAmmiOnline/api/Auth/login` | `GET` | `405 Method Not Allowed` | Confirma que la API ASP.NET Core está activa, responde en su ruta pública y rechaza métodos no permitidos. |
+| **Recurso estático** | `main-*.js` | `GET` | `200 OK` | Extrae dinámicamente el nombre del script principal compilado y verifica que el servidor entregue los bundles estáticos. |
+
+### 2. Privacidad y Seguridad en Logs Públicos
+
+Para cumplir con la política de seguridad del repositorio (cuyos logs de GitHub Actions son públicos):
+- Todas las peticiones HTTP se ejecutan con `curl -s -L -o /dev/null -w '%{http_code}'`.
+- **Bajo ninguna circunstancia se imprimen cuerpos de respuesta HTML**, respuestas JSON, encabezados confidenciales del servidor ni trazas de error.
+- La salida de consola y el resumen de GitHub Actions (`$GITHUB_STEP_SUMMARY`) registran únicamente el método, ruta, código esperado, código obtenido y estado final (`OK` / `FALLO`).
+
+### 3. Reintentos y Tolerancia a Fallos Transitorios
+
+- La prueba incluye reintentos automáticos (hasta 3 intentos con 5 segundos de espera entre cada uno) para tolerar el tiempo de reciclaje del grupo de aplicaciones de IIS (*Application Pool*) o retrasos de propagación del proxy inverso.
+
+### 4. Retroceso Automático (*Rollback*) y Alertas
+
+- Si alguna de las comprobaciones falla tras los reintentos:
+  1. El job de despliegue activa automáticamente el paso condicional `Retroceso automático y alerta` (`if: failure() && steps.smoke_test.outcome == 'failure'`).
+  2. Mediante la conexión SSH previa, se invoca `deploy-ammionline.ps1 -Rollback <id>` sobre el respaldo generado inmediatamente antes del despliegue.
+  3. Si está configurado el secreto `ALERTA_DESPLIEGUE_WEBHOOK`, se envía una notificación inmediata al canal del equipo (Slack, Discord, Microsoft Teams o Google Chat).
+  4. El job finaliza en estado rojo (`failure`) y el resumen en `$GITHUB_STEP_SUMMARY` detalla con precisión las rutas que provocaron el fallo.
