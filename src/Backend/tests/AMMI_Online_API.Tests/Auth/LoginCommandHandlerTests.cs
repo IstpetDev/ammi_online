@@ -4,6 +4,7 @@ using AMMI_Online_API.Application.Features.Segurity.Handlers;
 using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Segurity;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -16,6 +17,8 @@ public class LoginCommandHandlerTests
     private readonly Mock<IModuloOperacionRepository> _modOpRepoMock;
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<IJwtService> _jwtServiceMock;
+    private readonly Mock<IAuthSecurityService> _authSecurityServiceMock;
+    private readonly Mock<ILogger<LoginCommandHandler>> _loggerMock;
     private readonly LoginCommandHandler _handler;
 
     public LoginCommandHandlerTests()
@@ -25,13 +28,23 @@ public class LoginCommandHandlerTests
         _modOpRepoMock = new Mock<IModuloOperacionRepository>();
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _jwtServiceMock = new Mock<IJwtService>();
+        _authSecurityServiceMock = new Mock<IAuthSecurityService>();
+        _loggerMock = new Mock<ILogger<LoginCommandHandler>>();
+
+        _authSecurityServiceMock.Setup(s => s.GetCurrentClientIp()).Returns("192.168.1.50");
+        _authSecurityServiceMock.Setup(s => s.IsLoginLockedOut(It.IsAny<string>(), It.IsAny<string?>())).Returns(false);
+        _authSecurityServiceMock.Setup(s => s.GetInvalidCredentialsMessage()).Returns("Usuario o contraseña incorrectos");
+        _authSecurityServiceMock.Setup(s => s.GetLockoutMessage())
+            .Returns("Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por motivos de seguridad. Por favor, intente más tarde.");
 
         _handler = new LoginCommandHandler(
             _authRepoMock.Object,
             _rolOpRepoMock.Object,
             _modOpRepoMock.Object,
             _passwordHasherMock.Object,
-            _jwtServiceMock.Object);
+            _jwtServiceMock.Object,
+            _authSecurityServiceMock.Object,
+            _loggerMock.Object);
     }
 
     [Fact]
@@ -117,10 +130,13 @@ public class LoginCommandHandlerTests
         Assert.Equal(username, result.Data.Username);
         Assert.Single(result.Data.Roles);
         Assert.Equal("Estudiante", result.Data.Roles.First().Nombre);
+
+        // Verifica que se hayan restablecido los intentos fallidos
+        _authSecurityServiceMock.Verify(s => s.ResetFailedAttempts(username, "192.168.1.50"), Times.Once);
     }
 
     [Fact]
-    public async Task Login_ConUsuarioInexistente_RetornaFalloCredencialesIncorrectas()
+    public async Task Login_ConUsuarioInexistente_RetornaFalloCredencialesIncorrectasYRegistraFallo()
     {
         // Arrange
         _authRepoMock.Setup(r => r.GetByUsernameAsync("usuario.fantasma", It.IsAny<CancellationToken>()))
@@ -139,10 +155,13 @@ public class LoginCommandHandlerTests
         Assert.False(result.IsSuccess);
         Assert.Contains("Usuario o contraseña incorrectos", result.Message);
         Assert.Null(result.Data);
+
+        // Se registra intento fallido sin exponer si el usuario existe
+        _authSecurityServiceMock.Verify(s => s.RecordFailedAttempt("usuario.fantasma", "192.168.1.50"), Times.Once);
     }
 
     [Fact]
-    public async Task Login_ConContraseniaIncorrecta_RetornaFalloCredencialesIncorrectas()
+    public async Task Login_ConContraseniaIncorrecta_RetornaFalloCredencialesIncorrectasYRegistraFallo()
     {
         // Arrange
         const string username = "usuario.valido";
@@ -172,6 +191,59 @@ public class LoginCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Usuario o contraseña incorrectos", result.Message);
+        _authSecurityServiceMock.Verify(s => s.RecordFailedAttempt(username, "192.168.1.50"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Login_CuandoCuentaEstaBloqueadaPreviamente_RetornaBloqueoSinConsultarBaseDatos()
+    {
+        // Arrange
+        const string username = "usuario.bloqueado";
+        _authSecurityServiceMock.Setup(s => s.IsLoginLockedOut(username, "192.168.1.50"))
+            .Returns(true);
+
+        var command = new LoginCommand(new LoginRequestDTO
+        {
+            Username = username,
+            Password = "CualquierPassword"
+        });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("bloqueado temporalmente", result.Message);
+        // No se consulta la base de datos si ya está bloqueado
+        _authRepoMock.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Login_CuandoFalloDesencadenaBloqueo_RetornaMensajeNeutroDeBloqueo()
+    {
+        // Arrange
+        const string username = "usuario.al.limite";
+        _authRepoMock.Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Usuario?)null);
+
+        // El registro de este fallo causa que ahora esté bloqueado
+        _authSecurityServiceMock.Setup(s => s.RecordFailedAttempt(username, "192.168.1.50"))
+            .Returns(true);
+        _authSecurityServiceMock.Setup(s => s.IsLoginLockedOut(username, "192.168.1.50"))
+            .Returns(true);
+
+        var command = new LoginCommand(new LoginRequestDTO
+        {
+            Username = username,
+            Password = "PasswordErronea"
+        });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("bloqueado temporalmente", result.Message);
     }
 
     [Fact]
