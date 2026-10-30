@@ -9,6 +9,7 @@ namespace AMMI_Online_API.API.Controllers.Catalogs;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReglasCalculoController : ControllerBase
 {
     private readonly IMediator _mediator;

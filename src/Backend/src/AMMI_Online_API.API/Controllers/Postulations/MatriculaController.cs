@@ -74,7 +74,6 @@ public class MatriculaController : ApiController
     public async Task<Response<IEnumerable<DetalleMatriculaConAlumnoDTO>>> GetByMallaParaleloAndMateria(int idMallaParalelo, int idDetalleMalla)
         => await Mediator.Send(new GetDetallesMatriculaByMallaParaleloYMateriaQuery(idMallaParalelo, idDetalleMalla));
 
-    [AllowAnonymous]
     [HttpPut("{id}/CambiarParalelo")]
     public async Task<Response<CambiarParaleloResultDTO>> CambiarParalelo(int id, [FromBody] int idMallaParaleloNuevo, CancellationToken cancellationToken)
         => await Mediator.Send(new CambiarParaleloMatriculaCommand(id, idMallaParaleloNuevo), cancellationToken);

@@ -86,7 +86,6 @@ public class DistributivoController : ControllerBase
     }
 
     [HttpGet("ByCiclo/{idCiclo}/Agrupado")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetByCicloAgrupado(int idCiclo)
     {
         return Ok(await _mediator.Send(new GetDistributivoByCicloAgrupadoQuery(idCiclo)));

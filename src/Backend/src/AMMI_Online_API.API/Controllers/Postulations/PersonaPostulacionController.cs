@@ -27,12 +27,10 @@ namespace AMMI_Online_API.API.Controllers.Postulations
             => await Mediator.Send(request, cancellationToken);
 
         [HttpPost("postulacion")]
-        [AllowAnonymous]
         public async Task<Response<int>> CrearPostulacionManual([FromForm] CreatePersonaPostulacionManualCommand request, CancellationToken cancellationToken)
             => await Mediator.Send(request, cancellationToken);
 
         [HttpPut("actualizar-postulacion-contacto")]
-        [AllowAnonymous]
         public async Task<Response<int>> ActualizarPostulacionContacto([FromForm] ActualizarPostulacionContactoCommand request, CancellationToken cancellationToken)
             => await Mediator.Send(request, cancellationToken);
     }

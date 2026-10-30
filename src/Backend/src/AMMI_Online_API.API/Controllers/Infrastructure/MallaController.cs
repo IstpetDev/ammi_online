@@ -30,7 +30,6 @@ public class MallaController : ApiController
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<ActionResult<MallaDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetMallaByIdQuery(id), cancellationToken);
@@ -39,7 +38,6 @@ public class MallaController : ApiController
     }
 
     [HttpGet("ByCiclo/{idCiclo}")]
-    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<MallaDTO>>> GetByCiclo(int idCiclo, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetMallasByCicloIdQuery(idCiclo), cancellationToken);
