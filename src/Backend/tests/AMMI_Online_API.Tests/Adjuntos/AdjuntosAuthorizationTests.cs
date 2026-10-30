@@ -247,6 +247,10 @@ public class AdjuntosAuthorizationTests
         Assert.Equal("application/pdf", fileResult.ContentType);
         Assert.Equal("comprobante.pdf", fileResult.FileDownloadName);
         Assert.Equal(fakeContent, fileResult.FileContents);
+
+        // Verificación de encabezados de seguridad en la descarga (Issue #23)
+        Assert.Equal("nosniff", controller.Response.Headers["X-Content-Type-Options"].ToString());
+        Assert.Contains("attachment", controller.Response.Headers["Content-Disposition"].ToString());
     }
 
     [Fact]
