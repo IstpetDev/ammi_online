@@ -1,5 +1,4 @@
 using AMMI_Online_API.Application.Services;
-using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -10,13 +9,16 @@ public class FileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _environment;
     private readonly IFileValidationService _fileValidationService;
+    private readonly IFileStoragePathService _fileStoragePathService;
 
     public FileStorageService(
         IWebHostEnvironment environment,
-        IFileValidationService fileValidationService)
+        IFileValidationService fileValidationService,
+        IFileStoragePathService fileStoragePathService)
     {
         _environment = environment;
         _fileValidationService = fileValidationService;
+        _fileStoragePathService = fileStoragePathService;
     }
 
     public async Task<string> SaveFileAsync(IFormFile file, string folder, CancellationToken cancellationToken)
@@ -29,13 +31,8 @@ public class FileStorageService : IFileStorageService
         var extension = Path.GetExtension(sanitizedName).ToLowerInvariant();
         var fileName = $"{Guid.NewGuid()}{extension}";
 
-        // Definir la ruta de guardado
-        var uploadPath = Path.Combine(_environment.ContentRootPath, "uploads", folder);
-
-        // Crear directorio si no existe
-        if (!Directory.Exists(uploadPath))
-            Directory.CreateDirectory(uploadPath);
-
+        // Definir la ruta de guardado configurada fuera de la publicación
+        var uploadPath = _fileStoragePathService.GetTargetFolderPath(folder);
         var filePath = Path.Combine(uploadPath, fileName);
 
         // Guardar archivo
@@ -53,7 +50,7 @@ public class FileStorageService : IFileStorageService
         if (string.IsNullOrEmpty(filePath))
             return Task.CompletedTask;
 
-        var fullPath = Path.Combine(_environment.WebRootPath, filePath);
+        var fullPath = _fileStoragePathService.ResolvePhysicalPath(filePath);
 
         if (File.Exists(fullPath))
             File.Delete(fullPath);
@@ -64,12 +61,12 @@ public class FileStorageService : IFileStorageService
     public async Task<byte[]> GetFileAsync(string filePath, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(filePath))
-            return null;
+            return Array.Empty<byte>();
 
-        var fullPath = Path.Combine(_environment.WebRootPath, filePath);
+        var fullPath = _fileStoragePathService.ResolvePhysicalPath(filePath);
 
         if (!File.Exists(fullPath))
-            return null;
+            return Array.Empty<byte>();
 
         return await File.ReadAllBytesAsync(fullPath, cancellationToken);
     }
