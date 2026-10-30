@@ -46,12 +46,11 @@ export class ContenidoMallaService {
   }
 
   /**
-   * Descargar archivo usando la ruta almacenada en contenido
+   * Descargar archivo mediante endpoint autenticado de la API
    */
   downloadFile(contenido: string): Observable<Blob> {
-    // Construir URL completa: https://localhost:7267/uploads/contenido-malla/archivo.pdf
-    const fileUrl = `${this.baseUrl}/${contenido}`;
-    return this.http.get(fileUrl, {
+    return this.http.get(`${environment.apiUrl}/Adjuntos/by-path`, {
+      params: { path: contenido },
       responseType: 'blob'
     });
   }

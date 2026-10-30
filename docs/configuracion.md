@@ -178,7 +178,7 @@ Todos los endpoints que reciben archivos (adjuntos generales, documentos persona
 - **Nombres seguros en disco:** El nombre en almacenamiento físico se genera exclusivamente en el servidor mediante un GUID único (`{guid}{ext}`), asegurando que el nombre del cliente nunca determine la ruta ni el nombre en disco.
 
 ### 3. Descarga Segura
-- Los endpoints de descarga (`/api/Adjuntos/{id}`) y el servidor de archivos estáticos (`/Uploads`) retornan obligatoriamente los encabezados:
+- Los endpoints de descarga autenticada (`/api/Adjuntos/{id}` y `/api/Adjuntos/by-path`) retornan obligatoriamente los encabezados de endurecimiento:
   * `X-Content-Type-Options: nosniff`: Previene que el navegador interprete o ejecute contenido como un tipo MIME distinto al configurado.
   * `Content-Disposition: attachment; filename="..."`: Fuerza la descarga como archivo adjunto en lugar de su renderizado inline.
 
@@ -186,3 +186,32 @@ Todos los endpoints que reciben archivos (adjuntos generales, documentos persona
 - Se retiró la opción inoperante `"EnableVirusScan": false` de los archivos `appsettings*.json`.
 - Al no contar la infraestructura con un daemon o socket de escaneo antivirus local (ej. ClamAV), mantener una bandera booleana desactivada inducía a falsas expectativas de configuración.
 - La protección activa reside en la validación binaria criptográfica de firmas, la lista blanca de extensiones, el renombrado con GUID y el aislamiento de rutas. El análisis antivirus avanzado se recomienda a nivel perimetral de infraestructura (Defender en Windows Server / IIS, o Cloud Storage Defender en S3/Azure Blob).
+
+## Almacenamiento Externo y Descarga Exclusiva Autenticada (Issue #21)
+
+### 1. Eliminación de Servicio Estático sobre `/Uploads`
+- Se eliminó la directiva `UseStaticFiles` sobre la carpeta `/Uploads` en `Program.cs`.
+- Ningún archivo puede descargarse o inspeccionarse estáticamente sin pasar por el pipeline de autenticación y autorización de ASP.NET Core.
+
+### 2. Control de Acceso y Propiedad de Archivos
+- Las descargas se realizan a través de `AdjuntosController`:
+  * `GET /api/Adjuntos/{id}`: descarga por identificador numérico de adjunto.
+  * `GET /api/Adjuntos/by-path?path={ruta}`: descarga por ruta almacenada en base de datos.
+- Requisitos de seguridad aplicados en cada petición:
+  * **Sesión obligatoria:** Sin token JWT válido se responde inmediatamente con código de estado HTTP 401 Unauthorized.
+  * **Comprobación de autorización:** Mediante `IAdjuntosAuthorizationService`, se verifica que el usuario autenticado sea el dueño del recurso (`DocumentosPersonales`, `PersonaDiscapacidad` o `Pago`) o posea un rol administrativo autorizado (`Administrador`, `SuperAdmin`, `Personal`, `Docente`).
+  * **Aislamiento entre usuarios:** Si un usuario intenta acceder a un archivo ajeno, la API deniega el acceso respondiendo con HTTP 403 Forbidden.
+
+### 3. Configuración de Almacenamiento Fuera de la Publicación
+- Parámetros en `appsettings.json`:
+  * `FileSettings:UploadPath`: `"../Uploads"`
+  * `StorageSettings:Local:BasePath`: `"../Uploads"`
+- En entornos de producción (IIS), al estar configurado en `"../Uploads"` frente a `ContentRootPath` (`C:\inetpub\wwwroot\apiAmmiOnline`), el almacenamiento se ubica automáticamente en `C:\inetpub\wwwroot\Uploads`, quedando fuera de la carpeta publicada de la aplicación.
+- Es configurable por entorno mediante la variable `FileSettings__UploadPath` o en `appsettings.{Environment}.json`, admitiendo rutas absolutas o relativas.
+
+### 4. Resiliencia de Arranque y Tolerancia a Fallos
+- `Program.cs` ya no utiliza `PhysicalFileProvider` al inicio, por lo que la aplicación arranca sin errores incluso si la carpeta de almacenamiento aún no ha sido creada en el entorno de despliegue. Las subcarpetas necesarias se crean de forma segura bajo demanda.
+
+### 5. Compatibilidad Histórica de Rutas
+- El servicio `IFileStoragePathService` resuelve dinámicamente las rutas registradas en base de datos: si un archivo histórico se encuentra en el directorio legacy (`ContentRootPath/Uploads`), lo sirve sin pérdida de información; si fue migrado o es una nueva subida, lo sirve desde la carpeta de almacenamiento configurada.
+- No se requieren cambios en el esquema ni migraciones manuales de base de datos.

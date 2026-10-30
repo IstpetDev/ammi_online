@@ -1,8 +1,10 @@
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Adjuntos;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
@@ -12,18 +14,21 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
         private readonly Ammi_OnlineContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly IConfiguration _configuration;
-        private readonly AMMI_Online_API.Application.Services.IFileValidationService _fileValidationService;
+        private readonly IFileValidationService _fileValidationService;
+        private readonly IFileStoragePathService _fileStoragePathService;
 
         public IAdjuntosRepository(
             Ammi_OnlineContext context,
             IWebHostEnvironment environment,
             IConfiguration configuration,
-            AMMI_Online_API.Application.Services.IFileValidationService fileValidationService)
+            IFileValidationService fileValidationService,
+            IFileStoragePathService fileStoragePathService)
         {
             _context = context;
             _environment = environment;
             _configuration = configuration;
             _fileValidationService = fileValidationService;
+            _fileStoragePathService = fileStoragePathService;
         }
 
         public async Task<Adjunto?> GuardarArchivoAsync(IFormFile archivo, string subcarpeta, CancellationToken cancellationToken)
@@ -40,10 +45,8 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
                 var sanitizedName = validation.SanitizedFileName ?? archivo.FileName;
                 var fileExtension = Path.GetExtension(sanitizedName).ToLowerInvariant();
 
-                // Crear carpeta si no existe
-                var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
+                // Crear carpeta configurada por entorno si no existe (fuera de la publicación)
+                var uploadsFolder = _fileStoragePathService.GetTargetFolderPath(subcarpeta);
 
                 // Generar nombre único para el archivo
                 var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
@@ -55,7 +58,7 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
                     await archivo.CopyToAsync(fileStream, cancellationToken);
                 }
 
-                // Crear ruta relativa para guardar en BD
+                // Crear ruta relativa para guardar en BD (mantiene compatibilidad de esquema y consultas existentes)
                 var relativePath = Path.Combine("Uploads", subcarpeta, uniqueFileName).Replace("\\", "/");
 
                 // Guardar en la tabla Adjunto
@@ -83,7 +86,8 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
             if (adjunto == null)
                 throw new FileNotFoundException("Archivo no encontrado");
 
-            var fullPath = Path.Combine(_environment.ContentRootPath, adjunto.Path);
+            // Resuelve ruta física soportando tanto almacenamiento configurado como archivos legacy
+            var fullPath = _fileStoragePathService.ResolvePhysicalPath(adjunto.Path);
 
             if (!File.Exists(fullPath))
                 throw new FileNotFoundException("Archivo físico no encontrado");
@@ -101,7 +105,7 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
             try
             {
                 // Eliminar archivo físico
-                var fullPath = Path.Combine(_environment.ContentRootPath, adjunto.Path);
+                var fullPath = _fileStoragePathService.ResolvePhysicalPath(adjunto.Path);
                 if (File.Exists(fullPath))
                     File.Delete(fullPath);
 
@@ -121,6 +125,24 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Adjuntos
         public async Task<Adjunto?> GetByIdAsync(int id, CancellationToken ct)
         {
             return await _context.Adjunto.FindAsync(new object[] { id }, ct);
+        }
+
+        public async Task<Adjunto?> GetByPathAsync(string path, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+
+            var normalized = path.Replace('\\', '/').TrimStart('/');
+            var withUploads = normalized.StartsWith("Uploads/", StringComparison.OrdinalIgnoreCase)
+                ? normalized
+                : "Uploads/" + normalized;
+            var withoutUploads = normalized.StartsWith("Uploads/", StringComparison.OrdinalIgnoreCase)
+                ? normalized.Substring("Uploads/".Length)
+                : normalized;
+
+            return await _context.Adjunto
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Path == path || a.Path == normalized || a.Path == withUploads || a.Path == withoutUploads, ct);
         }
     }
 }

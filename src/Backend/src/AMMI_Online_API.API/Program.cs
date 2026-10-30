@@ -1,6 +1,5 @@
 using AMMI_Online_API.API.Extensions;
 using AMMI_Online_API.API.Infrastructure;
-using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,23 +35,6 @@ app.UseForwardedHeaders();
 
 // Límite de tasa para protección contra abusos y fuerza bruta
 app.UseRateLimiter();
-
-var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/Uploads",
-    OnPrepareResponse = ctx =>
-    {
-        ctx.Context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-        ctx.Context.Response.Headers.Append("Content-Disposition", "attachment");
-    }
-});
 
 app.UseProjectMiddleware();
 
