@@ -1,4 +1,5 @@
-﻿using AMMI_Online_API.Domain.Entities;
+using AMMI_Online_API.Application.Services;
+using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -8,19 +9,24 @@ namespace AMMI_Online_API.Infrastructure.Services;
 public class FileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _environment;
+    private readonly IFileValidationService _fileValidationService;
 
-    public FileStorageService(IWebHostEnvironment environment )
+    public FileStorageService(
+        IWebHostEnvironment environment,
+        IFileValidationService fileValidationService)
     {
         _environment = environment;
+        _fileValidationService = fileValidationService;
     }
 
     public async Task<string> SaveFileAsync(IFormFile file, string folder, CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("El archivo está vacío");
+        var validation = _fileValidationService.ValidateFormFile(file);
+        if (!validation.IsValid)
+            throw new ArgumentException(validation.ErrorMessage ?? "El archivo no es válido");
 
-        // Crear nombre único para el archivo
-        var extension = Path.GetExtension(file.FileName);
+        var sanitizedName = validation.SanitizedFileName ?? file.FileName;
+        var extension = Path.GetExtension(sanitizedName).ToLowerInvariant();
         var fileName = $"{Guid.NewGuid()}{extension}";
 
         // Definir la ruta de guardado
@@ -67,5 +73,4 @@ public class FileStorageService : IFileStorageService
 
         return await File.ReadAllBytesAsync(fullPath, cancellationToken);
     }
-
 }

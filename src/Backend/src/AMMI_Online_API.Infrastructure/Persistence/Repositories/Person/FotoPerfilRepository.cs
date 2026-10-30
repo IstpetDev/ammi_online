@@ -1,3 +1,4 @@
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Person;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
@@ -10,15 +11,23 @@ namespace AMMI_Online_API.Infrastructure.Persistence.Repositories.Person;
 
 public class FotoPerfilRepository : IFotoPerfilRepository
 {
+    private static readonly string[] FotoAllowedExtensions = [".jpg", ".jpeg", ".png"];
+
     private readonly Ammi_OnlineContext _context;
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
+    private readonly IFileValidationService _fileValidationService;
 
-    public FotoPerfilRepository(Ammi_OnlineContext context, IWebHostEnvironment environment, IConfiguration configuration)
+    public FotoPerfilRepository(
+        Ammi_OnlineContext context,
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
+        IFileValidationService fileValidationService)
     {
         _context = context;
         _environment = environment;
         _configuration = configuration;
+        _fileValidationService = fileValidationService;
     }
 
     private async Task<List<string>> GetFotoRequisitoCodigosAsync(CancellationToken ct)
@@ -161,19 +170,12 @@ public class FotoPerfilRepository : IFotoPerfilRepository
 
     private async Task<Adjunto> GuardarArchivoAsync(IFormFile archivo, string subcarpeta, CancellationToken ct)
     {
-        if (archivo == null || archivo.Length == 0)
-            throw new ArgumentException("El archivo no puede ser nulo o vacío");
+        var validation = _fileValidationService.ValidateFormFile(archivo, allowedExtensions: FotoAllowedExtensions);
+        if (!validation.IsValid)
+            throw new ArgumentException(validation.ErrorMessage ?? "Archivo de foto no válido");
 
-        var maxFileSize = _configuration.GetValue<long>("FileSettings:MaxFileSize", 10 * 1024 * 1024);
-        if (archivo.Length > maxFileSize)
-            throw new Exception($"El archivo excede el tamaño máximo permitido de {maxFileSize / (1024 * 1024)}MB");
-
-        var allowedExtensions = _configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>()
-            ?? new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
-
-        var fileExtension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(fileExtension))
-            throw new Exception($"Extensión no permitida. Extensiones permitidas: {string.Join(", ", allowedExtensions)}");
+        var sanitizedName = validation.SanitizedFileName ?? archivo.FileName;
+        var fileExtension = Path.GetExtension(sanitizedName).ToLowerInvariant();
 
         var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);
         if (!Directory.Exists(uploadsFolder))

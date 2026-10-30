@@ -1,3 +1,4 @@
+using AMMI_Online_API.Application.Services;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Person;
 using AMMI_Online_API.Infrastructure.Persistence.Context;
@@ -13,15 +14,18 @@ public class DocumentosPersonalesRepository : IDocumentosPersonales
     private readonly Ammi_OnlineContext _context;
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
+    private readonly IFileValidationService _fileValidationService;
 
     public DocumentosPersonalesRepository(
         Ammi_OnlineContext context,
         IWebHostEnvironment environment,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IFileValidationService fileValidationService)
     {
         _context = context;
         _environment = environment;
         _configuration = configuration;
+        _fileValidationService = fileValidationService;
     }
 
     public async Task<IEnumerable<DocumentosPersonales>> FindAsync(
@@ -114,6 +118,7 @@ public class DocumentosPersonalesRepository : IDocumentosPersonales
             throw;
         }
     }
+
     public async Task<DocumentosPersonales> UpdateAsync(DocumentosPersonales documentosPersonales, CancellationToken cancellationToken)
     {
         var existing = await _context.DocumentosPersonales
@@ -136,6 +141,7 @@ public class DocumentosPersonalesRepository : IDocumentosPersonales
 
         return existing;
     }
+
     public async Task<DocumentosPersonales> UpdateWithFileAsync(int id, DocumentosPersonales documentosPersonales, IFormFile? archivo, CancellationToken cancellationToken)
     {
         using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -277,27 +283,18 @@ public class DocumentosPersonalesRepository : IDocumentosPersonales
             .AnyAsync(x => x.IdDocumentosPersonales == id, cancellationToken);
     }
 
-    // Método para guardar archivo (similar al de PersonaPostulacionRepository)
+    // Método centralizado para guardar archivo validado mediante IFileValidationService
     private async Task<Adjunto> GuardarArchivoAsync(
         IFormFile archivo,
         string subcarpeta,
         CancellationToken cancellationToken)
     {
-        if (archivo == null || archivo.Length == 0)
-            throw new ArgumentException("El archivo no puede ser nulo o vacío");
+        var validation = _fileValidationService.ValidateFormFile(archivo);
+        if (!validation.IsValid)
+            throw new ArgumentException(validation.ErrorMessage ?? "Archivo no válido");
 
-        // Validar tamaño máximo
-        var maxFileSize = _configuration.GetValue<long>("FileSettings:MaxFileSize", 10 * 1024 * 1024);
-        if (archivo.Length > maxFileSize)
-            throw new Exception($"El archivo excede el tamaño máximo permitido de {maxFileSize / (1024 * 1024)}MB");
-
-        // Validar extensiones permitidas
-        var allowedExtensions = _configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>()
-            ?? new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
-
-        var fileExtension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(fileExtension))
-            throw new Exception($"Extensión no permitida. Extensiones permitidas: {string.Join(", ", allowedExtensions)}");
+        var sanitizedName = validation.SanitizedFileName ?? archivo.FileName;
+        var fileExtension = Path.GetExtension(sanitizedName).ToLowerInvariant();
 
         // Crear carpeta si no existe
         var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);

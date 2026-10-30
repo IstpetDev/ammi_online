@@ -15,19 +15,23 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
 
+    private readonly AMMI_Online_API.Application.Services.IFileValidationService _fileValidationService;
+
     public PersonaPostulacionRepository(
         Ammi_OnlineContext context,
         IWebHostEnvironment environment,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        AMMI_Online_API.Application.Services.IFileValidationService fileValidationService)
     {
         _context = context;
         _environment = environment;
         _configuration = configuration;
+        _fileValidationService = fileValidationService;
     }
 
 
     public async Task<IEnumerable<Postulacion>> FindAsync(
-        string? documento ,
+        string? documento,
         int? idCiclo,
         int? idMalla,
         int? idOferta,
@@ -443,21 +447,12 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
         string subcarpeta,
         CancellationToken cancellationToken)
     {
-        if (archivo == null || archivo.Length == 0)
-            throw new ArgumentException("El archivo no puede ser nulo o vacío");
+        var validation = _fileValidationService.ValidateFormFile(archivo);
+        if (!validation.IsValid)
+            throw new ArgumentException(validation.ErrorMessage ?? "Archivo no válido");
 
-        // Validar tamaño máximo
-        var maxFileSize = _configuration.GetValue<long>("FileSettings:MaxFileSize", 10 * 1024 * 1024);
-        if (archivo.Length > maxFileSize)
-            throw new Exception($"El archivo excede el tamaño máximo permitido de {maxFileSize / (1024 * 1024)}MB");
-
-        // Validar extensiones permitidas
-        var allowedExtensions = _configuration.GetSection("FileSettings:AllowedExtensions").Get<string[]>()
-            ?? new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
-
-        var fileExtension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(fileExtension))
-            throw new Exception($"Extensión no permitida. Extensiones permitidas: {string.Join(", ", allowedExtensions)}");
+        var sanitizedName = validation.SanitizedFileName ?? archivo.FileName;
+        var fileExtension = Path.GetExtension(sanitizedName).ToLowerInvariant();
 
         // Crear carpeta si no existe
         var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads", subcarpeta);
@@ -743,7 +738,7 @@ public class PersonaPostulacionRepository : IPersonaPostulacion
 
         return $"Error de base de datos: {sqlEx.Message}";
     }
- 
+
     private static string TraducirDbUpdateException(DbUpdateException ex)
     {
         if (ex.InnerException is SqlException sqlEx)
