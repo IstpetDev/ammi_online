@@ -54,7 +54,7 @@ jobs:
       - name: Compilar
         run: dotnet build src/Backend/AMMI_Online_API.sln --no-restore --configuration "$CONFIGURACION"
       - name: Pruebas .NET
-        run: dotnet test src/Backend/AMMI_Online_API.sln --no-build --configuration "$CONFIGURACION"
+        run: dotnet test src/Backend/AMMI_Online_API.sln --no-build --configuration "$CONFIGURACION" --collect:"XPlat Code Coverage"
 
   frontend:
     name: Frontend (Angular 20)

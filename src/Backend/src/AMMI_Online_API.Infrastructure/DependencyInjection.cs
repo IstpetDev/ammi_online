@@ -116,6 +116,7 @@ public static class DependencyInjection
         services.AddScoped<IGenerarMatricula, GenerarMatriculaRepository>();
         services.AddScoped<IReMatriculacionRepository, ReMatriculacionRepository>();
         services.AddScoped<IAdjuntos, IAdjuntosRepository>();
+        services.AddScoped<IAdjuntosAuthorizationService, AdjuntosAuthorizationService>();
 
         // Notas
         services.AddScoped<IReglasCalculoRepository, ReglasCalculoRepository>();
