@@ -45,6 +45,10 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Response<LoginR
         if (!_passwordHasher.VerifyPassword(request.Request.Password, usuario.Contrasenia))
             return Response<LoginResponseDTO>.Failure("Usuario o contraseña incorrectos");
 
+        // 3. Verificar si el usuario está inactivo o bloqueado
+        if (usuario.IdPersonaNavigation != null && !usuario.IdPersonaNavigation.Activo)
+            return Response<LoginResponseDTO>.Failure("El usuario se encuentra inactivo o bloqueado");
+
         // 3. Obtener roles del usuario directamente
         var rolesUsuario = await _authRepository.GetRolesUsuarioAsync(usuario.IdPersona, cancellationToken);
 
