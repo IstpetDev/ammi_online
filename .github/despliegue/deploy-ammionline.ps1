@@ -164,4 +164,13 @@ if (-not $exito) { exit 1 }
 # 3. Respaldos antiguos.
 Get-ChildItem $Respaldo -Directory | Sort-Object Name -Descending | Select-Object -Skip $Conservar |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+# 4. Retencion de logs: depurar archivos con mas de 30 dias de antiguedad.
+$carpetaLogs = Join-Path $Api 'logs'
+if (Test-Path $carpetaLogs) {
+    Get-ChildItem -Path $carpetaLogs -File -Recurse |
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 Write-Output "Despliegue correcto: $id"
