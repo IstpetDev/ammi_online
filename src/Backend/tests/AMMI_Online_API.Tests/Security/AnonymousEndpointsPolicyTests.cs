@@ -20,6 +20,8 @@ public class AnonymousEndpointsPolicyTests
         // Autenticación pública y registro inicial
         "AuthController.Login",
         "AuthController.Register",
+        "AuthController.ForgotPassword",
+        "AuthController.ResetPassword",
 
         // Verificación de correo pública para registro y postulación
         "EmailVerificationController.SendOtp",

@@ -16,19 +16,26 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.AddControllers(options =>
 {
-    // Inserta tu proveedor de decimales al principio de la lista
+    // Inserta proveedor de decimales al principio de la lista
     options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider());
 });
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services
     .AddProjectServices(builder.Configuration)
+    .AddForwardedHeadersConfiguration(builder.Configuration)
+    .AddCustomRateLimiting(builder.Configuration)
     .AddJwtAuthentication(builder.Configuration)
     .AddSwaggerDocumentation()
     .AddCorsPolicies(builder.Configuration);
 
 var app = builder.Build();
-//app.UseStaticFiles(); // Para servir archivos est ticos por defecto
+
+// Manejo de proxy inverso y determinación de IP real antes de rate limiting y autenticación
+app.UseForwardedHeaders();
+
+// Límite de tasa para protección contra abusos y fuerza bruta
+app.UseRateLimiter();
 
 var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 if (!Directory.Exists(uploadsPath))

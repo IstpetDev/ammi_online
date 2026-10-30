@@ -1,3 +1,4 @@
+using AMMI_Online_API.API.Extensions;
 using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Segurity;
 using AMMI_Online_API.Application.Features.Segurity.Commands;
@@ -5,12 +6,14 @@ using AMMI_Online_API.Application.Features.Segurity.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AMMI_Online_API.API.Controllers.Segurity;
 
 [ApiController]
 [Route("api/[controller]")]
 [AllowAnonymous]
+[EnableRateLimiting(RateLimiterExtensions.OtpPolicy)]
 public class EmailVerificationController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -74,7 +77,7 @@ public class EmailVerificationController : ControllerBase
         if (string.IsNullOrWhiteSpace(email))
             return BadRequest(Response<bool>.Failure("El email es requerido"));
 
-        var query = new CheckEmailVerifiedQuery(email); // Asegúrate de importar el namespace de CheckEmailVerifiedQuery
+        var query = new CheckEmailVerifiedQuery(email);
         var result = await _mediator.Send(query, cancellationToken);
         
         return result.IsSuccess ? Ok(result) : BadRequest(result);
