@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Segurity;
 using AMMI_Online_API.Application.Features.Segurity.Commands;
@@ -344,5 +345,98 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         await _authRepository.ClearResetTokenAsync(usuario.IdPersona, cancellationToken);
 
         return Response<bool>.Success(true, "Contraseña restablecida correctamente");
+    }
+}
+
+public class RecuperarClaveValidacionCommandHandler : IRequestHandler<RecuperarClaveValidacionCommand, Response<RecuperarClaveValidacionResponseDTO>>
+{
+    private readonly IAuthRepository _authRepository;
+    private readonly IPasswordHasher _passwordHasher;
+
+    public RecuperarClaveValidacionCommandHandler(
+        IAuthRepository authRepository,
+        IPasswordHasher passwordHasher)
+    {
+        _authRepository = authRepository;
+        _passwordHasher = passwordHasher;
+    }
+
+    public async Task<Response<RecuperarClaveValidacionResponseDTO>> Handle(RecuperarClaveValidacionCommand request, CancellationToken cancellationToken)
+    {
+        var doc = request.Request.Documento?.Trim();
+        if (string.IsNullOrWhiteSpace(doc))
+        {
+            return Response<RecuperarClaveValidacionResponseDTO>.Failure("El número de documento es requerido");
+        }
+
+        var usuario = await _authRepository.GetByDocumentoWithPersonaInfoAsync(doc, cancellationToken);
+        if (usuario == null || usuario.IdPersonaNavigation == null)
+        {
+            return Response<RecuperarClaveValidacionResponseDTO>.Failure("Los datos de validación no coinciden con ningún usuario registrado");
+        }
+
+        if (!usuario.IdPersonaNavigation.Activo)
+        {
+            return Response<RecuperarClaveValidacionResponseDTO>.Failure("El usuario asociado se encuentra inactivo o bloqueado");
+        }
+
+        var personaInfo = usuario.IdPersonaNavigation.PersonaInfo;
+        if (personaInfo == null || !personaInfo.FechaNacimiento.HasValue)
+        {
+            return Response<RecuperarClaveValidacionResponseDTO>.Failure("El usuario no tiene registrada una fecha de nacimiento para validación. Por favor contacte a secretaría/soporte.");
+        }
+
+        if (personaInfo.FechaNacimiento.Value != request.Request.FechaNacimiento)
+        {
+            return Response<RecuperarClaveValidacionResponseDTO>.Failure("La fecha de nacimiento no coincide con el documento ingresado");
+        }
+
+        // Generar contraseña temporal segura
+        var claveTemporal = GenerarClaveTemporal();
+        var hashed = _passwordHasher.HashPassword(claveTemporal);
+
+        // Actualizar contraseña y forzar cambio
+        await _authRepository.UpdatePasswordAsync(usuario.IdPersona, hashed, cancellationToken);
+        await _authRepository.SetRequiereCambioContraseniaAsync(usuario.IdPersona, true, cancellationToken);
+        await _authRepository.ClearResetTokenAsync(usuario.IdPersona, cancellationToken);
+
+        var data = new RecuperarClaveValidacionResponseDTO
+        {
+            Username = usuario.Username,
+            ClaveTemporal = claveTemporal,
+            Mensaje = "Identidad validada exitosamente. Usa la contraseña temporal para ingresar al sistema."
+        };
+
+        return Response<RecuperarClaveValidacionResponseDTO>.Success(data, "Contraseña temporal generada con éxito");
+    }
+
+    private static string GenerarClaveTemporal()
+    {
+        const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const string lower = "abcdefghjkmnpqrstuvwxyz";
+        const string digits = "23456789";
+        const string special = "#@$!*";
+        const string all = upper + lower + digits;
+
+        char[] chars = new char[8];
+        chars[0] = upper[RandomNumberGenerator.GetInt32(upper.Length)];
+        chars[1] = lower[RandomNumberGenerator.GetInt32(lower.Length)];
+        chars[2] = digits[RandomNumberGenerator.GetInt32(digits.Length)];
+        chars[3] = special[RandomNumberGenerator.GetInt32(special.Length)];
+
+        for (int i = 4; i < 8; i++)
+        {
+            chars[i] = all[RandomNumberGenerator.GetInt32(all.Length)];
+        }
+
+        for (int i = chars.Length - 1; i > 0; i--)
+        {
+            int j = RandomNumberGenerator.GetInt32(i + 1);
+            char temp = chars[i];
+            chars[i] = chars[j];
+            chars[j] = temp;
+        }
+
+        return new string(chars);
     }
 }

@@ -10,3 +10,4 @@ public record ChangePasswordCommand(int IdPersona, ChangePasswordDTO Request) : 
 public record CambiarContraseniaFirstLoginCommand(int IdPersona, CambiarContraseniaFirstLoginDTO Request) : IRequest<Response<bool>>;
 public record ForgotPasswordCommand(ForgotPasswordRequestDTO Request) : IRequest<Response<bool>>;
 public record ResetPasswordCommand(ResetPasswordRequestDTO Request) : IRequest<Response<bool>>;
+public record RecuperarClaveValidacionCommand(RecuperarClaveValidacionRequestDTO Request) : IRequest<Response<RecuperarClaveValidacionResponseDTO>>;

@@ -13,7 +13,8 @@ export const API_ENDPOINTS = {
     refresh: `${API_BASE_URL}/api/Auth/refresh`,
     forgotPassword: `${API_BASE_URL}/api/Auth/forgot-password`,
     resetPassword: `${API_BASE_URL}/api/Auth/reset-password`,
-    cambiarContraseniaPrimerIngreso: `${API_BASE_URL}/api/Auth/cambiar-contrasenia-primer-ingreso`
+    cambiarContraseniaPrimerIngreso: `${API_BASE_URL}/api/Auth/cambiar-contrasenia-primer-ingreso`,
+    recuperarClaveValidacion: `${API_BASE_URL}/api/Auth/recuperar-clave-validacion`
   },
   // Endpoints de postulaciones
   postulaciones: {

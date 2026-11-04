@@ -186,4 +186,13 @@ public class AuthRepository : IAuthRepository
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<Usuario?> GetByDocumentoWithPersonaInfoAsync(string documento, CancellationToken cancellationToken)
+    {
+        var doc = documento.Trim();
+        return await _context.Usuario
+            .Include(u => u.IdPersonaNavigation)
+                .ThenInclude(p => p.PersonaInfo)
+            .FirstOrDefaultAsync(u => u.IdPersonaNavigation != null && u.IdPersonaNavigation.Documento == doc, cancellationToken);
+    }
 }
