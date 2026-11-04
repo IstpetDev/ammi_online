@@ -315,6 +315,10 @@ export class AuthService {
     return roles.some(role => currentRoles.includes(role));
   }
 
+  recuperarClaveValidacion(documento: string, fechaNacimiento: string): Observable<any> {
+    return this.http.post<any>(API_ENDPOINTS.auth.recuperarClaveValidacion, { documento, fechaNacimiento });
+  }
+
   forgotPassword(username: string): Observable<any> {
     return this.http.post<any>(API_ENDPOINTS.auth.forgotPassword, { username });
   }

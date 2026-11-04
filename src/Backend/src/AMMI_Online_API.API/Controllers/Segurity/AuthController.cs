@@ -125,4 +125,15 @@ public class AuthController : ControllerBase
         if (!result.IsSuccess) return BadRequest(result);
         return Ok(result);
     }
+
+    [HttpPost("recuperar-clave-validacion")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Response<RecuperarClaveValidacionResponseDTO>>> RecuperarClaveValidacion(
+        [FromBody] RecuperarClaveValidacionRequestDTO request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new RecuperarClaveValidacionCommand(request), cancellationToken);
+        if (!result.IsSuccess) return BadRequest(result);
+        return Ok(result);
+    }
 }
