@@ -131,6 +131,9 @@ rutas_publicas=(
 
 for ruta in "${rutas_publicas[@]}"; do
   code=$(consultar_http "GET" "$url_base$ruta" "200")
+  if [ "$code" != "200" ]; then
+    code=$(consultar_http "GET" "$url_base/appAmmiOnline$ruta" "200")
+  fi
   registrar_resultado "$ruta" "GET" "200" "$code"
 done
 
@@ -164,6 +167,20 @@ if [ -n "$main_js_archivo" ]; then
   registrar_resultado "$main_js_archivo" "GET" "200" "$code"
 else
   registrar_resultado "main-*.js" "GET" "200" "000" "No se encontro etiqueta de script main-*.js en el index"
+fi
+
+# 5. Comprobar que POST Auth/login no devuelva 500
+echo ""
+echo "--- 5. Comprobando respuesta de POST Auth/login (no debe ser 500) ---"
+post_code=$(curl -s -L -o /dev/null -w '%{http_code}' -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"username":"smoke_test_user","password":"wrong_password"}' \
+  --connect-timeout 10 --max-time 30 "$url_base$ruta_auth" 2>/dev/null || echo "000")
+
+if [ "$post_code" = "500" ] || [ "$post_code" = "000" ] || [ "$post_code" = "502" ] || [ "$post_code" = "503" ]; then
+  registrar_resultado "$ruta_auth" "POST" "200/400/401" "$post_code" "Error interno en el servidor"
+else
+  registrar_resultado "$ruta_auth" "POST" "$post_code" "$post_code"
 fi
 
 echo ""

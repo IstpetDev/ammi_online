@@ -1,0 +1,66 @@
+name: Rollback Producción
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup:
+        description: 'Nombre de la carpeta de respaldo en C:\respaldos-despliegue (dejar vacío para el más reciente)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Revertir producción
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/despliegue
+          persist-credentials: false
+      - uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+      - name: Preparar SSH
+        env:
+          CLAVE: ${{ secrets.DEPLOY_SSH_KEY }}
+          CLAVE_SERVIDOR: ${{ vars.DEPLOY_HOST_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s %s\n' "$DEPLOY_HOST" "$CLAVE_SERVIDOR" > ~/.ssh/known_hosts
+      - name: Subir script actualizado
+        run: |
+          opts="-i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes"
+          scp $opts .github/despliegue/deploy-ammionline.ps1 "svc-deploy@${DEPLOY_HOST}:C:/despliegue/deploy-ammionline.ps1"
+      - name: Ejecutar Rollback
+        env:
+          RESPALDO_ESPECIFICO: ${{ github.event.inputs.backup }}
+        run: |
+          opts="-i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes"
+          if [ -n "$RESPALDO_ESPECIFICO" ]; then
+            echo "Revirtiendo a respaldo especifico: $RESPALDO_ESPECIFICO"
+            ssh $opts "svc-deploy@${DEPLOY_HOST}" \
+              "powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Rollback '$RESPALDO_ESPECIFICO'"
+          else
+            echo "Revirtiendo automaticamente al respaldo mas reciente..."
+            ssh $opts "svc-deploy@${DEPLOY_HOST}" \
+              "powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -AutoRollback"
+          fi
+      - name: Borrar clave
+        if: always()
+        run: rm -f ~/.ssh/deploy
