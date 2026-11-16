@@ -172,19 +172,12 @@ fi
 # 5. Comprobar que POST Auth/login no devuelva 500
 echo ""
 echo "--- 5. Comprobando respuesta de POST Auth/login (no debe ser 500) ---"
-post_response=$(curl -s -L -X POST \
+post_code=$(curl -s -L -o /dev/null -w '%{http_code}' -X POST \
   -H "Content-Type: application/json" \
   -d '{"username":"smoke_test_user","password":"wrong_password"}' \
-  -w "\n%{http_code}" \
   --connect-timeout 10 --max-time 30 "$url_base$ruta_auth" 2>/dev/null || echo "000")
 
-post_code=$(printf '%s' "$post_response" | tail -n 1)
-post_body=$(printf '%s' "$post_response" | sed '$d')
-
 if [ "$post_code" = "500" ] || [ "$post_code" = "000" ] || [ "$post_code" = "502" ] || [ "$post_code" = "503" ]; then
-  if [ -n "$post_body" ]; then
-    echo "  [DIAGNÓSTICO] Respuesta del servidor ($post_code): $(printf '%.200s' "$post_body")"
-  fi
   registrar_resultado "$ruta_auth" "POST" "200/400/401" "$post_code" "Error interno en el servidor"
 else
   registrar_resultado "$ruta_auth" "POST" "$post_code" "$post_code"
