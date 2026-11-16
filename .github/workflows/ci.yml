@@ -34,7 +34,7 @@ jobs:
       ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
 
   backend:
-    name: Backend (.NET 8)
+    name: Backend (.NET 10)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -48,13 +48,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
       - name: Restaurar
         run: dotnet restore src/Backend/AMMI_Online_API.sln
       - name: Compilar
         run: dotnet build src/Backend/AMMI_Online_API.sln --no-restore --configuration "$CONFIGURACION"
       - name: Pruebas .NET
-        run: dotnet test src/Backend/AMMI_Online_API.sln --no-build --configuration "$CONFIGURACION"
+        run: dotnet test src/Backend/AMMI_Online_API.sln --no-build --configuration "$CONFIGURACION" --collect:"XPlat Code Coverage"
 
   frontend:
     name: Frontend (Angular 20)
@@ -94,6 +94,8 @@ jobs:
           persist-credentials: false
       - run: bash .github/scripts/pruebas/validar-rama.test.sh
       - run: bash .github/scripts/pruebas/validar-ci.test.sh
+      - run: bash .github/scripts/pruebas/validar-secretos-appsettings.test.sh
+      - run: bash .github/scripts/pruebas/prueba-humo.test.sh
 
   ci-ok:
     name: ci-ok

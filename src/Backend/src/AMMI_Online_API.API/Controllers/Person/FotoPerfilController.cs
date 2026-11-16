@@ -20,19 +20,40 @@ public class FotoPerfilController : ApiController
         => await Mediator.Send(new GetFotoPerfilByPersonaIdQuery(idPersona), cancellationToken);
 
     [HttpPut("{idDocumentosPersonales}")]
-    
-    public async Task<Response<FotoPerfilDTO>> UpdateFoto(int idDocumentosPersonales, IFormFile archivo, CancellationToken cancellationToken)
-        => await Mediator.Send(new UpdateFotoPerfilCommand(idDocumentosPersonales, archivo), cancellationToken);
+    public async Task<IActionResult> UpdateFoto(int idDocumentosPersonales, IFormFile archivo, CancellationToken cancellationToken)
+    {
+        var autorizado = await AdjuntosAuthService.PuedeModificarFotoPerfilAsync(idDocumentosPersonales, CurrentPersonaId, CurrentRoles, cancellationToken);
+        if (!autorizado)
+            return Forbid();
+
+        var response = await Mediator.Send(new UpdateFotoPerfilCommand(idDocumentosPersonales, archivo), cancellationToken);
+        if (!response.IsSuccess)
+            return NotFound(response);
+
+        return Ok(response);
+    }
 
     [HttpDelete("{idDocumentosPersonales}")]
-    public async Task<Response<bool>> DeleteFoto(int idDocumentosPersonales, CancellationToken cancellationToken)
-        => await Mediator.Send(new DeleteFotoPerfilCommand(idDocumentosPersonales), cancellationToken);
+    public async Task<IActionResult> DeleteFoto(int idDocumentosPersonales, CancellationToken cancellationToken)
+    {
+        var autorizado = await AdjuntosAuthService.PuedeEliminarFotoPerfilAsync(idDocumentosPersonales, CurrentPersonaId, CurrentRoles, cancellationToken);
+        if (!autorizado)
+            return Forbid();
+
+        var response = await Mediator.Send(new DeleteFotoPerfilCommand(idDocumentosPersonales), cancellationToken);
+        if (!response.IsSuccess)
+            return NotFound(response);
+
+        return Ok(response);
+    }
 
     [HttpDelete("{documento}")]
+    [Authorize(Roles = "Administrador,SuperAdmin,Personal")]
     public async Task<Response<bool>> DeleteFotoAdminByDocumento(string documento, CancellationToken cancellationToken)
         => await Mediator.Send(new DeleteFotoPerfilAdminByDocumentoCommand(documento), cancellationToken);
 
     [HttpDelete("{idPersona}")]
+    [Authorize(Roles = "Administrador,SuperAdmin,Personal")]
     public async Task<Response<bool>> DeleteFotoAdminByPersonaId(int idPersona, CancellationToken cancellationToken)
         => await Mediator.Send(new DeleteFotoPerfilAdminByPersonaIdCommand(idPersona), cancellationToken);
 }

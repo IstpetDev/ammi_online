@@ -11,6 +11,7 @@ namespace AMMI_Online_API.API.Controllers.Catalogs;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EstadoMatriculaController : ControllerBase
 {
     private readonly IEstadoMatriculaRepository _repository;

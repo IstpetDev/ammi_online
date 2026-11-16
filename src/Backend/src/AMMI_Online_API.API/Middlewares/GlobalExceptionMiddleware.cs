@@ -1,5 +1,7 @@
-﻿using AMMI_Online_API.Application.Common.Exceptions;
+using AMMI_Online_API.Application.Common.Exceptions;
 using AMMI_Online_API.Application.Common.Wrapper;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Text.Json;
@@ -10,13 +12,16 @@ namespace AMMI_Online_API.API.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<GlobalExceptionMiddleware> _logger;
+        private readonly IHostEnvironment _environment;
 
         public GlobalExceptionMiddleware(
             RequestDelegate next,
-            ILogger<GlobalExceptionMiddleware> logger)
+            ILogger<GlobalExceptionMiddleware> logger,
+            IHostEnvironment environment)
         {
             _next = next;
             _logger = logger;
+            _environment = environment;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -33,27 +38,45 @@ namespace AMMI_Online_API.API.Middleware
 
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            context.Response.ContentType = "application/json";
-
-            // Configurar ExceptionHandler si no está configurado
-            if (ExceptionHandler.GetSpecificErrorMessage == null)
-            {
-                ExceptionHandler.Configure(_logger);
-            }
-
-            var errorMessage = ExceptionHandler.GetSpecificErrorMessage(exception);
+            // Registrar error con traza completa en el log interno del servidor para diagnóstico
             ExceptionHandler.LogDetailedError(_logger, exception);
 
-            var response = Response<object>.Failure(errorMessage);
+            context.Response.ContentType = "application/json";
 
-            // Mapear tipos de excepción a códigos HTTP
-            context.Response.StatusCode = exception switch
+            var isDevelopment = _environment.IsDevelopment();
+            var statusCode = exception switch
             {
-                KeyNotFoundException => (int)HttpStatusCode.NotFound,
-                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-                ValidationException => (int)HttpStatusCode.BadRequest,
-                _ => (int)HttpStatusCode.InternalServerError
+                KeyNotFoundException => HttpStatusCode.NotFound,
+                UnauthorizedAccessException => HttpStatusCode.Unauthorized,
+                ValidationException => HttpStatusCode.BadRequest,
+                TimeoutException => HttpStatusCode.RequestTimeout,
+                _ => HttpStatusCode.InternalServerError
             };
+
+            context.Response.StatusCode = (int)statusCode;
+
+            string errorMessage;
+            if (isDevelopment)
+            {
+                errorMessage = ExceptionHandler.GetSpecificErrorMessage(exception, isDevelopment: true);
+            }
+            else
+            {
+                // En producción: mensajes sanitizados sin trazas, códigos SQL ni detalles internos del servidor
+                errorMessage = statusCode switch
+                {
+                    HttpStatusCode.BadRequest => exception is ValidationException valEx
+                        ? $"Error de validación: {valEx.Message}"
+                        : "Solicitud incorrecta",
+                    HttpStatusCode.NotFound => "Registro no encontrado",
+                    HttpStatusCode.Unauthorized => "No tiene permisos para esta acción",
+                    HttpStatusCode.RequestTimeout => "Tiempo de espera agotado",
+                    _ => "Ha ocurrido un error interno en el servidor."
+                };
+            }
+
+            var response = Response<object>.Failure(errorMessage);
+            response.StatusCode = statusCode;
 
             var result = JsonSerializer.Serialize(response);
             await context.Response.WriteAsync(result);

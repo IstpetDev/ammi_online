@@ -327,6 +327,67 @@ export class AlumnoHomeComponent implements OnInit {
     return 'badge-danger';
   }
 
+  getEstadoMateriaInfo(m: MateriaHistorialDTO): { texto: string; clase: string } {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const inicio = this.normalizarFecha(m.fechaInicio);
+    const fin = this.normalizarFecha(m.fechaFin);
+
+    // 1. Falta para inicializar si aún falta para la fecha de inicio
+    if (inicio && hoy < inicio) {
+      return { texto: 'Falta para inicializar', clase: 'badge-por-iniciar' };
+    }
+
+    // Si tiene fecha de fin evaluamos tiempos de vigencia y prórroga
+    if (fin) {
+      const diasGracia = m.diasGracia ?? 5;
+      const limiteProrroga = new Date(fin);
+      limiteProrroga.setDate(limiteProrroga.getDate() + diasGracia);
+      limiteProrroga.setHours(23, 59, 59, 999);
+
+      // 2. En curso si está en los tiempos correctos
+      if (hoy <= fin) {
+        return { texto: 'En curso', clase: 'badge-en-curso' };
+      }
+
+      // 3. Calificando si está en prórroga (fecha de gracia de calificaciones)
+      if (hoy <= limiteProrroga) {
+        return { texto: 'Calificando', clase: 'badge-calificando' };
+      }
+
+      // 4. Finalizada si ya está pasada la fecha de prórroga
+      return { texto: 'Finalizada', clase: 'badge-finalizada' };
+    }
+
+    // Fallbacks si no hay fechaFin definida pero statusPeriodo viene informado
+    if (m.statusPeriodo === 'NotStarted') {
+      return { texto: 'Falta para inicializar', clase: 'badge-por-iniciar' };
+    }
+    if (m.statusPeriodo === 'GracePeriod') {
+      return { texto: 'Calificando', clase: 'badge-calificando' };
+    }
+    if (m.statusPeriodo === 'Closed') {
+      return { texto: 'Finalizada', clase: 'badge-finalizada' };
+    }
+
+    return { texto: 'En curso', clase: 'badge-en-curso' };
+  }
+
+  private normalizarFecha(fecha: string | Date | null | undefined): Date | null {
+    if (!fecha) return null;
+    if (typeof fecha === 'string') {
+      const partes = fecha.split('T')[0].split('-');
+      if (partes.length === 3) {
+        return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+      }
+    }
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return null;
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   getIniciales(nombre: string | null | undefined): string {
     if (!nombre) return 'DOC';
     return nombre

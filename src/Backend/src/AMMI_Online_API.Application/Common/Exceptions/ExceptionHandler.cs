@@ -1,4 +1,4 @@
-﻿using AMMI_Online_API.Application.Common.Wrapper;
+using AMMI_Online_API.Application.Common.Wrapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
@@ -38,45 +38,49 @@ namespace AMMI_Online_API.Application.Common.Exceptions
             }
         }
 
-        public static string GetSpecificErrorMessage(Exception ex)
+        public static string GetSpecificErrorMessage(Exception ex, bool isDevelopment = false)
         {
             return ex switch
             {
-                ArgumentNullException argEx => $"Valor requerido no proporcionado: {argEx.ParamName}",
-                InvalidOperationException customEx => customEx.Message,
-                DbUpdateException dbEx => GetDbUpdateErrorMessage(dbEx),
-                MySqlException sqlEx => GetMySqlErrorMessage(sqlEx),
+                ArgumentNullException argEx => isDevelopment
+                    ? $"Valor requerido no proporcionado: {argEx.ParamName}"
+                    : "Datos requeridos no proporcionados",
+                InvalidOperationException customEx => isDevelopment
+                    ? customEx.Message
+                    : "Operación no válida",
+                DbUpdateException dbEx => GetDbUpdateErrorMessage(dbEx, isDevelopment),
+                MySqlException sqlEx => GetMySqlErrorMessage(sqlEx, isDevelopment),
                 ValidationException valEx => $"Error de validación: {valEx.Message}",
                 KeyNotFoundException _ => "Registro no encontrado",
                 UnauthorizedAccessException _ => "No tiene permisos para esta acción",
                 TimeoutException _ => "Tiempo de espera agotado",
-                _ => "Error interno del servidor"
+                _ => isDevelopment ? $"{ex.GetType().Name}: {ex.Message}" : "Error interno del servidor"
             };
         }
 
-        private static string GetDbUpdateErrorMessage(DbUpdateException ex)
+        private static string GetDbUpdateErrorMessage(DbUpdateException ex, bool isDevelopment)
         {
             Exception current = ex;
             while (current != null)
             {
-                if (current is MySqlException sqlEx) return GetMySqlErrorMessage(sqlEx);
+                if (current is MySqlException sqlEx) return GetMySqlErrorMessage(sqlEx, isDevelopment);
                 current = current.InnerException;
             }
 
             string msg = ex.InnerException?.Message ?? ex.Message;
             return msg.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase)
                 ? "Registro duplicado"
-                : "Error al actualizar la base de datos";
+                : (isDevelopment ? msg : "Error al actualizar la base de datos");
         }
 
-        private static string GetMySqlErrorMessage(MySqlException ex)
+        private static string GetMySqlErrorMessage(MySqlException ex, bool isDevelopment)
         {
             return ex.Number switch
             {
                 1062 => "Registro duplicado",
                 1451 => "No se puede eliminar, tiene registros relacionados",
                 1452 => "Referencia a registro inexistente",
-                _ => $"Error de base de datos (Código: {ex.Number})"
+                _ => isDevelopment ? $"Error de base de datos (Código: {ex.Number}): {ex.Message}" : "Error de base de datos"
             };
         }
 

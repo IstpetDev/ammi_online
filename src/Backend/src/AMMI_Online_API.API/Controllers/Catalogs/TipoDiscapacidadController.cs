@@ -11,7 +11,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class TipoDiscapacidadController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<TipoDiscapacidadDTO>>> GetAllTipoDiscapacidad([FromQuery] GetAllTipoDiscapacidadQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 

@@ -11,7 +11,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class EspecialidadController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<EspecialidadDTO>>> GetEspecialidad(
             [FromQuery] GetEspecialidadQuery query,
             CancellationToken cancellationToken)

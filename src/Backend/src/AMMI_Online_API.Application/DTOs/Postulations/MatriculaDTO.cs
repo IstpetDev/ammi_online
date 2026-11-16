@@ -20,4 +20,5 @@ public class MatriculaDTO
     public int? IdCiclo { get; set; }
     public string DetalleCiclo { get; set; }
     public string? PathFoto { get; set; }
+    public int? IdAdjuntoFoto { get; set; }
 }

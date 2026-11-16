@@ -7,5 +7,6 @@ public record FotoPerfilDTO
     public string NombreCompleto { get; set; } = string.Empty;
     public string Documento { get; set; } = string.Empty;
     public string? PathFoto { get; set; }
+    public int? IdAdjunto { get; set; }
     public bool? Estado { get; set; }
 }

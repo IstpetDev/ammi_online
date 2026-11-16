@@ -30,7 +30,6 @@ public class MallaCompletaController : ApiController
     /// y opcionalmente: MallaParalelo + Distributivos para un paralelo.
     /// </summary>
     [HttpPost("Crear")]
-    [AllowAnonymous]
     public async Task<ActionResult<Response<CrearMallaCompletaResultDTO>>> Crear(
         [FromBody] CrearMallaCompletaRequest request,
         CancellationToken cancellationToken)
@@ -59,7 +58,6 @@ public class MallaCompletaController : ApiController
     /// Si alguna condición falla, se hace rollback completo y no se persiste nada.
     /// </summary>
     [HttpPost("Duplicar")]
-    [AllowAnonymous]
     public async Task<ActionResult<Response<DuplicarMallaResultDTO>>> Duplicar(
         [FromBody] DuplicarMallaRequest request,
         CancellationToken cancellationToken)
@@ -87,7 +85,6 @@ public class MallaCompletaController : ApiController
     ///   - No deben existir ya mallas con los mismos cursos en el ciclo destino.
     /// </summary>
     [HttpPost("ClonarParaCiclo")]
-    [AllowAnonymous]
     public async Task<ActionResult<Response<ClonarMallasResultDTO>>> ClonarParaCiclo(
         [FromBody] ClonarMallasParaCicloRequest request,
         CancellationToken cancellationToken)
@@ -107,7 +104,6 @@ public class MallaCompletaController : ApiController
     /// Obtiene el estado de configuración de los cursos para un ciclo y tipo de oferta específicos.
     /// </summary>
     [HttpPost("configuracion-cursos")]
-    [AllowAnonymous]
     public async Task<ActionResult<Response<IEnumerable<CursoConfigStatusDTO>>>> GetConfiguracionCursos(
         [FromBody] CursoConfigRequestDTO request,
         CancellationToken cancellationToken)

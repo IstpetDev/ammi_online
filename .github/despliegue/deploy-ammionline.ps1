@@ -20,14 +20,16 @@ $UrlApi   = 'http://localhost/apiAmmiOnline/'
 
 # Nunca se tocan: configuracion del servidor, datos subidos, logs y publicaciones antiguas.
 $NoTocarArchivos = @('appsettings*.json', 'web.config', 'app_offline.htm')
+# La app (estatica) si recibe su web.config desde el repositorio: lleva la reescritura de rutas de Angular.
+$NoTocarArchivosApp = @('app_offline.htm')
 $NoTocarCarpetas = @('OLD', 'Uploads', 'logs')
 
 function Copiar {
-    param([string]$Origen, [string]$Destino, [bool]$Espejo)
+    param([string]$Origen, [string]$Destino, [bool]$Espejo, [string[]]$ExcluirArchivos = $NoTocarArchivos)
     $modo = if ($Espejo) { '/MIR' } else { '/E' }   # /E no borra nada en el destino
     # Hasta 3 vueltas: un archivo puede seguir bloqueado unos segundos tras apagar la API.
     for ($i = 1; $i -le 3; $i++) {
-        $salida = robocopy $Origen $Destino $modo /XF @NoTocarArchivos /XD @NoTocarCarpetas /R:3 /W:5 /NJH /NJS /NP /NDL
+        $salida = robocopy $Origen $Destino $modo /XF @ExcluirArchivos /XD @NoTocarCarpetas /R:3 /W:5 /NJH /NJS /NP /NDL
         if ($LASTEXITCODE -lt 8) { return }
         Write-Output "robocopy codigo $LASTEXITCODE (intento $i de 3) en ${Destino}. Lineas con error:"
         $salida | Where-Object { $_ -match 'ERROR|Error|Acceso|denegado|process cannot|proceso no' } | Select-Object -First 8 | ForEach-Object { Write-Output "   $_" }
@@ -97,10 +99,52 @@ function Esperar-Api-Liberada {
     Write-Output 'Aviso: la DLL de la API sigue bloqueada tras 60 s; se intenta copiar igualmente.'
 }
 
+function Comprobar-HostingBundle {
+    # Verifica que el Hosting Bundle / runtime de ASP.NET Core requerido este instalado en el servidor IIS.
+    $versionRequerida = '10.'
+    $candidatos = @()
+    if ($env:DOTNET_ROOT) { $candidatos += (Join-Path $env:DOTNET_ROOT 'dotnet.exe') }
+    $candidatos += 'dotnet'
+    if ($env:ProgramFiles) { $candidatos += (Join-Path $env:ProgramFiles 'dotnet\dotnet.exe') }
+    if ($env:LocalAppData) { $candidatos += (Join-Path $env:LocalAppData 'dotnet\dotnet.exe') }
+
+    $runtimes = @()
+    foreach ($c in $candidatos) {
+        try {
+            $salida = & $c --list-runtimes 2>$null
+            if ($salida) {
+                $runtimes = $salida
+                break
+            }
+        } catch { }
+    }
+
+    $instalado = $runtimes | Where-Object { $_ -match "Microsoft\.AspNetCore\.App\s+$versionRequerida" }
+    if (-not $instalado) {
+        $carpetas = @()
+        if ($env:ProgramFiles) { $carpetas += Join-Path $env:ProgramFiles 'dotnet\shared\Microsoft.AspNetCore.App' }
+        if ($env:LocalAppData) { $carpetas += Join-Path $env:LocalAppData 'dotnet\shared\Microsoft.AspNetCore.App' }
+        foreach ($dir in $carpetas) {
+            if (Test-Path $dir) {
+                $encontrado = Get-ChildItem -Path $dir -Directory -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -like "$versionRequerida*" }
+                if ($encontrado) {
+                    $instalado = $encontrado
+                    break
+                }
+            }
+        }
+    }
+
+    if (-not $instalado) {
+        throw "El servidor no cuenta con el Hosting Bundle de ASP.NET Core $versionRequerida instalado. Instale el .NET Hosting Bundle antes de desplegar."
+    }
+}
+
 function Restaurar {
     param([string]$Carpeta)
     Copiar (Join-Path $Carpeta 'api') $Api $false
-    Copiar (Join-Path $Carpeta 'app') $App $true
+    Copiar (Join-Path $Carpeta 'app') $App $true $NoTocarArchivosApp
 }
 
 function Con-Api-Fuera-De-Linea {
@@ -127,6 +171,8 @@ if ($Rollback) {
 
 if (-not $Zip -or -not (Test-Path $Zip)) { throw 'Falta -Zip o el archivo no existe' }
 
+Comprobar-HostingBundle
+
 $id = (Get-Date).ToString('yyyyMMdd-HHmmss')
 $prep = Join-Path $Trabajo "preparado-$id"
 $exito = $false
@@ -134,17 +180,18 @@ try {
     Expand-Archive -Path $Zip -DestinationPath $prep -Force
     if (-not (Test-Path (Join-Path $prep 'api\AMMI_Online_API.API.dll'))) { throw 'El paquete no trae la API' }
     if (-not (Test-Path (Join-Path $prep 'app\index.html')))             { throw 'El paquete no trae la app' }
+    if (-not (Test-Path (Join-Path $prep 'app\web.config')))             { throw 'El paquete no trae web.config de la app' }
 
     # 1. Respaldo del estado actual (codigo, sin Uploads ni logs ni OLD).
     $copia = Join-Path $Respaldo $id
     Copiar $Api (Join-Path $copia 'api') $false
-    Copiar $App (Join-Path $copia 'app') $false
+    Copiar $App (Join-Path $copia 'app') $false $NoTocarArchivosApp
     Write-Output "Respaldo: $copia"
 
     # 2. Despliegue; si algo falla, se restaura el respaldo.
     try {
         Con-Api-Fuera-De-Linea { Copiar (Join-Path $prep 'api') $Api $false }
-        Copiar (Join-Path $prep 'app') $App $true
+        Copiar (Join-Path $prep 'app') $App $true $NoTocarArchivosApp
         Comprobar-Salud
         $exito = $true
     } catch {
@@ -164,4 +211,13 @@ if (-not $exito) { exit 1 }
 # 3. Respaldos antiguos.
 Get-ChildItem $Respaldo -Directory | Sort-Object Name -Descending | Select-Object -Skip $Conservar |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+# 4. Retencion de logs: depurar archivos con mas de 30 dias de antiguedad.
+$carpetaLogs = Join-Path $Api 'logs'
+if (Test-Path $carpetaLogs) {
+    Get-ChildItem -Path $carpetaLogs -File -Recurse |
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 Write-Output "Despliegue correcto: $id"

@@ -222,6 +222,11 @@
         <h4 class="materia-card-nombre">{{ dm.nombreMateria }}</h4>
         <span class="materia-card-sub">{{ dm.paralelos.length }} paralelo{{ dm.paralelos.length !== 1 ? 's' : '' }}</span>
       </div>
+      @if (esAdmin) {
+      <button type="button" class="btn-config-materia" (click)="abrirModalConfigMateria(dm, $event)" title="Configurar fechas de inicio y fin para esta materia">
+        <i class="pi pi-cog"></i>
+      </button>
+      }
     </div>
     <div class="paralelos-lista">
       @for (p of dm.paralelos; track p.idParalelo ?? p.idMallaParalelo) {
@@ -254,3 +259,81 @@
 </app-shared-empty-state>
 }
 }
+
+<!-- MODAL CONFIGURACIÓN DE FECHAS DE LA MATERIA (ADMINISTRADOR) -->
+<app-shared-modal
+  [(visible)]="modalConfigFechasVisible"
+  title="Configurar Fechas de la Materia"
+  customWidth="520px"
+  [showFooter]="true"
+  [confirmDisabled]="guardandoFechasMateria"
+  [confirmLoading]="guardandoFechasMateria"
+  (confirm)="guardarFechasMateria()"
+  (cancel)="cerrarModalConfigMateria()"
+  confirmText="Guardar Cambios"
+  cancelText="Cancelar">
+
+  @if (materiaAConfigurar) {
+    <div class="modal-config-fechas-body">
+      <div class="materia-info-banner">
+        <div class="materia-info-icon">
+          <i class="pi pi-book"></i>
+        </div>
+        <div class="materia-info-text">
+          <div class="materia-info-nombre">{{ materiaAConfigurar.nombreMateria }}</div>
+          <div class="materia-info-sub">
+            Materia de la Malla &bull; {{ materiaAConfigurar.paralelos?.length || 0 }} paralelo(s)
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field-group">
+        <label for="modalFechaInicio" class="form-label">
+          <i class="pi pi-calendar"></i> Fecha de Inicio de Calificaciones
+        </label>
+        <input
+          id="modalFechaInicio"
+          type="date"
+          class="form-date-input"
+          [(ngModel)]="configFechaInicio" />
+        <span class="form-field-help">Fecha a partir de la cual se habilita el registro de notas.</span>
+      </div>
+
+      <div class="form-field-group">
+        <label for="modalFechaFin" class="form-label">
+          <i class="pi pi-calendar"></i> Fecha Fin de Calificaciones
+        </label>
+        <input
+          id="modalFechaFin"
+          type="date"
+          class="form-date-input"
+          [(ngModel)]="configFechaFin" />
+        <span class="form-field-help">Fecha límite ordinaria para el ingreso de notas por los docentes.</span>
+      </div>
+
+      <div class="form-field-group">
+        <label for="modalDiasGracia" class="form-label">
+          <i class="pi pi-clock"></i> Días de Prórroga (Gracia)
+        </label>
+        <input
+          id="modalDiasGracia"
+          type="number"
+          min="0"
+          max="365"
+          class="form-date-input"
+          [(ngModel)]="configDiasGracia" />
+        <span class="form-field-help">Días adicionales otorgados tras expirar la fecha fin.</span>
+      </div>
+
+      @if (configFechaFin) {
+        <div class="resumen-plazo-card">
+          <i class="pi pi-info-circle"></i>
+          <div>
+            <div class="resumen-plazo-title">Fecha límite definitiva calculada:</div>
+            <div class="resumen-plazo-fecha">{{ getConfigNuevaFechaLimite() }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</app-shared-modal>

@@ -48,10 +48,26 @@ public class PagosController : ApiController
     }
 
     [HttpGet("GetPagosByDocumento/{documento}")]
-    public async Task<Response<IEnumerable<PagoDTO>>> GetPagosByDocumento(string documento, CancellationToken cancellationToken)
-        => new Response<IEnumerable<PagoDTO>>(await Mediator.Send(new GetPagosByDocumentoQuery(documento), cancellationToken));
+    public async Task<IActionResult> GetPagosByDocumento(string documento, CancellationToken cancellationToken)
+    {
+        var autorizado = await AdjuntosAuthService.PuedeConsultarPagosPorDocumentoAsync(
+            documento, CurrentPersonaId, CurrentRoles, cancellationToken);
+        if (!autorizado)
+            return Forbid();
+
+        var result = await Mediator.Send(new GetPagosByDocumentoQuery(documento), cancellationToken);
+        return Ok(new Response<IEnumerable<PagoDTO>>(result));
+    }
 
     [HttpGet("GetPagosByMatricula/{idMatricula}")]
-    public async Task<Response<IEnumerable<PagoDTO>>> GetPagosByMatricula(int idMatricula, CancellationToken cancellationToken)
-        => new Response<IEnumerable<PagoDTO>>(await Mediator.Send(new GetPagosByMatriculaQuery(idMatricula), cancellationToken));
+    public async Task<IActionResult> GetPagosByMatricula(int idMatricula, CancellationToken cancellationToken)
+    {
+        var autorizado = await AdjuntosAuthService.PuedeConsultarPagosPorMatriculaAsync(
+            idMatricula, CurrentPersonaId, CurrentRoles, cancellationToken);
+        if (!autorizado)
+            return Forbid();
+
+        var result = await Mediator.Send(new GetPagosByMatriculaQuery(idMatricula), cancellationToken);
+        return Ok(new Response<IEnumerable<PagoDTO>>(result));
+    }
 }

@@ -141,5 +141,14 @@ export class DetalleMallaService {
     return this.http.put<any>(`${this.apiUrl}/${idDetalleMalla}/FechasNotas`, dto)
       .pipe(map(r => this.unwrapData<DetalleMallaDTO>(r) as DetalleMallaDTO));
   }
+
+  /**
+   * Actualizar la plantilla de evaluación para una materia específica
+   */
+  actualizarPlantilla(idDetalleMalla: number, idPlantillaEvaluacion: number): Observable<DetalleMallaDTO> {
+    return this.http.put<any>(`${this.apiUrl}/${idDetalleMalla}/Plantilla`, { idDetalleMalla, idPlantillaEvaluacion })
+      .pipe(map(r => this.unwrapData<DetalleMallaDTO>(r) as DetalleMallaDTO));
+  }
 }
+
 

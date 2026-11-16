@@ -11,7 +11,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class MateriaController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<PaginatedResult<MateriaDTO>>> GetMaterias([FromQuery] GetMateriaQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 

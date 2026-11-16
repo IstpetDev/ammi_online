@@ -4,6 +4,8 @@ using AMMI_Online_API.Application.Common.Wrapper;
 using AMMI_Online_API.Application.DTOs.Segurity;
 using AMMI_Online_API.Domain.Entities;
 using AMMI_Online_API.Domain.Interfaces.Segurity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace AMMI_Online_API.Application.Services.Implementations;
 
@@ -12,7 +14,10 @@ public class OtpService : IOtpService
     private readonly IEmailVerificationOtpRepository _otpRepository;
     private readonly IEmailService _emailService;
     private readonly IPasswordHasher _passwordHasher;
-    
+    private readonly IAuthSecurityService _authSecurityService;
+    private readonly ILogger<OtpService> _logger;
+    private readonly string _frontendUrl;
+
     private const int OTP_EXPIRATION_MINUTES = 10;
     private const int MAX_DAILY_ATTEMPTS = 5;
     private const int RESEND_COOLDOWN_SECONDS = 60;
@@ -20,11 +25,17 @@ public class OtpService : IOtpService
     public OtpService(
         IEmailVerificationOtpRepository otpRepository,
         IEmailService emailService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IAuthSecurityService authSecurityService,
+        ILogger<OtpService> logger,
+        IConfiguration configuration)
     {
         _otpRepository = otpRepository;
         _emailService = emailService;
         _passwordHasher = passwordHasher;
+        _authSecurityService = authSecurityService;
+        _logger = logger;
+        _frontendUrl = configuration["FrontendSettings:BaseUrl"] ?? "http://localhost:4200";
     }
 
     public async Task<string> GenerateOtpCodeAsync()
@@ -35,7 +46,7 @@ public class OtpService : IOtpService
         {
             rng.GetBytes(bytes);
         }
-        
+
         var number = BitConverter.ToUInt32(bytes, 0) % 900000 + 100000;
         return number.ToString();
     }
@@ -44,16 +55,35 @@ public class OtpService : IOtpService
     {
         try
         {
-            // 1. Verificar límite diario
-            var dailyAttempts = await _otpRepository.GetDailyAttemptsCountAsync(email);
+            var clientIp = _authSecurityService.GetCurrentClientIp();
+            var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+
+            // 1. Control de tasa de solicitudes por IP y por correo
+            if (_authSecurityService.IsActionLockedOut("send-otp", normalizedEmail, clientIp))
+            {
+                _logger.LogWarning(
+                    "Solicitud de OTP rechazada por exceso de tasa para '{Email}' desde la IP '{IpAddress}'.",
+                    normalizedEmail,
+                    clientIp);
+                return Response<OtpResponseDTO>.Failure(
+                    "Demasiadas solicitudes de código de verificación. Por favor, intente más tarde.");
+            }
+
+            // 2. Verificar límite diario por correo
+            var dailyAttempts = await _otpRepository.GetDailyAttemptsCountAsync(normalizedEmail);
             if (dailyAttempts >= MAX_DAILY_ATTEMPTS)
             {
+                _logger.LogWarning(
+                    "Límite diario de OTP excedido ({MaxAttempts}) para '{Email}' desde la IP '{IpAddress}'.",
+                    MAX_DAILY_ATTEMPTS,
+                    normalizedEmail,
+                    clientIp);
                 return Response<OtpResponseDTO>.Failure(
                     $"Has excedido el límite de {MAX_DAILY_ATTEMPTS} intentos diarios. Por favor, intenta mañana.");
             }
 
-            // 2. Verificar si existe un OTP activo reciente (cooldown)
-            var existingOtp = await _otpRepository.GetActiveOtpAsync(email);
+            // 3. Verificar si existe un OTP activo reciente (cooldown)
+            var existingOtp = await _otpRepository.GetActiveOtpAsync(normalizedEmail);
             if (existingOtp != null && existingOtp.UltimoReenvio.HasValue)
             {
                 var timeSinceLastResend = (DateTime.UtcNow - existingOtp.UltimoReenvio.Value).TotalSeconds;
@@ -65,41 +95,43 @@ public class OtpService : IOtpService
                 }
             }
 
-            // 3. Revocar OTPs activos anteriores
-            await _otpRepository.RevokeActiveOtpsAsync(email);
+            _authSecurityService.RecordActionAttempt("send-otp", normalizedEmail, clientIp);
 
-            // 4. Generar nuevo código OTP (sin hashear para enviarlo por email)
+            // 4. Revocar OTPs activos anteriores
+            await _otpRepository.RevokeActiveOtpsAsync(normalizedEmail);
+
+            // 5. Generar nuevo código OTP
             var codigoPlano = await GenerateOtpCodeAsync();
-            
-            // 5. Hashear el código para almacenarlo de forma segura
+
+            // 6. Hashear el código para almacenamiento seguro
             var codigoHasheado = _passwordHasher.HashPassword(codigoPlano);
-            
             var fechaExpiracion = DateTime.UtcNow.AddMinutes(OTP_EXPIRATION_MINUTES);
 
-            // 6. Crear registro en base de datos con código hasheado
+            // 7. Guardar en base de datos
             var otp = new EmailVerificacionesOtp
             {
-                Email = email,
-                CodigoOtp = codigoHasheado, // ⚠️ Guardamos el hash, no el código plano
+                Email = normalizedEmail,
+                CodigoOtp = codigoHasheado,
                 FechaCreacion = DateTime.UtcNow,
                 FechaExpiracion = fechaExpiracion,
                 IntentosRestantes = 3,
                 EsVerificado = 0ul,
                 ReenviosRealizados = existingOtp?.ReenviosRealizados + 1 ?? 0,
-                UltimoReenvio = DateTime.UtcNow
+                UltimoReenvio = DateTime.UtcNow,
+                IpOrigen = clientIp
             };
 
             await _otpRepository.CreateOtpAsync(otp);
 
-            // 7. Generar token de verificación (código plano codificado en Base64 para URL)
+            // 8. Generar token de verificación para URL
             var verificationToken = Convert.ToBase64String(
-                System.Text.Encoding.UTF8.GetBytes($"{email}:{codigoPlano}:{otp.IdVerificacion}")
+                System.Text.Encoding.UTF8.GetBytes($"{normalizedEmail}:{codigoPlano}:{otp.IdVerificacion}")
             );
 
-            // 8. Enviar email con botón de verificación (no se muestra el código)
+            // 9. Enviar email (NO se registra el código OTP ni el token en los logs)
             var emailBody = GenerateOtpEmailTemplate(verificationToken, nombrePostulante ?? "Postulante");
             var emailSent = await _emailService.SendEmailAsync(
-                email,
+                normalizedEmail,
                 "Verificación de Correo Electrónico - AMMI Online",
                 emailBody,
                 true
@@ -107,11 +139,19 @@ public class OtpService : IOtpService
 
             if (!emailSent)
             {
+                _logger.LogWarning(
+                    "Fallo al enviar correo de verificación OTP a '{Email}' desde la IP '{IpAddress}'.",
+                    normalizedEmail,
+                    clientIp);
                 return Response<OtpResponseDTO>.Failure(
                     "Error al enviar el código de verificación. Por favor, verifica tu email e intenta nuevamente.");
             }
 
-            // 9. Retornar respuesta exitosa
+            _logger.LogInformation(
+                "Email de verificación OTP despachado para '{Email}' desde la IP '{IpAddress}'.",
+                normalizedEmail,
+                clientIp);
+
             var response = new OtpResponseDTO
             {
                 Enviado = true,
@@ -120,14 +160,12 @@ public class OtpService : IOtpService
                 IntentosRestantes = 3
             };
 
-            return Response<OtpResponseDTO>.Success(
-                response, 
-                "Email de verificación enviado correctamente");
+            return Response<OtpResponseDTO>.Success(response, "Email de verificación enviado correctamente");
         }
         catch (Exception ex)
         {
-            return Response<OtpResponseDTO>.Failure(
-                $"Error inesperado al enviar el código: {ex.Message}");
+            _logger.LogError(ex, "Error inesperado al enviar el código OTP a '{Email}'.", email);
+            return Response<OtpResponseDTO>.Failure($"Error inesperado al enviar el código: {ex.Message}");
         }
     }
 
@@ -135,44 +173,78 @@ public class OtpService : IOtpService
     {
         try
         {
-            // 1. Obtener OTP activo
-            var otp = await _otpRepository.GetActiveOtpAsync(email);
+            var clientIp = _authSecurityService.GetCurrentClientIp();
+            var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+
+            // 1. Verificar bloqueo temporal por IP o cuenta
+            if (_authSecurityService.IsLoginLockedOut(normalizedEmail, clientIp))
+            {
+                _logger.LogWarning(
+                    "Verificación de OTP rechazada por bloqueo temporal para '{Email}' desde la IP '{IpAddress}'.",
+                    normalizedEmail,
+                    clientIp);
+                return Response<VerifyOtpResponseDTO>.Failure(
+                    "Demasiados intentos fallidos. Su acceso ha sido bloqueado temporalmente por motivos de seguridad.");
+            }
+
+            // 2. Obtener OTP activo
+            var otp = await _otpRepository.GetActiveOtpAsync(normalizedEmail);
 
             if (otp == null)
             {
+                _authSecurityService.RecordFailedAttempt(normalizedEmail, clientIp);
+                _logger.LogWarning(
+                    "Fallo en verificación de OTP para '{Email}' desde la IP '{IpAddress}'. No existe OTP pendiente.",
+                    normalizedEmail,
+                    clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "No hay una verificación pendiente para este email. Solicita un nuevo email de verificación.");
             }
 
-            // 2. Verificar expiración
+            // 3. Verificar expiración
             if (otp.FechaExpiracion < DateTime.UtcNow)
             {
+                _authSecurityService.RecordFailedAttempt(normalizedEmail, clientIp);
+                _logger.LogWarning(
+                    "Fallo en verificación de OTP para '{Email}' desde la IP '{IpAddress}'. Token expirado.",
+                    normalizedEmail,
+                    clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "El enlace de verificación ha expirado. Por favor, solicita un nuevo email.");
             }
 
-            // 3. Verificar intentos restantes
+            // 4. Verificar intentos restantes
             if (otp.IntentosRestantes <= 0)
             {
+                _authSecurityService.RecordFailedAttempt(normalizedEmail, clientIp);
+                _logger.LogWarning(
+                    "Fallo en verificación de OTP para '{Email}' desde la IP '{IpAddress}'. Intentos agotados.",
+                    normalizedEmail,
+                    clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "Has agotado los intentos. Solicita un nuevo email de verificación.");
             }
 
-            // 4. Verificar el código usando BCrypt (compara con hash almacenado)
+            // 5. Verificar el código usando BCrypt (sin registrar el código ingresado)
             var isValidCode = _passwordHasher.VerifyPassword(codigo, otp.CodigoOtp);
-            
+
             if (!isValidCode)
             {
-                // Decrementar intentos
                 await _otpRepository.DecrementIntentosAsync(otp.IdVerificacion);
-                
+                _authSecurityService.RecordFailedAttempt(normalizedEmail, clientIp);
+
+                _logger.LogWarning(
+                    "Fallo en verificación de OTP para '{Email}' desde la IP '{IpAddress}'. Código incorrecto.",
+                    normalizedEmail,
+                    clientIp);
+
                 var intentosRestantes = otp.IntentosRestantes - 1;
                 return Response<VerifyOtpResponseDTO>.Failure(
                     $"Token de verificación inválido. Te quedan {intentosRestantes} intento{(intentosRestantes == 1 ? "" : "s")}.");
             }
 
-            // 5. Código correcto - marcar como verificado
-            var verified = await _otpRepository.VerifyOtpAsync(email, otp.CodigoOtp);
+            // 6. Código correcto - marcar como verificado e invalidar el token/OTP para un solo uso
+            var verified = await _otpRepository.VerifyOtpAsync(normalizedEmail, otp.CodigoOtp);
 
             if (!verified)
             {
@@ -180,21 +252,25 @@ public class OtpService : IOtpService
                     "Error al verificar el email. Intenta nuevamente.");
             }
 
-            // 6. Retornar respuesta exitosa
+            // 7. Restablecer intentos fallidos
+            _authSecurityService.ResetFailedAttempts(normalizedEmail, clientIp);
+            _logger.LogInformation(
+                "Email '{Email}' verificado exitosamente desde la IP '{IpAddress}'.",
+                normalizedEmail,
+                clientIp);
+
             var response = new VerifyOtpResponseDTO
             {
                 Verificado = true,
                 Mensaje = "¡Email verificado exitosamente! Puedes continuar con tu postulación."
             };
 
-            return Response<VerifyOtpResponseDTO>.Success(
-                response, 
-                "Verificación exitosa");
+            return Response<VerifyOtpResponseDTO>.Success(response, "Verificación exitosa");
         }
         catch (Exception ex)
         {
-            return Response<VerifyOtpResponseDTO>.Failure(
-                $"Error inesperado al verificar: {ex.Message}");
+            _logger.LogError(ex, "Error inesperado al verificar OTP para '{Email}'.", email);
+            return Response<VerifyOtpResponseDTO>.Failure($"Error inesperado al verificar: {ex.Message}");
         }
     }
 
@@ -202,6 +278,8 @@ public class OtpService : IOtpService
     {
         try
         {
+            var clientIp = _authSecurityService.GetCurrentClientIp();
+
             // 1. Decodificar el token desde Base64
             string decodedToken;
             try
@@ -211,6 +289,10 @@ public class OtpService : IOtpService
             }
             catch
             {
+                _authSecurityService.RecordFailedAttempt("otp-token-invalido", clientIp);
+                _logger.LogWarning(
+                    "Intento de verificación por token con formato corrupto desde la IP '{IpAddress}'.",
+                    clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "Token de verificación inválido o corrupto.");
             }
@@ -219,25 +301,30 @@ public class OtpService : IOtpService
             var tokenParts = decodedToken.Split(':');
             if (tokenParts.Length != 3)
             {
+                _authSecurityService.RecordFailedAttempt("otp-token-invalido", clientIp);
+                _logger.LogWarning(
+                    "Intento de verificación por token con estructura no válida desde la IP '{IpAddress}'.",
+                    clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "Token de verificación con formato inválido.");
             }
 
             var email = tokenParts[0];
             var codigoPlano = tokenParts[1];
-            
-            // Validar que idVerificacion sea un número válido
+
             if (!int.TryParse(tokenParts[2], out int _))
             {
+                _authSecurityService.RecordFailedAttempt("otp-token-invalido", clientIp);
                 return Response<VerifyOtpResponseDTO>.Failure(
                     "Token de verificación inválido.");
             }
 
-            // 3. Usar el método existente de verificación con hash
+            // 3. Delegar al método seguro de verificación con hash
             return await VerifyOtpAsync(email, codigoPlano);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al procesar token de verificación.");
             return Response<VerifyOtpResponseDTO>.Failure(
                 $"Error al procesar el token de verificación: {ex.Message}");
         }
@@ -245,7 +332,6 @@ public class OtpService : IOtpService
 
     public async Task<Response<OtpResponseDTO>> ResendOtpAsync(string email)
     {
-        // Reutilizar la lógica de envío
         return await SendOtpEmailAsync(email);
     }
 
@@ -256,10 +342,8 @@ public class OtpService : IOtpService
 
     private string GenerateOtpEmailTemplate(string verificationToken, string nombrePostulante)
     {
-        // URL del frontend donde se procesará la verificación
-        var frontendUrl = "http://localhost:4200"; // TODO: Mover a configuración 
-        var verificationUrl = $"{frontendUrl}/verify-email-token?token={Uri.EscapeDataString(verificationToken)}";
-        
+        var verificationUrl = $"{_frontendUrl}/verify-email-token?token={Uri.EscapeDataString(verificationToken)}";
+
         return $@"
 <!DOCTYPE html>
 <html lang='es'>
@@ -328,10 +412,6 @@ public class OtpService : IOtpService
             box-shadow: 0 4px 15px rgba(26, 35, 126, 0.4);
             transition: all 0.3s ease;
         }}
-        .verify-button:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(26, 35, 126, 0.5);
-        }}
         .warning-box {{
             background-color: #fff3e0;
             border-left: 5px solid #ff9800;
@@ -344,57 +424,6 @@ public class OtpService : IOtpService
             color: #e65100;
             font-weight: 600;
             font-size: 14px;
-        }}
-        .warning-box .icon {{
-            font-size: 20px;
-            margin-right: 10px;
-        }}
-        .info-box {{
-            background-color: #e3f2fd;
-            border-left: 5px solid #2196f3;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 6px;
-        }}
-        .info-box strong {{
-            color: #1565c0;
-            display: block;
-            margin-bottom: 10px;
-            font-size: 15px;
-        }}
-        .info-box ul {{
-            margin: 10px 0 0 0;
-            padding-left: 25px;
-            color: #424242;
-        }}
-        .info-box li {{
-            margin: 8px 0;
-            font-size: 14px;
-        }}
-        .alternative-link {{
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-        }}
-        .alternative-link p {{
-            font-size: 13px;
-            color: #666;
-            margin: 5px 0;
-        }}
-        .alternative-link a {{
-            color: #1a237e;
-            word-break: break-all;
-            font-size: 12px;
-        }}
-        .signature {{
-            margin-top: 35px;
-            color: #666;
-            font-size: 15px;
-        }}
-        .signature strong {{
-            color: #1a237e;
         }}
         .footer {{
             background-color: #fafafa;
@@ -410,22 +439,6 @@ public class OtpService : IOtpService
         .footer .copyright {{
             font-weight: 600;
             color: #424242;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .container {{
-                margin: 0;
-                border-radius: 0;
-            }}
-            .header {{
-                padding: 30px 20px;
-            }}
-            .content {{
-                padding: 30px 20px;
-            }}
-            .verify-button {{
-                padding: 15px 35px;
-                font-size: 16px;
-            }}
         }}
     </style>
 </head>
@@ -443,7 +456,7 @@ public class OtpService : IOtpService
             
             <div class='message'>
                 <p>Has iniciado el proceso de postulación en <strong>AMMI Online</strong>.</p>
-                <p>Para garantizar la seguridad de tu información y verificar que este correo electrónico te pertenece, por favor haz clic en el siguiente botón:</p>
+                <p>Para verificar tu correo electrónico, haz clic en el siguiente enlace:</p>
             </div>
             
             <div class='button-container'>
@@ -453,14 +466,12 @@ public class OtpService : IOtpService
             </div>
             
             <div class='warning-box'>
-                <p>
-                    <span class='icon'>⚠️</span>
-                    Este enlace expirará en <strong>{OTP_EXPIRATION_MINUTES} minutos</strong>
-                </p>
+                <p>⚠️ Este enlace expirará en <strong>{OTP_EXPIRATION_MINUTES} minutos</strong>.</p>
             </div>
-        
+        </div>
+
         <div class='footer'>
-            <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
+            <p>Este es un correo automático institucional.</p>
             <p class='copyright'>© 2026 AMMI Online. Todos los derechos reservados.</p>
         </div>
     </div>

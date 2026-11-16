@@ -7,4 +7,26 @@
 [extend]
 useDefault = true
 
-# Sin excepciones por ahora. Los valores de ejemplo deben ser ficticios.
+[allowlist]
+description = "Pruebas de validación de CI para gitleaks"
+paths = [
+    '''\.github/scripts/pruebas/.*''',
+]
+
+[[rules]]
+id = "connection-string-password"
+description = "Cadena de conexión con contraseña (password o pwd)"
+regex = '''(?i)(?:(?:Server|Host|Data\s*Source|Database|Initial\s*Catalog|Uid|User\s*Id)\s*=[^;\r\n"']+;.*?(?:password|pwd)\s*=\s*(?:['"][^\s;'"]+['"]|[^\s;'"]+)|(?:password|pwd)\s*=\s*(?:['"][^\s;'"]+['"]|[^\s;'"]+);.*?(?:Server|Host|Data\s*Source|Database|Initial\s*Catalog|Uid|User\s*Id)\s*=[^;\r\n"']+)'''
+keywords = [
+    "password=",
+    "pwd="
+]
+
+[[rules]]
+id = "jwt-secret-key"
+description = "Clave secreta JWT configurada"
+regex = '''(?i)(?:["']?(?:SecretKey|JWT_SECRET|JwtSettings__SecretKey)["']?)\s*[:=]\s*["']([^\s;'"]{8,})["']'''
+keywords = [
+    "secretkey",
+    "jwt_secret"
+]

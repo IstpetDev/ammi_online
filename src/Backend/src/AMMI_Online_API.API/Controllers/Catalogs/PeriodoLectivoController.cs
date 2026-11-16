@@ -11,7 +11,6 @@ namespace AMMI_Online_API.API.Controllers.Catalogs
     public class PeriodoLectivoController : ApiController
     {
         [HttpGet]
-        [AllowAnonymous]
         public async Task<Response<IEnumerable<PeriodoLectivoDTO>>> GetPeriodosLectivos([FromQuery] GetPeriodolectivoQuery query, CancellationToken cancellationToken)
             => await Mediator.Send(query, cancellationToken);
 

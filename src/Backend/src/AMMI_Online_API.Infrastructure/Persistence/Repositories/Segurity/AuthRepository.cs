@@ -17,6 +17,7 @@ public class AuthRepository : IAuthRepository
     public async Task<Usuario?> GetByUsernameAsync(string username, CancellationToken cancellationToken)
     {
         return await _context.Usuario
+            .Include(u => u.IdPersonaNavigation)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
     }
