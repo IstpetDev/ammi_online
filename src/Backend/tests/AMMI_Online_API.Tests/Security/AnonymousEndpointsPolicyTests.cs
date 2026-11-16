@@ -22,6 +22,7 @@ public class AnonymousEndpointsPolicyTests
         "AuthController.Register",
         "AuthController.ForgotPassword",
         "AuthController.ResetPassword",
+        "AuthController.RecuperarClaveValidacion",
 
         // Verificación de correo pública para registro y postulación
         "EmailVerificationController.SendOtp",
