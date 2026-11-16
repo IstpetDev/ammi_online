@@ -20,8 +20,8 @@ $UrlApi   = 'http://localhost/apiAmmiOnline/'
 
 # Nunca se tocan: configuracion del servidor, datos subidos, logs y publicaciones antiguas.
 $NoTocarArchivos = @('appsettings*.json', 'web.config', 'app_offline.htm')
-# La app (estatica) si recibe su web.config desde el repositorio: lleva la reescritura de rutas de Angular.
-$NoTocarArchivosApp = @('app_offline.htm')
+# La app conserva la configuracion nativa de IIS del servidor para evitar error 500 por directivas o modulos incompatibles.
+$NoTocarArchivosApp = @('app_offline.htm', 'web.config')
 $NoTocarCarpetas = @('OLD', 'Uploads', 'logs')
 
 function Copiar {
