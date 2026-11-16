@@ -205,7 +205,6 @@ export class WelcomeOnboardingComponent implements OnInit {
       { icon: 'pi pi-chart-bar', title: 'Calificaciones', description: 'Accede a tus notas y calificaciones por materia y ciclo lectivo.' },
     ];
     this.quickLinks = [
-      { label: 'Mis Matrículas', route: '/dashboard/mis-materias', icon: 'pi pi-book' },
       { label: 'Mis Pagos', route: '/dashboard/mis-pagos', icon: 'pi pi-credit-card' },
       { label: 'Calificaciones', route: '/dashboard/mis-calificaciones', icon: 'pi pi-chart-bar' },
     ];

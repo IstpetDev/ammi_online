@@ -16,6 +16,7 @@ public class DetalleMallaHandler :
     IRequestHandler<CreateBulkDetalleMallaCommand, IEnumerable<DetalleMallaDTO>>,
     IRequestHandler<UpdateDetalleMallaCommand, DetalleMallaDTO>,
     IRequestHandler<ActualizarFechasNotasMateriaCommand, DetalleMallaDTO>,
+    IRequestHandler<ActualizarPlantillaMateriaCommand, DetalleMallaDTO>,
     IRequestHandler<DeleteDetalleMallaCommand, bool>,
     IRequestHandler<GetDetalleMallaPorModuloQuery, IEnumerable<DetalleMallaModuloDTO>>,
     IRequestHandler<GetFechasSugeridasModuloQuery, FechasSugeridasModuloDTO>
@@ -227,6 +228,21 @@ public class DetalleMallaHandler :
         entity.DiasGracia = request.Dto.DiasGracia ?? entity.DiasGracia ?? 5;
 
         await _repository.UpdateAsync(entity, cancellationToken);
+
+        return await Handle(new GetDetalleMallaByIdQuery(entity.IdDetalleMalla), cancellationToken);
+    }
+
+    public async Task<DetalleMallaDTO> Handle(ActualizarPlantillaMateriaCommand request, CancellationToken cancellationToken)
+    {
+        var entity = await _repository.GetByIdAsync(request.Dto.IdDetalleMalla, cancellationToken);
+        if (entity == null) throw new KeyNotFoundException("Detalle de materia no encontrado.");
+
+        if (request.Dto.IdPlantillaEvaluacion <= 0)
+        {
+            throw new InvalidOperationException("Debe seleccionar una plantilla de evaluación válida.");
+        }
+
+        await _repository.MigrarPlantillaMateriaAsync(request.Dto.IdDetalleMalla, request.Dto.IdPlantillaEvaluacion, cancellationToken);
 
         return await Handle(new GetDetalleMallaByIdQuery(entity.IdDetalleMalla), cancellationToken);
     }

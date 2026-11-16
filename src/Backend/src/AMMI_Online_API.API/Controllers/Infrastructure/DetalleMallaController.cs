@@ -116,6 +116,27 @@ public class DetalleMallaController : ControllerBase
         }
     }
 
+    [HttpPut("{id}/Plantilla")]
+    public async Task<ActionResult<DetalleMallaDTO>> ActualizarPlantilla(int id, [FromBody] ActualizarPlantillaMateriaDTO dto, CancellationToken cancellationToken)
+    {
+        if (id != dto.IdDetalleMalla)
+            return BadRequest("El ID de la ruta no coincide con el cuerpo de la solicitud.");
+
+        try
+        {
+            var result = await _mediator.Send(new ActualizarPlantillaMateriaCommand(dto), cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Materia no encontrada");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpDelete("{id}")]
     
     public async Task<ActionResult<bool>> Delete(int id, CancellationToken cancellationToken)

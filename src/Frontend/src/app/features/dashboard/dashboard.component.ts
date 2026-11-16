@@ -77,7 +77,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // ALUMNO - restringido por ROL
     { label: 'Mis Pagos', icon: 'pi-wallet', route: '/dashboard/mis-pagos', roles: ['ALUMNO'] },
     { label: 'Mis Calificaciones', icon: 'pi-star', route: '/dashboard/mis-calificaciones', roles: ['ALUMNO'] },
-    { label: 'Mis Materias', icon: 'pi-tags', route: '/dashboard/mis-materias', roles: ['ALUMNO'] },
+    // { label: 'Mis Materias', icon: 'pi-tags', route: '/dashboard/mis-materias', roles: ['ALUMNO'] },
 
     // ACADEMIA/ADMIN - restringido por PERMISOS
     { label: 'Distributivo', icon: 'pi-users', route: '/dashboard/distributivo', permisos: ['DISTRIBUTIBOS.LEER'] },

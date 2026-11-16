@@ -26,6 +26,7 @@ import { SharedEmptyStateComponent } from '../../../../shared/shared-empty-state
 import { SharedChipComponent } from '../../../../shared/shared-chip/shared-chip.component';
 import { CalificacionesStateService } from '../calificaciones.state.service';
 import { SharedToastComponent } from '../../../../shared/shared-toast/shared-toast.component';
+import { SharedModalComponent } from '../../../../shared/shared-modal/shared-modal.component';
 
 interface ParaleloConMalla {
   idMallaParalelo?: number;
@@ -40,7 +41,7 @@ interface ParaleloConMalla {
   selector: 'app-calificaciones-seleccion',
   standalone: true,
   imports: [CommonModule, FormsModule,
-    CardModule, ButtonModule, ProgressSpinnerModule, CustomSelectComponent, SharedEmptyStateComponent, SharedChipComponent, SharedToastComponent],
+    CardModule, ButtonModule, ProgressSpinnerModule, CustomSelectComponent, SharedEmptyStateComponent, SharedChipComponent, SharedToastComponent, SharedModalComponent],
   templateUrl: './calificaciones-seleccion.component.html',
   styleUrls: ['./calificaciones-seleccion.component.css']
 })
@@ -78,6 +79,14 @@ export class CalificacionesSeleccionComponent implements OnInit {
   periodosLectivos: PeriodoLectivoDTO[] = [];
   mallas: MallaDTO[] = [];
   detallesMalla: DetalleMallaDTO[] = [];
+
+  // Configuración de fechas por materia (Administrador)
+  modalConfigFechasVisible = false;
+  materiaAConfigurar: any = null;
+  configFechaInicio = '';
+  configFechaFin = '';
+  configDiasGracia = 5;
+  guardandoFechasMateria = false;
 
   _filtroPeriodoLectivo: PeriodoLectivoDTO | null = null;
   _filtroCiclo: CicloDTO | null = null;
@@ -544,5 +553,88 @@ export class CalificacionesSeleccionComponent implements OnInit {
   private navegarAIngreso(asignacion: any): void {
     this.stateService.setAsignacion(asignacion);
     this.router.navigate(['/dashboard/calificaciones/ingreso', asignacion.idMallaParalelo, asignacion.idDetalleMalla]);
+  }
+
+  // ==========================================
+  // CONFIGURACIÓN DE FECHAS POR MATERIA (ADMIN)
+  // ==========================================
+
+  abrirModalConfigMateria(dm: any, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.materiaAConfigurar = dm;
+    this.configDiasGracia = dm.diasGracia ?? 5;
+    if (dm.fechaInicio) {
+      const fInicio = new Date(dm.fechaInicio);
+      this.configFechaInicio = fInicio.toISOString().split('T')[0];
+    } else {
+      this.configFechaInicio = '';
+    }
+    if (dm.fechaFin) {
+      const fFin = new Date(dm.fechaFin);
+      this.configFechaFin = fFin.toISOString().split('T')[0];
+    } else {
+      this.configFechaFin = '';
+    }
+    this.modalConfigFechasVisible = true;
+  }
+
+  cerrarModalConfigMateria(): void {
+    this.modalConfigFechasVisible = false;
+    this.materiaAConfigurar = null;
+  }
+
+  getConfigNuevaFechaLimite(): string {
+    if (!this.configFechaFin) return 'No definida';
+    const [y, m, d] = this.configFechaFin.split('-').map(Number);
+    const fin = new Date(y, m - 1, d);
+    const dias = Number(this.configDiasGracia) || 0;
+    fin.setDate(fin.getDate() + dias);
+    return fin.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  guardarFechasMateria(): void {
+    if (!this.materiaAConfigurar) return;
+    this.guardandoFechasMateria = true;
+
+    const idDetalleMalla = this.materiaAConfigurar.idDetalleMalla;
+    const dto = {
+      idDetalleMalla: idDetalleMalla,
+      fechaInicio: this.configFechaInicio ? this.configFechaInicio : null,
+      fechaFin: this.configFechaFin ? this.configFechaFin : null,
+      diasGracia: Number(this.configDiasGracia) || 0
+    };
+
+    this.detalleMallaService.actualizarFechasNotas(idDetalleMalla, dto).subscribe({
+      next: () => {
+        this.guardandoFechasMateria = false;
+        this.materiaAConfigurar.fechaInicio = this.configFechaInicio || null;
+        this.materiaAConfigurar.fechaFin = this.configFechaFin || null;
+        this.materiaAConfigurar.diasGracia = Number(this.configDiasGracia) || 0;
+
+        const target = this.detallesMalla.find(m => m.idDetalleMalla === idDetalleMalla);
+        if (target) {
+          target.fechaInicio = this.configFechaInicio || '';
+          target.fechaFin = this.configFechaFin || '';
+          target.diasGracia = Number(this.configDiasGracia) || 0;
+        }
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Fechas actualizadas',
+          detail: `Se guardaron las fechas de calificación para ${this.materiaAConfigurar.nombreMateria}.`
+        });
+        this.cerrarModalConfigMateria();
+      },
+      error: () => {
+        this.guardandoFechasMateria = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron actualizar las fechas de la materia.'
+        });
+      }
+    });
   }
 }
