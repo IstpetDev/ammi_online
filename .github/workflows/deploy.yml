@@ -50,6 +50,10 @@ jobs:
         run: |
           mkdir -p paquete/app
           cp -r src/Frontend/dist/Ammi_Online/browser/. paquete/app/
+          for ruta in login acelerado-virtual formal-virtual forgot-password reset-password verify-email-token; do
+            mkdir -p "paquete/app/$ruta"
+            cp paquete/app/index.html "paquete/app/$ruta/index.html"
+          done
           (cd paquete && zip -qr ../release.zip api app)
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -117,16 +121,7 @@ jobs:
           echo "La prueba de humo en el dominio público falló. Ejecutando retroceso automático al último respaldo..."
           ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "svc-deploy@${DEPLOY_HOST}" \
-            'powershell -NoProfile -ExecutionPolicy Bypass -Command "
-              \$ultimo = Get-ChildItem C:\respaldos-despliegue -Directory | Sort-Object Name -Descending | Select-Object -First 1
-              if (\$ultimo) {
-                Write-Output \"Restaurando respaldo previo: \$(\$ultimo.Name)\"
-                powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Rollback \$ultimo.Name
-              } else {
-                Write-Error \"No se encontró respaldo previo en C:\respaldos-despliegue\"
-                exit 1
-              }
-            "'
+            'powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -AutoRollback'
           echo "### ⚠️ Retroceso Automático Ejecutado" >> "$GITHUB_STEP_SUMMARY"
           echo "La prueba de humo en el dominio público falló. Se ejecutó la restauración automática al último respaldo." >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$ALERTA_WEBHOOK" ]; then

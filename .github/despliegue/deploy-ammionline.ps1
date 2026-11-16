@@ -2,10 +2,12 @@
 # Se ejecuta como el usuario svc-deploy (sin privilegios de administrador), por SSH.
 # Uso:   powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -Zip C:\despliegue\release.zip
 # Revertir: ... -Rollback <nombre-de-carpeta-en-C:\respaldos-despliegue>
+# Auto-Revertir al ultimo: ... -AutoRollback
 # Solo ASCII a proposito: Windows PowerShell 5.1 lee mal los scripts en UTF-8 sin BOM.
 param(
     [string]$Zip,
-    [string]$Rollback
+    [string]$Rollback,
+    [switch]$AutoRollback
 )
 $ErrorActionPreference = 'Stop'
 
@@ -18,10 +20,10 @@ $Conservar = 5
 $UrlApp   = 'http://localhost/appAmmiOnline/'
 $UrlApi   = 'http://localhost/apiAmmiOnline/'
 
-# Nunca se tocan: configuracion del servidor, datos subidos, logs y publicaciones antiguas.
+# Nunca se tocan en la API: configuracion del servidor, datos subidos, logs y publicaciones antiguas.
 $NoTocarArchivos = @('appsettings*.json', 'web.config', 'app_offline.htm')
-# La app conserva la configuracion nativa de IIS del servidor para evitar error 500 por directivas o modulos incompatibles.
-$NoTocarArchivosApp = @('app_offline.htm', 'web.config')
+# En la app se excluye app_offline.htm; web.config si se actualiza con la regla de reescritura de Angular.
+$NoTocarArchivosApp = @('app_offline.htm')
 $NoTocarCarpetas = @('OLD', 'Uploads', 'logs')
 
 function Copiar {
@@ -141,6 +143,44 @@ function Comprobar-HostingBundle {
     }
 }
 
+function Fusionar-Appsettings {
+    param([string]$OrigenJson, [string]$DestinoJson)
+    if (-not (Test-Path $OrigenJson) -or -not (Test-Path $DestinoJson)) { return }
+    try {
+        $origen = Get-Content -Raw -Path $OrigenJson | ConvertFrom-Json
+        $destino = Get-Content -Raw -Path $DestinoJson | ConvertFrom-Json
+
+        $modificado = $false
+        foreach ($prop in $origen.PSObject.Properties) {
+            $nombre = $prop.Name
+            # No sobreescribir nunca credenciales ni cadenas de conexion ya existentes
+            if ($nombre -in @('ConnectionStrings', 'JwtSettings', 'EmailSettings')) { continue }
+
+            if ($null -eq $destino.PSObject.Properties[$nombre]) {
+                $destino | Add-Member -MemberType NoteProperty -Name $nombre -Value $prop.Value
+                $modificado = $true
+                Write-Output "Configuracion automatica: se anadio la seccion '$nombre' a appsettings.json"
+            }
+        }
+
+        # Asegurar origen de produccion en CORS si esta vacio o no existe
+        if ($destino.PSObject.Properties['Cors']) {
+            if (-not $destino.Cors.AllowedOrigins -or $destino.Cors.AllowedOrigins.Count -eq 0) {
+                $destino.Cors.AllowedOrigins = @('https://ammionline.ammi.edu.ec')
+                $modificado = $true
+            }
+        }
+
+        if ($modificado) {
+            Copy-Item $DestinoJson "$DestinoJson.bak" -Force
+            $destino | ConvertTo-Json -Depth 15 | Set-Content -Path $DestinoJson -Encoding ascii
+            Write-Output "appsettings.json actualizado con las nuevas configuraciones."
+        }
+    } catch {
+        Write-Output "Aviso al fusionar configuraciones en appsettings.json: $($_.Exception.Message)"
+    }
+}
+
 function Restaurar {
     param([string]$Carpeta)
     Copiar (Join-Path $Carpeta 'api') $Api $false
@@ -158,6 +198,13 @@ function Con-Api-Fuera-De-Linea {
         Remove-Item $marca -Force -ErrorAction SilentlyContinue
         if (Test-Path $marca) { Write-Output "ATENCION: no se pudo borrar $marca; la API seguira en 503 hasta borrarlo." }
     }
+}
+
+if ($AutoRollback) {
+    $ultimo = Get-ChildItem $Respaldo -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    if (-not $ultimo) { throw "No hay respaldos disponibles en $Respaldo para rollback" }
+    $Rollback = $ultimo.Name
+    Write-Output "Auto-Rollback seleccionado hacia el ultimo respaldo: $Rollback"
 }
 
 if ($Rollback) {
@@ -190,7 +237,15 @@ try {
 
     # 2. Despliegue; si algo falla, se restaura el respaldo.
     try {
-        Con-Api-Fuera-De-Linea { Copiar (Join-Path $prep 'api') $Api $false }
+        Con-Api-Fuera-De-Linea {
+            Copiar (Join-Path $prep 'api') $Api $false
+            Fusionar-Appsettings (Join-Path $prep 'api\appsettings.json') (Join-Path $Api 'appsettings.json')
+        }
+        # Respaldar web.config del app por seguridad antes de sobrescribir con la nueva configuracion
+        $webConfigApp = Join-Path $App 'web.config'
+        if (Test-Path $webConfigApp) {
+            Copy-Item $webConfigApp "$webConfigApp.bak" -Force -ErrorAction SilentlyContinue
+        }
         Copiar (Join-Path $prep 'app') $App $true $NoTocarArchivosApp
         Comprobar-Salud
         $exito = $true

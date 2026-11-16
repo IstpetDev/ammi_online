@@ -4,6 +4,15 @@ public static class CorsExtensions
 {
     public const string PolicyName = "FrontendPolicy";
 
+    private static readonly string[] DefaultOrigins =
+    [
+        "https://ammionline.ammi.edu.ec",
+        "http://localhost:4200",
+        "https://localhost:4200",
+        "http://localhost",
+        "https://localhost"
+    ];
+
     public static IServiceCollection AddCorsPolicies(
         this IServiceCollection services,
         IConfiguration? configuration = null)
@@ -16,12 +25,10 @@ public static class CorsExtensions
                     ? GetAllowedOrigins(configuration)
                     : Array.Empty<string>();
 
-                if (allowedOrigins.Length > 0)
-                {
-                    policy.WithOrigins(allowedOrigins);
-                }
+                var origins = allowedOrigins.Length > 0 ? allowedOrigins : DefaultOrigins;
 
-                policy.AllowAnyHeader()
+                policy.WithOrigins(origins)
+                      .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials()
                       .WithExposedHeaders("Content-Disposition");
