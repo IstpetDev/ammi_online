@@ -18,4 +18,5 @@ public interface IAuthRepository
     Task<Usuario?> GetByResetTokenAsync(string token, CancellationToken cancellationToken);
     Task<bool> ClearResetTokenAsync(int idPersona, CancellationToken cancellationToken);
     Task<bool> SetRequiereCambioContraseniaAsync(int idPersona, bool requiere, CancellationToken cancellationToken);
+    Task<Usuario?> GetByDocumentoWithPersonaInfoAsync(string documento, CancellationToken cancellationToken);
 }

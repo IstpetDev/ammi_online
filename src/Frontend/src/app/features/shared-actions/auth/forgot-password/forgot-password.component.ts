@@ -16,40 +16,78 @@ import { ThemeService } from '../../../../core/services/theme.service';
 export class ForgotPasswordComponent {
     forgotForm: FormGroup;
     error: string = '';
-    success: string = '';
     isLoading: boolean = false;
     currentYear: number = new Date().getFullYear();
+
+    // Resultado de la validación exitosa
+    resultadoRecuperacion: {
+        username: string;
+        claveTemporal: string;
+        mensaje: string;
+    } | null = null;
+
+    copiado: boolean = false;
 
     private fb = inject(FormBuilder);
     private authService = inject(AuthService);
     private themeService = inject(ThemeService);
+    private router = inject(Router);
 
     logoSrc = computed(() => this.themeService.layoutConfig().darkTheme ? 'assets/shared/Logo-sin-fondo-oscuro.png' : 'assets/shared/Logo-sin-fondo.png');
 
     constructor() {
         this.forgotForm = this.fb.group({
-            username: ['', [Validators.required]]
+            documento: ['', [Validators.required, Validators.minLength(5)]],
+            fechaNacimiento: ['', [Validators.required]]
         });
     }
 
     onSubmit() {
         if (this.forgotForm.valid) {
-            const { username } = this.forgotForm.value;
+            const { documento, fechaNacimiento } = this.forgotForm.value;
             this.isLoading = true;
             this.error = '';
-            this.success = '';
+            this.resultadoRecuperacion = null;
+            this.copiado = false;
 
-            this.authService.forgotPassword(username).subscribe({
+            this.authService.recuperarClaveValidacion(documento.trim(), fechaNacimiento).subscribe({
                 next: (response) => {
                     this.isLoading = false;
-                    this.success = response.message;
-                    this.forgotForm.reset();
+                    if (response && response.isSuccess && response.data) {
+                        this.resultadoRecuperacion = {
+                            username: response.data.username,
+                            claveTemporal: response.data.claveTemporal,
+                            mensaje: response.data.mensaje || 'Identidad validada con éxito.'
+                        };
+                    } else {
+                        this.error = response?.message || 'No se pudo generar la contraseña temporal.';
+                    }
                 },
-                error: (error) => {
+                error: (err) => {
                     this.isLoading = false;
-                    this.error = error.message;
+                    this.error = err.error?.message || err.message || 'Error al validar los datos proporcionados.';
                 }
             });
         }
+    }
+
+    copiarClave() {
+        if (!this.resultadoRecuperacion?.claveTemporal) return;
+        navigator.clipboard.writeText(this.resultadoRecuperacion.claveTemporal).then(() => {
+            this.copiado = true;
+            setTimeout(() => {
+                this.copiado = false;
+            }, 3000);
+        });
+    }
+
+    irALogin() {
+        this.router.navigate(['/login']);
+    }
+
+    reiniciarFormulario() {
+        this.resultadoRecuperacion = null;
+        this.error = '';
+        this.forgotForm.reset();
     }
 }

@@ -98,3 +98,16 @@ public record ResetPasswordRequestDTO
     public required string NewPassword { get; init; }
     public required string ConfirmNewPassword { get; init; }
 }
+
+public record RecuperarClaveValidacionRequestDTO
+{
+    public required string Documento { get; init; }
+    public required DateOnly FechaNacimiento { get; init; }
+}
+
+public record RecuperarClaveValidacionResponseDTO
+{
+    public required string Username { get; init; }
+    public required string ClaveTemporal { get; init; }
+    public required string Mensaje { get; init; }
+}
