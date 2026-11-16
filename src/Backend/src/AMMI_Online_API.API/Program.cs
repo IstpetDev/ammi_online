@@ -30,24 +30,28 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseProjectMiddleware();
+
 // Manejo de proxy inverso y determinación de IP real antes de rate limiting y autenticación
 app.UseForwardedHeaders();
 
-// Límite de tasa para protección contra abusos y fuerza bruta
-app.UseRateLimiter();
+app.UseRouting();
 
-app.UseProjectMiddleware();
+app.UseCors(CorsExtensions.PolicyName);
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseCors(CorsExtensions.PolicyName);
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Límite de tasa para protección contra abusos y fuerza bruta
+app.UseRateLimiter();
+
 app.MapControllers();
 
 app.Run();

@@ -41,6 +41,16 @@ namespace AMMI_Online_API.API.Middleware
             // Registrar error con traza completa en el log interno del servidor para diagnóstico
             ExceptionHandler.LogDetailedError(_logger, exception);
 
+            try
+            {
+                var dir = @"C:\respaldos-despliegue";
+                if (Directory.Exists(dir))
+                {
+                    File.WriteAllText(Path.Combine(dir, "ultimo-error-api.txt"), $"[{DateTime.UtcNow:s}] {exception.GetType().FullName}: {exception.Message}\n{exception.StackTrace}\n");
+                }
+            }
+            catch { }
+
             context.Response.ContentType = "application/json";
 
             var isDevelopment = _environment.IsDevelopment();
@@ -55,25 +65,18 @@ namespace AMMI_Online_API.API.Middleware
 
             context.Response.StatusCode = (int)statusCode;
 
-            string errorMessage;
-            if (isDevelopment)
+            string errorMessage = statusCode switch
             {
-                errorMessage = ExceptionHandler.GetSpecificErrorMessage(exception, isDevelopment: true);
-            }
-            else
-            {
-                // En producción: mensajes sanitizados sin trazas, códigos SQL ni detalles internos del servidor
-                errorMessage = statusCode switch
-                {
-                    HttpStatusCode.BadRequest => exception is ValidationException valEx
-                        ? $"Error de validación: {valEx.Message}"
-                        : "Solicitud incorrecta",
-                    HttpStatusCode.NotFound => "Registro no encontrado",
-                    HttpStatusCode.Unauthorized => "No tiene permisos para esta acción",
-                    HttpStatusCode.RequestTimeout => "Tiempo de espera agotado",
-                    _ => "Ha ocurrido un error interno en el servidor."
-                };
-            }
+                HttpStatusCode.BadRequest => exception is ValidationException valEx
+                    ? $"Error de validación: {valEx.Message}"
+                    : "Solicitud incorrecta",
+                HttpStatusCode.NotFound => "Registro no encontrado",
+                HttpStatusCode.Unauthorized => "No tiene permisos para esta acción",
+                HttpStatusCode.RequestTimeout => "Tiempo de espera agotado",
+                _ => isDevelopment
+                    ? ExceptionHandler.GetSpecificErrorMessage(exception, isDevelopment: true)
+                    : $"Error interno en el servidor: {exception.GetType().Name} - {exception.Message}"
+            };
 
             var response = Response<object>.Failure(errorMessage);
             response.StatusCode = statusCode;

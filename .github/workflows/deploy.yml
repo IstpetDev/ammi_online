@@ -118,7 +118,11 @@ jobs:
         env:
           ALERTA_WEBHOOK: ${{ secrets.ALERTA_DESPLIEGUE_WEBHOOK }}
         run: |
-          echo "La prueba de humo en el dominio público falló. Ejecutando retroceso automático al último respaldo..."
+          echo "La prueba de humo en el dominio público falló. Obteniendo diagnóstico del servidor..."
+          ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "svc-deploy@${DEPLOY_HOST}" \
+            'powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path C:\respaldos-despliegue\ultimo-error-api.txt) { Write-Output \"=== ULTIMO ERROR API ===\"; Get-Content C:\respaldos-despliegue\ultimo-error-api.txt }"' || true
+          echo "Ejecutando retroceso automático al último respaldo..."
           ssh -i "$HOME/.ssh/deploy" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "svc-deploy@${DEPLOY_HOST}" \
             'powershell -NoProfile -ExecutionPolicy Bypass -File C:\despliegue\deploy-ammionline.ps1 -AutoRollback'
