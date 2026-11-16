@@ -147,10 +147,7 @@
                 <p class="card-subtitle">{{ materiasEnCurso.length }} asignaturas inscritas</p>
               </div>
             </div>
-            <a routerLink="/dashboard/mis-materias" class="btn-link-action">
-              Ver Contenidos
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-inline"><polyline points="9 18 15 12 9 6"/></svg>
-            </a>
+
           </div>
 
           <!-- LISTADO COMPACTO DE MATERIAS -->
@@ -161,7 +158,6 @@
               <div class="materia-main-info">
                 <div class="materia-name-line">
                   <span class="materia-name">{{ m.nombreMateria }}</span>
-                  <span class="materia-hours-tag" *ngIf="m.duracionHoras">{{ m.duracionHoras }}h</span>
                   <span class="materia-area-tag" *ngIf="m.areaCompetencia">{{ m.areaCompetencia }}</span>
                 </div>
                 <div class="materia-docente-sub">
@@ -172,16 +168,13 @@
 
               <!-- Estado / Calificación -->
               <div class="materia-side-data">
-                <span class="status-pill" [ngClass]="getNotaBadgeClass(m.notaFinal)">
-                  {{ m.estado || (m.notaFinal !== null ? 'Nota: ' + (m.notaFinal | number:'1.2-2') : 'En Curso') }}
+                <span class="status-pill" [ngClass]="getEstadoMateriaInfo(m).clase">
+                  {{ getEstadoMateriaInfo(m).texto }}
                 </span>
 
                 <div class="materia-actions-compact">
                   <a routerLink="/dashboard/mis-calificaciones" class="btn-icon-link" title="Ver calificaciones">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                  </a>
-                  <a routerLink="/dashboard/mis-materias" class="btn-icon-link" title="Ver material de estudio">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                   </a>
                 </div>
               </div>
@@ -308,16 +301,6 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
 
-            <a routerLink="/dashboard/mis-materias" class="quick-link-item">
-              <div class="link-icon-circle bg-blue-light">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
-              </div>
-              <div class="link-info">
-                <span class="link-title">Plan de Estudios</span>
-                <span class="link-desc">Malla curricular y sílabos</span>
-              </div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="link-arrow"><polyline points="9 18 15 12 9 6"/></svg>
-            </a>
 
             <a routerLink="/dashboard/mis-pagos" class="quick-link-item">
               <div class="link-icon-circle bg-green-light">

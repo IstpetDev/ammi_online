@@ -71,3 +71,10 @@ public record ActualizarFechasNotasMateriaDTO
     public int? DiasGracia { get; init; }
 }
 
+public record ActualizarPlantillaMateriaDTO
+{
+    public int IdDetalleMalla { get; init; }
+    public int IdPlantillaEvaluacion { get; init; }
+}
+
+

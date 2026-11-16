@@ -7,4 +7,5 @@ public record CreateDetalleMallaCommand(DetalleMallaCreateDTO CreateDto) : IRequ
 public record CreateBulkDetalleMallaCommand(List<DetalleMallaCreateDTO> CreateDtos) : IRequest<IEnumerable<DetalleMallaDTO>>;
 public record UpdateDetalleMallaCommand(int Id, DetalleMallaUpdateDTO UpdateDto) : IRequest<DetalleMallaDTO>;
 public record ActualizarFechasNotasMateriaCommand(ActualizarFechasNotasMateriaDTO Dto) : IRequest<DetalleMallaDTO>;
+public record ActualizarPlantillaMateriaCommand(ActualizarPlantillaMateriaDTO Dto) : IRequest<DetalleMallaDTO>;
 public record DeleteDetalleMallaCommand(int Id) : IRequest<bool>;

@@ -16,12 +16,19 @@ import { MessageService } from 'primeng/api';
 import { MatriculaService } from '../../../../core/services/postulaciones/matricula.service';
 import { NotasAlumnoService } from '../../../../core/services/infrastructure/notas-alumno.service';
 import { PlantillaEstructuraService } from '../../../../core/services/infrastructure/plantilla-estructura.service';
+import { PlantillaEvaluacionService } from '../../../../core/services/infrastructure/plantilla-evaluacion.service';
 import { DetalleMallaService } from '../../../../core/services/infrastructure/detalle-malla.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { PlantillaEstructuraDTO } from '../../../../data/models/notas/plantilla-estructura.model';
+import { PlantillaEvaluacionDTO } from '../../../../data/models/notas/plantilla-evaluacion.model';
+import { DetalleMallaDTO } from '../../../../data/models/detalle-malla/detalle-malla.model';
 import { NotasAlumnoDTO, NotasMasivasDTO, NotaAlumnoItemDTO } from '../../../../data/models/notas';
 import { CalificacionesStateService } from '../calificaciones.state.service';
 import { SharedEmptyStateComponent } from '../../../../shared/shared-empty-state/shared-empty-state.component';
 import { SharedToastComponent } from '../../../../shared/shared-toast/shared-toast.component';
+import { SharedDrawerComponent } from '../../../../shared/shared-drawer/shared-drawer.component';
+import { SharedModalComponent } from '../../../../shared/shared-modal/shared-modal.component';
+import { PlantillaFormComponent } from '../../../shared-actions/settings/grades/components/plantilla-form/plantilla-form.component';
 
 interface NotaAlumnoEditable {
   idDetalleMatricula: number | null;
@@ -49,7 +56,8 @@ interface GrupoHeaderNodo {
   standalone: true,
   imports: [CommonModule, FormsModule,
     TableModule, ButtonModule, InputNumberModule,
-    TagModule, TooltipModule, ProgressSpinnerModule, SharedEmptyStateComponent, SharedToastComponent],
+    TagModule, TooltipModule, ProgressSpinnerModule, SharedEmptyStateComponent, SharedToastComponent,
+    SharedDrawerComponent, SharedModalComponent, PlantillaFormComponent],
   providers: [MessageService],
   templateUrl: './calificaciones-ingreso.component.html',
   styleUrls: ['./calificaciones-ingreso.component.css']
@@ -60,13 +68,18 @@ export class CalificacionesIngresoComponent implements OnInit, OnDestroy {
   private matriculaService = inject(MatriculaService);
   private notasService = inject(NotasAlumnoService);
   private estructuraService = inject(PlantillaEstructuraService);
+  private plantillaEvaluacionService = inject(PlantillaEvaluacionService);
   private detalleMallaService = inject(DetalleMallaService);
+  private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private stateService = inject(CalificacionesStateService);
 
   idMallaParalelo = 0;
   idDetalleMalla = 0;
   asignacion: any = null;
+
+  // Permisos y rol
+  esAdmin = false;
 
   alumnos: NotaAlumnoEditable[] = [];
   estructuraArbol: PlantillaEstructuraDTO[] = [];
@@ -86,6 +99,41 @@ export class CalificacionesIngresoComponent implements OnInit, OnDestroy {
   estadoAutoguardado: 'guardado' | 'guardando' | 'pendiente' | 'error' = 'guardado';
   searchTermAlumno = '';
 
+  // Datos completos de la materia actual
+  detalleMallaActual: DetalleMallaDTO | null = null;
+
+  // Drawer: Modificar Notas Requeridas (Plantilla de Evaluación)
+  drawerPlantillaVisible = false;
+  cargandoPlantillas = false;
+  plantillasDisponibles: PlantillaEvaluacionDTO[] = [];
+  busquedaPlantilla = '';
+  plantillaSeleccionadaId: number | null = null;
+  plantillaSeleccionadaDetalle: PlantillaEvaluacionDTO | null = null;
+  previewEstructuraNodos: PlantillaEstructuraDTO[] = [];
+  cargandoPreviewPlantilla = false;
+  guardandoPlantilla = false;
+
+  // Modal: Crear Nueva Plantilla
+  modalCrearPlantillaVisible = false;
+
+  // Modal: Confirmación y Advertencia de Impacto al Cambiar Plantilla
+  modalConfirmarCambioPlantillaVisible = false;
+  advertenciaCambioPlantilla: {
+    plantillaOrigen: string;
+    plantillaDestino: string;
+    tareasOrigenTotal: number;
+    tareasDestinoTotal: number;
+    alumnosConNotasEnSobrantes: number;
+    tareasAEliminarNombres: string[];
+    tareasAConservarTexto: string;
+  } | null = null;
+
+  // Modal: Modificar Tiempo de Subida / Prórroga
+  modalProrrogaVisible = false;
+  fechaFinProrroga = '';
+  diasGraciaProrroga = 5;
+  guardandoProrroga = false;
+
   // Modal de Retroalimentación / Observaciones
   modalObsVisible = false;
   modalObsAlumno: NotaAlumnoEditable | null = null;
@@ -96,6 +144,8 @@ export class CalificacionesIngresoComponent implements OnInit, OnDestroy {
   private paramsSub?: Subscription;
 
   ngOnInit(): void {
+    this.esAdmin = this.authService.hasAnyRole(['ADMIN', 'ADMINISTRADOR']);
+
     this.autoSaveSub = this.autoSaveSubject.pipe(
       debounceTime(1500)
     ).subscribe(() => {
@@ -161,10 +211,12 @@ export class CalificacionesIngresoComponent implements OnInit, OnDestroy {
     this.detalleMallaService.getById(this.idDetalleMalla).subscribe({
       next: (dm) => {
         if (dm) {
+          this.detalleMallaActual = dm;
           this.asignacion = {
             ...this.asignacion,
             nombreMateria: dm.nombreMateria || this.asignacion?.nombreMateria,
-            idPlantillaEvaluacion: dm.idPlantillaEvaluacion || this.asignacion?.idPlantillaEvaluacion
+            idPlantillaEvaluacion: dm.idPlantillaEvaluacion || this.asignacion?.idPlantillaEvaluacion,
+            nombrePlantilla: dm.nombrePlantilla || this.asignacion?.nombrePlantilla
           };
 
           const fechaInicio = dm.fechaInicio ? new Date(dm.fechaInicio) : null;
@@ -567,5 +619,265 @@ export class CalificacionesIngresoComponent implements OnInit, OnDestroy {
   getPesoNodoVisible(nodo: PlantillaEstructuraDTO): number {
     const peso = this.pesoEfectivoPorNodo[nodo.idPlantillaEstructura];
     return Math.round(((peso ?? nodo.peso) as number) * 100) / 100;
+  }
+
+  // ==========================================
+  // MÉTODOS DE ADMINISTRADOR: MODIFICAR PLANTILLA
+  // ==========================================
+
+  abrirDrawerPlantilla(): void {
+    this.drawerPlantillaVisible = true;
+    this.plantillaSeleccionadaId = this.asignacion?.idPlantillaEvaluacion || null;
+    this.cargarPlantillasDisponibles();
+  }
+
+  cerrarDrawerPlantilla(): void {
+    this.drawerPlantillaVisible = false;
+  }
+
+  cargarPlantillasDisponibles(): void {
+    this.cargandoPlantillas = true;
+    this.plantillaEvaluacionService.getActivas().subscribe({
+      next: (plantillas) => {
+        this.plantillasDisponibles = plantillas || [];
+        this.cargandoPlantillas = false;
+        if (this.plantillaSeleccionadaId) {
+          this.seleccionarPlantilla(this.plantillaSeleccionadaId);
+        }
+      },
+      error: () => {
+        this.cargandoPlantillas = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las plantillas de evaluación'
+        });
+      }
+    });
+  }
+
+  getPlantillasFiltradas(): PlantillaEvaluacionDTO[] {
+    if (!this.busquedaPlantilla.trim()) {
+      return this.plantillasDisponibles;
+    }
+    const q = this.busquedaPlantilla.toLowerCase();
+    return this.plantillasDisponibles.filter(p =>
+      p.nombre.toLowerCase().includes(q) || (p.detalle && p.detalle.toLowerCase().includes(q))
+    );
+  }
+
+  seleccionarPlantilla(id: number): void {
+    this.plantillaSeleccionadaId = id;
+    this.plantillaSeleccionadaDetalle = this.plantillasDisponibles.find(p => p.idPlantillaEvaluacion === id) || null;
+    this.cargandoPreviewPlantilla = true;
+    this.previewEstructuraNodos = [];
+
+    this.estructuraService.getArbol(id).subscribe({
+      next: (arbol) => {
+        this.previewEstructuraNodos = arbol || [];
+        this.cargandoPreviewPlantilla = false;
+      },
+      error: () => {
+        this.previewEstructuraNodos = [];
+        this.cargandoPreviewPlantilla = false;
+      }
+    });
+  }
+
+  aplicarPlantillaAMateria(): void {
+    if (!this.plantillaSeleccionadaId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Por favor selecciona una plantilla de evaluación'
+      });
+      return;
+    }
+
+    if (this.plantillaSeleccionadaId === this.asignacion?.idPlantillaEvaluacion) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Información',
+        detail: 'La materia ya tiene asignada esta plantilla de evaluación'
+      });
+      this.drawerPlantillaVisible = false;
+      return;
+    }
+
+    // Análisis de impacto en las notas existentes
+    const hojasNuevas = this.extraerNodosHojaFromArray(this.previewEstructuraNodos);
+    const tareasActuales = this.nodosHoja.filter(n => n.nodoNombre.toLowerCase().startsWith('tarea'));
+    const tareasNuevas = hojasNuevas.filter(n => n.nodoNombre.toLowerCase().startsWith('tarea'));
+
+    // Si pasamos de más tareas a menos (ej. 8 a 7)
+    if (tareasActuales.length > tareasNuevas.length) {
+      const sobrantes = tareasActuales.slice(tareasNuevas.length);
+      const idsSobrantes = sobrantes.map(t => t.idPlantillaEstructura);
+      const alumnosAfectados = this.alumnos.filter(a =>
+        idsSobrantes.some(id => a.notas[id] !== null && a.notas[id] !== undefined)
+      ).length;
+
+      this.advertenciaCambioPlantilla = {
+        plantillaOrigen: this.nombrePlantilla || 'Plantilla actual',
+        plantillaDestino: this.plantillaSeleccionadaDetalle?.nombre || '',
+        tareasOrigenTotal: tareasActuales.length,
+        tareasDestinoTotal: tareasNuevas.length,
+        alumnosConNotasEnSobrantes: alumnosAfectados,
+        tareasAEliminarNombres: sobrantes.map(t => t.nodoNombre),
+        tareasAConservarTexto: `Tarea 1 a Tarea ${tareasNuevas.length} y Evaluación`
+      };
+
+      this.modalConfirmarCambioPlantillaVisible = true;
+      return;
+    }
+
+    // Si pasamos de menos tareas a más o igual, pero hay alumnos con notas
+    const tieneNotas = this.alumnos.some(a => Object.values(a.notas).some(v => v !== null && v !== undefined));
+    if (tieneNotas && tareasActuales.length < tareasNuevas.length) {
+      this.advertenciaCambioPlantilla = {
+        plantillaOrigen: this.nombrePlantilla || 'Plantilla actual',
+        plantillaDestino: this.plantillaSeleccionadaDetalle?.nombre || '',
+        tareasOrigenTotal: tareasActuales.length,
+        tareasDestinoTotal: tareasNuevas.length,
+        alumnosConNotasEnSobrantes: 0,
+        tareasAEliminarNombres: [],
+        tareasAConservarTexto: `Tarea 1 a Tarea ${tareasActuales.length} y Evaluación`
+      };
+
+      this.modalConfirmarCambioPlantillaVisible = true;
+      return;
+    }
+
+    // Sin notas registradas: asignación directa
+    this.confirmarYEjecutarCambioPlantilla();
+  }
+
+  confirmarYEjecutarCambioPlantilla(): void {
+    if (!this.plantillaSeleccionadaId) return;
+
+    this.guardandoPlantilla = true;
+    this.detalleMallaService.actualizarPlantilla(this.idDetalleMalla, this.plantillaSeleccionadaId).subscribe({
+      next: (dm) => {
+        this.guardandoPlantilla = false;
+        this.modalConfirmarCambioPlantillaVisible = false;
+        this.drawerPlantillaVisible = false;
+
+        const nombreNuevo = dm.nombrePlantilla || this.plantillaSeleccionadaDetalle?.nombre || '';
+        this.asignacion = {
+          ...this.asignacion,
+          idPlantillaEvaluacion: this.plantillaSeleccionadaId,
+          nombrePlantilla: nombreNuevo
+        };
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Estructura Actualizada',
+          detail: `Plantilla cambiada a "${nombreNuevo}". Las notas y promedios se han sincronizado correctamente.`
+        });
+        this.cargarDatos();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        const msg = err.error?.message || err.error || 'No se pudo actualizar la plantilla de la materia';
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al actualizar',
+          detail: typeof msg === 'string' ? msg : JSON.stringify(msg)
+        });
+      }
+    });
+  }
+
+  cerrarModalConfirmarCambioPlantilla(): void {
+    this.modalConfirmarCambioPlantillaVisible = false;
+  }
+
+  abrirCrearPlantilla(): void {
+    this.modalCrearPlantillaVisible = true;
+  }
+
+  cerrarCrearPlantilla(): void {
+    this.modalCrearPlantillaVisible = false;
+  }
+
+  onPlantillaGuardada(plantilla: any): void {
+    this.cerrarCrearPlantilla();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Plantilla Creada',
+      detail: 'La nueva plantilla se ha registrado correctamente'
+    });
+    // Recargar lista y seleccionar la recién creada
+    this.plantillaEvaluacionService.getActivas().subscribe({
+      next: (plantillas) => {
+        this.plantillasDisponibles = plantillas || [];
+        if (plantilla?.idPlantillaEvaluacion) {
+          this.seleccionarPlantilla(plantilla.idPlantillaEvaluacion);
+        }
+      }
+    });
+  }
+
+  // ==========================================
+  // MÉTODOS DE ADMINISTRADOR: MODIFICAR PRÓRROGA
+  // ==========================================
+
+  abrirModalProrroga(): void {
+    this.modalProrrogaVisible = true;
+    this.diasGraciaProrroga = this.detalleMallaActual?.diasGracia ?? 5;
+    if (this.detalleMallaActual?.fechaFin) {
+      const fecha = new Date(this.detalleMallaActual.fechaFin);
+      this.fechaFinProrroga = fecha.toISOString().split('T')[0];
+    } else {
+      this.fechaFinProrroga = '';
+    }
+  }
+
+  cerrarModalProrroga(): void {
+    this.modalProrrogaVisible = false;
+  }
+
+  guardarProrroga(): void {
+    this.guardandoProrroga = true;
+    const dto = {
+      idDetalleMalla: this.idDetalleMalla,
+      fechaInicio: this.detalleMallaActual?.fechaInicio ? new Date(this.detalleMallaActual.fechaInicio).toISOString().split('T')[0] : null,
+      fechaFin: this.fechaFinProrroga || (this.detalleMallaActual?.fechaFin ? new Date(this.detalleMallaActual.fechaFin).toISOString().split('T')[0] : null),
+      diasGracia: this.diasGraciaProrroga
+    };
+
+    this.detalleMallaService.actualizarFechasNotas(this.idDetalleMalla, dto).subscribe({
+      next: (dm) => {
+        this.guardandoProrroga = false;
+        this.modalProrrogaVisible = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Tiempo de subida y prórroga actualizado correctamente'
+        });
+        this.cargarDatos();
+      },
+      error: (err) => {
+        this.guardandoProrroga = false;
+        const msg = err.error?.message || err.error || 'No se pudo actualizar el tiempo de prórroga';
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: typeof msg === 'string' ? msg : JSON.stringify(msg)
+        });
+      }
+    });
+  }
+
+  getNuevaFechaLimiteEstimada(): string {
+    const baseDate = this.fechaFinProrroga
+      ? new Date(this.fechaFinProrroga + 'T00:00:00')
+      : (this.detalleMallaActual?.fechaFin ? new Date(this.detalleMallaActual.fechaFin) : null);
+
+    if (!baseDate) return 'Sin fecha de fin definida';
+
+    const fechaLimite = new Date(baseDate);
+    fechaLimite.setDate(fechaLimite.getDate() + (this.diasGraciaProrroga || 0));
+    return fechaLimite.toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' });
   }
 }
